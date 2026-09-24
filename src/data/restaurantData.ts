@@ -25,7 +25,7 @@ export const HERO_SLIDES = [
     title: 'Vaibhav Special Chicken Mandi',
     subtitle: 'Communal Arabic Platter with Tender Char-grilled Chicken & Fragrant Saffron Basmati',
     category: 'Arabic Specialty',
-    imageUrl: '/assets/images/chicken_mandi_hero_1789894879370.jpg',
+    imageUrl: '/assets/images/chicken_mandi_hero_1789894879370.webp',
     altText: 'Vaibhav Special Chicken Mandi platter with tender roasted whole chicken cuts, golden cashews, raisins, cucumber, carrot slices, and Yemeni tomato salsa'
   },
   {
@@ -33,7 +33,7 @@ export const HERO_SLIDES = [
     title: 'Smoky Chicken Tikka Kebab Platter',
     subtitle: 'Charred Spiced Chicken Skewers with Lemon Wedges & Fresh Mint Chutney',
     category: 'Clay Oven Grill',
-    imageUrl: '/assets/images/chicken_tikka_hero_1789894901572.jpg',
+    imageUrl: '/assets/images/chicken_tikka_hero_1789894901572.webp',
     altText: 'Skewers of sizzling golden-charred spiced chicken tikka kebabs with aromatic smoke, fresh lemon wedges, and coriander mint chutney'
   },
   {
@@ -41,7 +41,7 @@ export const HERO_SLIDES = [
     title: 'Assorted Vibrant Mocktails & Coolers',
     subtitle: 'Trio of Colorful Signature Coolers: Mint Mojito, Citrus Sunshine & Crimson Berry',
     category: 'Beverages & Coolers',
-    imageUrl: '/assets/images/vibrant_mocktails_hero_1789894941398.jpg',
+    imageUrl: '/assets/images/vibrant_mocktails_hero_1789894941398.webp',
     altText: 'Three colorful artisan mocktails in emerald green, sunny yellow citrus, and vibrant crimson berry with crushed ice and fresh herb garnishes'
   },
   {
@@ -49,7 +49,7 @@ export const HERO_SLIDES = [
     title: 'Sizzling Tandoori Chicken Platter',
     subtitle: 'Char-Roasted in Traditional Clay Ovens with Kashmiri Spices & Sliced Red Onions',
     category: 'Tandoor Specialty',
-    imageUrl: '/assets/images/sizzling_tandoori_hero_1789894957461.jpg',
+    imageUrl: '/assets/images/sizzling_tandoori_hero_1789894957461.webp',
     altText: 'Authentic sizzling tandoori chicken served in a cast iron skillet with charred marks, lemon wedges, and green mint dip'
   },
   {
@@ -57,7 +57,7 @@ export const HERO_SLIDES = [
     title: 'Gourmet Sizzling Brownie & Ice Cream',
     subtitle: 'Warm Chocolate Fudge Brownie with Rich Vanilla Ice Cream & Swirled Dark Chocolate',
     category: 'Elegant Desserts',
-    imageUrl: '/assets/images/brownie_dessert_hero_1789894922593.jpg',
+    imageUrl: '/assets/images/brownie_dessert_hero_1789894922593.webp',
     altText: 'Warm chocolate fudge brownie topped with a scoop of Madagascar vanilla ice cream and spiral drizzle of rich dark chocolate sauce'
   }
 ];
@@ -96,7 +96,7 @@ export const SIGNATURE_DISHES: SignatureDish[] = [
     tagline: 'Grand Arabian feast with saffron rice & tender roasted chicken',
     price: 699,
     description: 'Fragrant Arabic seasoned long-grain rice topped with char-grilled tender chicken cuts, roasted cashew nuts, raisins, and spicy Yemeni tomato chutney with Salan.',
-    image: '/assets/images/chicken_mandi_hero_1789894879370.jpg',
+    image: '/assets/images/chicken_mandi_hero_1789894879370.webp',
     isVeg: false,
     badge: 'Signature Platter',
     serving: 'Serves 3–4 (Family Platter)',
@@ -108,7 +108,7 @@ export const SIGNATURE_DISHES: SignatureDish[] = [
     tagline: 'Charred spiced chicken skewers with lemon & fresh mint chutney',
     price: 280,
     description: 'Skewered boneless chicken chunks marinated overnight in aromatic tandoori masala and hung curd, roasted over live coals with crispy charred edges and herb smoke.',
-    image: '/assets/images/chicken_tikka_hero_1789894901572.jpg',
+    image: '/assets/images/chicken_tikka_hero_1789894901572.webp',
     isVeg: false,
     badge: 'Clay Oven Grill',
     serving: 'Platter (6 Large Skewers)',
@@ -120,7 +120,7 @@ export const SIGNATURE_DISHES: SignatureDish[] = [
     tagline: '3 Vibrant chilled coolers: Mint Mojito, Citrus Sunshine & Berry Fizz',
     price: 180,
     description: 'Three handcrafted chilled coolers in emerald green, sunny yellow citrus, and vibrant crimson berry, prepared with fresh mint, key lime, fruit nectars, and effervescent fizz.',
-    image: '/assets/images/vibrant_mocktails_hero_1789894941398.jpg',
+    image: '/assets/images/vibrant_mocktails_hero_1789894941398.webp',
     isVeg: true,
     badge: 'Artisan Coolers',
     serving: 'Flight of 3 Coolers',
@@ -132,7 +132,7 @@ export const SIGNATURE_DISHES: SignatureDish[] = [
     tagline: 'Char-roasted in traditional clay ovens with hand-pounded spices',
     price: 320,
     description: 'Succulent farm-fresh chicken marinated overnight in Kashmiri chilli, hung curd, ginger-garlic paste, and roasted cumin, finished in a live charcoal clay tandoor.',
-    image: '/assets/images/sizzling_tandoori_hero_1789894957461.jpg',
+    image: '/assets/images/sizzling_tandoori_hero_1789894957461.webp',
     isVeg: false,
     badge: 'Tandoor Specialty',
     serving: 'Half / Full Platter',
@@ -144,7 +144,7 @@ export const SIGNATURE_DISHES: SignatureDish[] = [
     tagline: 'Warm fudge brownie, vanilla bean ice cream & rich chocolate swirls',
     price: 160,
     description: 'Gourmet warm chocolate fudge brownie served with a velvety scoop of Madagascar vanilla ice cream, topped with generous spiral drizzles of dark chocolate sauce.',
-    image: '/assets/images/brownie_dessert_hero_1789894922593.jpg',
+    image: '/assets/images/brownie_dessert_hero_1789894922593.webp',
     isVeg: true,
     badge: 'Elegant Dessert',
     serving: 'Platter with Ice Cream',
@@ -504,7 +504,7 @@ export const GALLERY_PHOTOS: GalleryPhoto[] = [
     id: 'g1',
     title: 'Vaibhav Special Mandi Platter',
     category: 'Arabic Specialty',
-    imageUrl: '/assets/images/chicken_mandi_hero_1789894879370.jpg',
+    imageUrl: '/assets/images/chicken_mandi_hero_1789894879370.webp',
     altText: 'Grand Arabian Mandi platter on communal dastarkhwan at Vaibhav Grand'
   },
   {
@@ -518,7 +518,7 @@ export const GALLERY_PHOTOS: GalleryPhoto[] = [
     id: 'g3',
     title: 'Sizzling Tandoori Chicken Skillet',
     category: 'Tandoor Grill',
-    imageUrl: '/assets/images/sizzling_tandoori_hero_1789894957461.jpg',
+    imageUrl: '/assets/images/sizzling_tandoori_hero_1789894957461.webp',
     altText: 'Sizzling tandoori chicken roasted in traditional clay oven with fresh lemon wedges'
   },
   {
@@ -546,14 +546,14 @@ export const GALLERY_PHOTOS: GalleryPhoto[] = [
     id: 'g7',
     title: 'Smoky Chicken Tikka Kebab Skewers',
     category: 'Mughlai Starters',
-    imageUrl: '/assets/images/chicken_tikka_hero_1789894901572.jpg',
+    imageUrl: '/assets/images/chicken_tikka_hero_1789894901572.webp',
     altText: 'Platter of succulent tender chicken tikka kebabs on skewers served with fresh lemon and mint dip'
   },
   {
     id: 'g8',
     title: 'Gourmet Sizzling Brownie & Ice Cream',
     category: 'Desserts & Refreshments',
-    imageUrl: '/assets/images/brownie_dessert_hero_1789894922593.jpg',
+    imageUrl: '/assets/images/brownie_dessert_hero_1789894922593.webp',
     altText: 'Warm chocolate fudge brownie topped with vanilla ice cream and chocolate swirl sauce'
   }
 ];

@@ -3,6 +3,7 @@ import { RESTAURANT_INFO } from '../data/restaurantData';
 import { Menu, X, ChevronDown, ExternalLink, Phone } from 'lucide-react';
 import { useLenis } from './SmoothScrollProvider';
 import { TopUtilityBar } from './TopUtilityBar';
+import { BrandEmblem } from './BrandEmblem';
 
 interface NavbarProps {
   onOpenOrderModal?: () => void;
@@ -87,30 +88,36 @@ export const Navbar: React.FC<NavbarProps> = () => {
         }`}
       >
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex items-center justify-between">
-          {/* Brand Wordmark (Text-based only in Playfair Display, no icon/mark) */}
+          {/* Brand Wordmark with Winged Horse Emblem */}
           <a
-            href="#"
+            href="/"
             onClick={(e) => {
               e.preventDefault();
               scrollTo(0, { duration: 1.2 });
             }}
             id="nav-brand-logo"
-            className="group flex flex-col focus:outline-none"
+            className="group flex items-center gap-2.5 sm:gap-3 focus:outline-none"
           >
-            <span
-              className={`font-['Playfair_Display'] text-2xl sm:text-3xl font-bold tracking-tight transition-colors duration-200 ${
-                isScrolled ? 'text-[#2E4823]' : 'text-[#FDFBF7] drop-shadow-[0_2px_4px_rgba(0,0,0,0.6)]'
-              }`}
-            >
-              Vaibhav Grand
-            </span>
-            <span
-              className={`text-[10px] sm:text-xs uppercase tracking-[0.25em] font-medium transition-colors duration-200 ${
-                isScrolled ? 'text-[#2E4823]/70' : 'text-[#FDFBF7]/85 drop-shadow-[0_1px_2px_rgba(0,0,0,0.5)]'
-              }`}
-            >
-              Family Restaurant • Renigunta
-            </span>
+            <BrandEmblem
+              className="w-9 h-9 sm:w-10 sm:h-10 shrink-0 transition-transform duration-300 group-hover:scale-105"
+              idSuffix="nav"
+            />
+            <div className="flex flex-col">
+              <span
+                className={`font-['Playfair_Display'] text-2xl sm:text-3xl font-bold tracking-tight transition-colors duration-200 ${
+                  isScrolled ? 'text-[#2E4823]' : 'text-[#FDFBF7] drop-shadow-[0_2px_4px_rgba(0,0,0,0.6)]'
+                }`}
+              >
+                Vaibhav Grand
+              </span>
+              <span
+                className={`text-[10px] sm:text-xs uppercase tracking-[0.25em] font-medium transition-colors duration-200 ${
+                  isScrolled ? 'text-[#2E4823]/70' : 'text-[#FDFBF7]/85 drop-shadow-[0_1px_2px_rgba(0,0,0,0.5)]'
+                }`}
+              >
+                Family Restaurant • Renigunta
+              </span>
+            </div>
           </a>
 
           {/* Desktop Navigation Links */}

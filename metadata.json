@@ -2,5 +2,5 @@
   "name": "Vaibhav Grand Family Restaurant",
   "description": "Authentic Indian, Mughlai, Arabic Mandi, Tandoor & Biryani family dining in Renigunta, Tirupati.",
   "requestFramePermissions": [],
-  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+  "majorCapabilities": []
 }

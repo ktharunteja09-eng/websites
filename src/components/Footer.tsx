@@ -1,6 +1,7 @@
 import React from 'react';
 import { RESTAURANT_INFO } from '../data/restaurantData';
 import { MapPin, Clock, Phone, Mail, Instagram, Facebook, MessageCircle, ExternalLink } from 'lucide-react';
+import { BrandEmblem } from './BrandEmblem';
 
 interface FooterProps {
   onOpenPrivacy: () => void;
@@ -18,13 +19,16 @@ export const Footer: React.FC<FooterProps> = ({ onOpenPrivacy, onOpenTerms, onOp
           
           {/* Column 1: Restaurant Brand & Address with Google Maps link */}
           <div className="space-y-4">
-            <div className="flex flex-col">
-              <span className="font-['Playfair_Display'] text-2xl font-bold tracking-tight text-white">
-                Vaibhav Grand
-              </span>
-              <span className="text-xs uppercase tracking-[0.2em] text-[#D3452B] font-semibold mt-1">
-                Family Restaurant • Renigunta
-              </span>
+            <div className="flex items-center gap-3">
+              <BrandEmblem className="w-10 h-10 shrink-0" idSuffix="footer" />
+              <div className="flex flex-col">
+                <span className="font-['Playfair_Display'] text-2xl font-bold tracking-tight text-white">
+                  Vaibhav Grand
+                </span>
+                <span className="text-xs uppercase tracking-[0.2em] text-[#D3452B] font-semibold mt-1">
+                  Family Restaurant • Renigunta
+                </span>
+              </div>
             </div>
 
             <p className="text-sm text-gray-400 leading-relaxed max-w-sm">

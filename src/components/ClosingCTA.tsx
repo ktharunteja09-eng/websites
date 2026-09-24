@@ -17,7 +17,7 @@ export const ClosingCTA: React.FC<ClosingCTAProps> = ({ onOpenOrderModal }) => {
       {/* Background Image: Blurred Food Photo with Dark Vignette Overlay */}
       <div className="absolute inset-0 z-0">
         <img
-          src="/assets/images/chicken_mandi_hero_1789894879370.jpg"
+          src="/assets/images/chicken_mandi_hero_1789894879370.webp"
           alt="Vaibhav Grand authentic feast spread"
           referrerPolicy="no-referrer"
           className="w-full h-full object-cover object-center filter blur-[4px] scale-105 opacity-35"
