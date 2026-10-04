@@ -74,9 +74,9 @@ export const DigitalMenuCards: React.FC = () => {
             <Sparkles className="w-5 h-5 text-amber-300" />
           </div>
           <div>
-            <h4 className="font-['Playfair_Display'] text-base sm:text-lg font-bold text-[#2E4823]">
+            <h3 className="font-['Playfair_Display'] text-base sm:text-lg font-bold text-[#2E4823]">
               Digital Menu Booklet &amp; Photo Card Placeholders
-            </h4>
+            </h3>
             <p className="text-xs sm:text-sm text-gray-700 mt-1 leading-relaxed">
               Browse our official menu book pages below. You can tap{' '}
               <strong>"Upload Menu Photo"</strong> on any slot to upload your own physical menu scans or dish photos anytime!
@@ -112,7 +112,7 @@ export const DigitalMenuCards: React.FC = () => {
           const isCustom = Boolean(customImage);
 
           return (
-            <div
+            <article
               key={page.id}
               className="bg-white rounded-2xl overflow-hidden border border-[#2E4823]/15 shadow-[0_6px_24px_rgba(46,72,35,0.06)] flex flex-col transition-all duration-300 hover:shadow-[0_12px_32px_rgba(46,72,35,0.12)] hover:-translate-y-1 group"
             >
@@ -159,9 +159,9 @@ export const DigitalMenuCards: React.FC = () => {
 
                 {/* Bottom Title on Image */}
                 <div className="absolute bottom-3 left-3 right-3 text-white pointer-events-none">
-                  <h5 className="font-['Playfair_Display'] text-sm sm:text-base font-bold leading-tight drop-shadow">
+                  <h3 className="font-['Playfair_Display'] text-sm sm:text-base font-bold leading-tight drop-shadow">
                     {page.title}
-                  </h5>
+                  </h3>
                   <p className="text-[11px] text-gray-200 line-clamp-1 mt-0.5">
                     {page.subtitle}
                   </p>
@@ -220,7 +220,7 @@ export const DigitalMenuCards: React.FC = () => {
                   </p>
                 )}
               </div>
-            </div>
+            </article>
           );
         })}
       </div>
@@ -250,15 +250,17 @@ export const DigitalMenuCards: React.FC = () => {
             <img
               src={activePreview.currentImage}
               alt={activePreview.page.title}
+              width={800}
+              height={1000}
               className="max-w-full max-h-[75vh] object-contain rounded-2xl shadow-2xl border border-white/20"
             />
             <div className="mt-4 text-center text-white px-4">
               <span className="text-xs uppercase tracking-widest text-amber-300 font-bold">
                 Page {activePreview.page.pageNumber} • {activePreview.page.category}
               </span>
-              <h3 className="font-['Playfair_Display'] text-xl sm:text-2xl font-bold mt-1">
+              <p role="heading" aria-level={2} className="font-['Playfair_Display'] text-xl sm:text-2xl font-bold mt-1">
                 {activePreview.page.title}
-              </h3>
+              </p>
               <p className="text-xs text-gray-300 mt-1 max-w-md">
                 {activePreview.page.subtitle}
               </p>

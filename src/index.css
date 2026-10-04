@@ -14,6 +14,9 @@
 
   html {
     scroll-behavior: auto !important;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
   }
 
   /* Lenis Butter Smooth Scrolling Rules */
@@ -33,7 +36,8 @@
     overflow: clip;
   }
 
-  .lenis.lenis-smooth iframe {
+  /* Only disable pointer events on iframe WHILE actively scrolling, so user can interact with Google Map */
+  html.lenis-scrolling iframe {
     pointer-events: none;
   }
 
@@ -41,6 +45,7 @@
     background-color: #FDFBF7;
     color: #1C1C1C;
     font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    overflow-x: hidden;
   }
 
   h1, h2, h3, .font-display {
@@ -48,10 +53,77 @@
   }
 }
 
+/* Butter Smooth Interactive Button & Link Physics */
+button,
+a.button-link,
+[role="button"] {
+  transition: transform 0.24s cubic-bezier(0.16, 1, 0.3, 1),
+              box-shadow 0.24s cubic-bezier(0.16, 1, 0.3, 1),
+              background-color 0.2s ease,
+              border-color 0.2s ease,
+              color 0.2s ease,
+              opacity 0.2s ease;
+  will-change: transform;
+}
+
+button:active,
+[role="button"]:active {
+  transform: scale(0.97) !important;
+}
+
+/* Butter Smooth Card Lift Physics */
+.card-butter {
+  transition: transform 0.32s cubic-bezier(0.16, 1, 0.3, 1),
+              box-shadow 0.32s cubic-bezier(0.16, 1, 0.3, 1),
+              border-color 0.2s ease;
+  will-change: transform;
+}
+.card-butter:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 16px 36px -8px rgba(46, 72, 35, 0.12);
+}
+
 /* Custom focus ring matching brand identity */
 :focus-visible {
   outline: 2px solid #2E4823;
-  outline-offset: 2px;
+  outline-offset: 3px;
+  box-shadow: 0 0 0 4px rgba(46, 72, 35, 0.15);
+}
+
+/* Subtle Shimmer for High-Priority Buttons */
+@keyframes button-shimmer {
+  0% {
+    transform: translateX(-150%) skewX(-20deg);
+  }
+  100% {
+    transform: translateX(250%) skewX(-20deg);
+  }
+}
+
+.btn-shimmer {
+  position: relative;
+  overflow: hidden;
+}
+
+.btn-shimmer::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 60%;
+  height: 100%;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255, 255, 255, 0.22),
+    transparent
+  );
+  transform: translateX(-150%) skewX(-20deg);
+  transition: none;
+}
+
+.btn-shimmer:hover::after {
+  animation: button-shimmer 1.2s ease-in-out infinite;
 }
 
 /* Hide scrollbars for clean category tabs */
@@ -62,3 +134,25 @@
   -ms-overflow-style: none;
   scrollbar-width: none;
 }
+
+/* Horizontal Review Side-Scroll Marquee Animation */
+@keyframes marquee-scroll {
+  0% {
+    transform: translateX(0);
+  }
+  100% {
+    transform: translateX(-50%);
+  }
+}
+
+.animate-marquee-slow {
+  display: flex;
+  width: max-content;
+  animation: marquee-scroll 45s linear infinite;
+  will-change: transform;
+}
+
+.animate-marquee-slow:hover {
+  animation-play-state: paused;
+}
+

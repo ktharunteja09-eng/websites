@@ -1,0 +1,560 @@
+{
+  "apollo-fish.webp": {
+    "file": "/assets/images_processed/apollo-fish.webp",
+    "itemId": "apollo-fish",
+    "itemName": "Apollo Fish",
+    "price": 0,
+    "category": "starters",
+    "isVeg": false,
+    "desc": "Freshly prepared Apollo Fish."
+  },
+  "baby-corn-555.webp": {
+    "file": "/assets/images_processed/baby-corn-555.webp",
+    "itemId": "baby-corn-555",
+    "itemName": "Baby Corn 555",
+    "price": 0,
+    "category": "starters",
+    "isVeg": true,
+    "desc": "Freshly prepared Baby Corn 555."
+  },
+  "baby-corn-manchurian.webp": {
+    "file": "/assets/images_processed/baby-corn-manchurian.webp",
+    "itemId": "baby-corn-manchurian",
+    "itemName": "Baby Corn Manchurian",
+    "price": 0,
+    "category": "starters",
+    "isVeg": true,
+    "desc": "Freshly prepared Baby Corn Manchurian."
+  },
+  "boiled-egg.webp": {
+    "file": "/assets/images_processed/boiled-egg.webp",
+    "itemId": "boiled-egg",
+    "itemName": "Boiled Egg",
+    "price": 0,
+    "category": "starters",
+    "isVeg": false,
+    "desc": "Freshly prepared Boiled Egg."
+  },
+  "butter-chicken.webp": {
+    "file": "/assets/images_processed/butter-chicken.webp",
+    "itemId": "butter-chicken",
+    "itemName": "Butter Chicken",
+    "price": 0,
+    "category": "starters",
+    "isVeg": false,
+    "desc": "Freshly prepared Butter Chicken."
+  },
+  "butter-kulcha.webp": {
+    "file": "/assets/images_processed/butter-kulcha.webp",
+    "itemId": "butter-kulcha",
+    "itemName": "Butter Kulcha",
+    "price": 0,
+    "category": "breads",
+    "isVeg": true,
+    "desc": "Freshly prepared Butter Kulcha."
+  },
+  "butter-naan.webp": {
+    "file": "/assets/images_processed/butter-naan.webp",
+    "itemId": "butter-naan",
+    "itemName": "Butter Naan",
+    "price": 0,
+    "category": "breads",
+    "isVeg": true,
+    "desc": "Freshly prepared Butter Naan."
+  },
+  "butter-roti.webp": {
+    "file": "/assets/images_processed/butter-roti.webp",
+    "itemId": "butter-roti",
+    "itemName": "Butter Roti",
+    "price": 0,
+    "category": "breads",
+    "isVeg": true,
+    "desc": "Freshly prepared Butter Roti."
+  },
+  "chicken-65.webp": {
+    "file": "/assets/images_processed/chicken-65.webp",
+    "itemId": "chicken-65",
+    "itemName": "Chicken 65",
+    "price": 0,
+    "category": "starters",
+    "isVeg": false,
+    "desc": "Freshly prepared Chicken 65."
+  },
+  "chicken-curry-bone.webp": {
+    "file": "/assets/images_processed/chicken-curry-bone.webp",
+    "itemId": "chicken-curry-bone",
+    "itemName": "Chicken Curry Bone",
+    "price": 0,
+    "category": "curries",
+    "isVeg": false,
+    "desc": "Freshly prepared Chicken Curry Bone."
+  },
+  "chicken-curry-boneless.webp": {
+    "file": "/assets/images_processed/chicken-curry-boneless.webp",
+    "itemId": "chicken-curry-boneless",
+    "itemName": "Chicken Curry Boneless",
+    "price": 0,
+    "category": "curries",
+    "isVeg": false,
+    "desc": "Freshly prepared Chicken Curry Boneless."
+  },
+  "chicken-drumstick.webp": {
+    "file": "/assets/images_processed/chicken-drumstick.webp",
+    "itemId": "chicken-drumstick",
+    "itemName": "Chicken Drumstick",
+    "price": 0,
+    "category": "starters",
+    "isVeg": false,
+    "desc": "Freshly prepared Chicken Drumstick."
+  },
+  "chicken-dum-biriyani.webp": {
+    "file": "/assets/images_processed/chicken-dum-biriyani.webp",
+    "itemId": "chicken-dum-biriyani",
+    "itemName": "Chicken Dum Biriyani",
+    "price": 0,
+    "category": "biryani",
+    "isVeg": false,
+    "desc": "Freshly prepared Chicken Dum Biriyani."
+  },
+  "chicken-fried-rice.webp": {
+    "file": "/assets/images_processed/chicken-fried-rice.webp",
+    "itemId": "chicken-fried-rice",
+    "itemName": "Chicken Fried Rice",
+    "price": 0,
+    "category": "rice-noodles",
+    "isVeg": false,
+    "desc": "Freshly prepared Chicken Fried Rice."
+  },
+  "chicken-fry-curries.webp": {
+    "file": "/assets/images_processed/chicken-fry-curries.webp",
+    "itemId": "chicken-fry-curries",
+    "itemName": "Chicken Fry Curries",
+    "price": 0,
+    "category": "starters",
+    "isVeg": false,
+    "desc": "Freshly prepared Chicken Fry Curries."
+  },
+  "chicken-lollipop.webp": {
+    "file": "/assets/images_processed/chicken-lollipop.webp",
+    "itemId": "chicken-lollipop",
+    "itemName": "Chicken Lollipop",
+    "price": 0,
+    "category": "starters",
+    "isVeg": false,
+    "desc": "Freshly prepared Chicken Lollipop."
+  },
+  "chicken-mughlai-curry.webp": {
+    "file": "/assets/images_processed/chicken-mughlai-curry.webp",
+    "itemId": "chicken-mughlai-curry",
+    "itemName": "Chicken Mughlai Curry",
+    "price": 0,
+    "category": "curries",
+    "isVeg": false,
+    "desc": "Freshly prepared Chicken Mughlai Curry."
+  },
+  "chicken-noodles.webp": {
+    "file": "/assets/images_processed/chicken-noodles.webp",
+    "itemId": "chicken-noodles",
+    "itemName": "Chicken Noodles",
+    "price": 0,
+    "category": "starters",
+    "isVeg": false,
+    "desc": "Freshly prepared Chicken Noodles."
+  },
+  "chicken-rayalaseema.webp": {
+    "file": "/assets/images_processed/chicken-rayalaseema.webp",
+    "itemId": "chicken-rayalaseema",
+    "itemName": "Chicken Rayalaseema",
+    "price": 0,
+    "category": "starters",
+    "isVeg": false,
+    "desc": "Freshly prepared Chicken Rayalaseema."
+  },
+  "chilli-paneer.webp": {
+    "file": "/assets/images_processed/chilli-paneer.webp",
+    "itemId": "chilli-paneer",
+    "itemName": "Chilli Paneer",
+    "price": 0,
+    "category": "starters",
+    "isVeg": true,
+    "desc": "Freshly prepared Chilli Paneer."
+  },
+  "chocolate-milkshake.webp": {
+    "file": "/assets/images_processed/chocolate-milkshake.webp",
+    "itemId": "chocolate-milkshake",
+    "itemName": "Chocolate Milkshake",
+    "price": 0,
+    "category": "beverages",
+    "isVeg": true,
+    "desc": "Freshly prepared Chocolate Milkshake."
+  },
+  "egg-fried-rice.webp": {
+    "file": "/assets/images_processed/egg-fried-rice.webp",
+    "itemId": "egg-fried-rice",
+    "itemName": "Egg Fried Rice",
+    "price": 0,
+    "category": "rice-noodles",
+    "isVeg": false,
+    "desc": "Freshly prepared Egg Fried Rice."
+  },
+  "egg-noodles.webp": {
+    "file": "/assets/images_processed/egg-noodles.webp",
+    "itemId": "egg-noodles",
+    "itemName": "Egg Noodles",
+    "price": 0,
+    "category": "starters",
+    "isVeg": false,
+    "desc": "Freshly prepared Egg Noodles."
+  },
+  "fish-65.webp": {
+    "file": "/assets/images_processed/fish-65.webp",
+    "itemId": "fish-65",
+    "itemName": "Fish 65",
+    "price": 0,
+    "category": "starters",
+    "isVeg": false,
+    "desc": "Freshly prepared Fish 65."
+  },
+  "fish-biryani.webp": {
+    "file": "/assets/images_processed/fish-biryani.webp",
+    "itemId": "fish-biryani",
+    "itemName": "Fish Biryani",
+    "price": 0,
+    "category": "biryani",
+    "isVeg": false,
+    "desc": "Freshly prepared Fish Biryani."
+  },
+  "fish-masala.webp": {
+    "file": "/assets/images_processed/fish-masala.webp",
+    "itemId": "fish-masala",
+    "itemName": "Fish Masala",
+    "price": 0,
+    "category": "curries",
+    "isVeg": false,
+    "desc": "Freshly prepared Fish Masala."
+  },
+  "green-mint-mojito.webp": {
+    "file": "/assets/images_processed/green-mint-mojito.webp",
+    "itemId": "green-mint-mojito",
+    "itemName": "Green Mint Mojito",
+    "price": 0,
+    "category": "beverages",
+    "isVeg": true,
+    "desc": "Freshly prepared Green Mint Mojito."
+  },
+  "jeera-rice.webp": {
+    "file": "/assets/images_processed/jeera-rice.webp",
+    "itemId": "jeera-rice",
+    "itemName": "Jeera Rice",
+    "price": 0,
+    "category": "rice-noodles",
+    "isVeg": false,
+    "desc": "Freshly prepared Jeera Rice."
+  },
+  "kadai-fish-curry.webp": {
+    "file": "/assets/images_processed/kadai-fish-curry.webp",
+    "itemId": "kadai-fish-curry",
+    "itemName": "Kadai Fish Curry",
+    "price": 0,
+    "category": "curries",
+    "isVeg": false,
+    "desc": "Freshly prepared Kadai Fish Curry."
+  },
+  "kadai-veg.webp": {
+    "file": "/assets/images_processed/kadai-veg.webp",
+    "itemId": "kadai-veg",
+    "itemName": "Kadai Veg",
+    "price": 0,
+    "category": "starters",
+    "isVeg": false,
+    "desc": "Freshly prepared Kadai Veg."
+  },
+  "kulcha.webp": {
+    "file": "/assets/images_processed/kulcha.webp",
+    "itemId": "kulcha",
+    "itemName": "Kulcha",
+    "price": 0,
+    "category": "breads",
+    "isVeg": true,
+    "desc": "Freshly prepared Kulcha."
+  },
+  "loaded-chicken-fries.webp": {
+    "file": "/assets/images_processed/loaded-chicken-fries.webp",
+    "itemId": "loaded-chicken-fries",
+    "itemName": "Loaded Chicken Fries",
+    "price": 0,
+    "category": "starters",
+    "isVeg": false,
+    "desc": "Freshly prepared Loaded Chicken Fries."
+  },
+  "loaded-french-fries.webp": {
+    "file": "/assets/images_processed/loaded-french-fries.webp",
+    "itemId": "loaded-french-fries",
+    "itemName": "Loaded French Fries",
+    "price": 0,
+    "category": "starters",
+    "isVeg": false,
+    "desc": "Freshly prepared Loaded French Fries."
+  },
+  "mandi.webp": {
+    "file": "/assets/images_processed/mandi.webp",
+    "itemId": "mandi",
+    "itemName": "Mandi",
+    "price": 0,
+    "category": "mandi",
+    "isVeg": false,
+    "desc": "Freshly prepared Mandi."
+  },
+  "masala-kulcha.webp": {
+    "file": "/assets/images_processed/masala-kulcha.webp",
+    "itemId": "masala-kulcha",
+    "itemName": "Masala Kulcha",
+    "price": 0,
+    "category": "curries",
+    "isVeg": false,
+    "desc": "Freshly prepared Masala Kulcha."
+  },
+  "mushroom-65.webp": {
+    "file": "/assets/images_processed/mushroom-65.webp",
+    "itemId": "mushroom-65",
+    "itemName": "Mushroom 65",
+    "price": 0,
+    "category": "starters",
+    "isVeg": true,
+    "desc": "Freshly prepared Mushroom 65."
+  },
+  "mushroom-fried-rice.webp": {
+    "file": "/assets/images_processed/mushroom-fried-rice.webp",
+    "itemId": "mushroom-fried-rice",
+    "itemName": "Mushroom Fried Rice",
+    "price": 0,
+    "category": "rice-noodles",
+    "isVeg": false,
+    "desc": "Freshly prepared Mushroom Fried Rice."
+  },
+  "mushroom-noodles.webp": {
+    "file": "/assets/images_processed/mushroom-noodles.webp",
+    "itemId": "mushroom-noodles",
+    "itemName": "Mushroom Noodles",
+    "price": 0,
+    "category": "starters",
+    "isVeg": true,
+    "desc": "Freshly prepared Mushroom Noodles."
+  },
+  "oreo-milkshake.webp": {
+    "file": "/assets/images_processed/oreo-milkshake.webp",
+    "itemId": "oreo-milkshake",
+    "itemName": "Oreo Milkshake",
+    "price": 0,
+    "category": "beverages",
+    "isVeg": true,
+    "desc": "Freshly prepared Oreo Milkshake."
+  },
+  "paneer-65.webp": {
+    "file": "/assets/images_processed/paneer-65.webp",
+    "itemId": "paneer-65",
+    "itemName": "Paneer 65",
+    "price": 0,
+    "category": "starters",
+    "isVeg": true,
+    "desc": "Freshly prepared Paneer 65."
+  },
+  "paneer-biryani.webp": {
+    "file": "/assets/images_processed/paneer-biryani.webp",
+    "itemId": "paneer-biryani",
+    "itemName": "Paneer Biryani",
+    "price": 0,
+    "category": "biryani",
+    "isVeg": false,
+    "desc": "Freshly prepared Paneer Biryani."
+  },
+  "paneer-manchurian.webp": {
+    "file": "/assets/images_processed/paneer-manchurian.webp",
+    "itemId": "paneer-manchurian",
+    "itemName": "Paneer Manchurian",
+    "price": 0,
+    "category": "starters",
+    "isVeg": true,
+    "desc": "Freshly prepared Paneer Manchurian."
+  },
+  "panneer-kheema-masala.webp": {
+    "file": "/assets/images_processed/panneer-kheema-masala.webp",
+    "itemId": "panneer-kheema-masala",
+    "itemName": "Panneer Kheema Masala",
+    "price": 0,
+    "category": "curries",
+    "isVeg": false,
+    "desc": "Freshly prepared Panneer Kheema Masala."
+  },
+  "panneer-tikka-masala.webp": {
+    "file": "/assets/images_processed/panneer-tikka-masala.webp",
+    "itemId": "panneer-tikka-masala",
+    "itemName": "Panneer Tikka Masala",
+    "price": 0,
+    "category": "curries",
+    "isVeg": false,
+    "desc": "Freshly prepared Panneer Tikka Masala."
+  },
+  "panneer-tikka.webp": {
+    "file": "/assets/images_processed/panneer-tikka.webp",
+    "itemId": "panneer-tikka",
+    "itemName": "Panneer Tikka",
+    "price": 0,
+    "category": "starters",
+    "isVeg": false,
+    "desc": "Freshly prepared Panneer Tikka."
+  },
+  "panner-tikka-fry.webp": {
+    "file": "/assets/images_processed/panner-tikka-fry.webp",
+    "itemId": "panner-tikka-fry",
+    "itemName": "Panner Tikka Fry",
+    "price": 0,
+    "category": "starters",
+    "isVeg": false,
+    "desc": "Freshly prepared Panner Tikka Fry."
+  },
+  "pepper-chicken.webp": {
+    "file": "/assets/images_processed/pepper-chicken.webp",
+    "itemId": "pepper-chicken",
+    "itemName": "Pepper Chicken",
+    "price": 0,
+    "category": "starters",
+    "isVeg": false,
+    "desc": "Freshly prepared Pepper Chicken."
+  },
+  "pepper-fish.webp": {
+    "file": "/assets/images_processed/pepper-fish.webp",
+    "itemId": "pepper-fish",
+    "itemName": "Pepper Fish",
+    "price": 0,
+    "category": "starters",
+    "isVeg": false,
+    "desc": "Freshly prepared Pepper Fish."
+  },
+  "peri-peri-french-fries.webp": {
+    "file": "/assets/images_processed/peri-peri-french-fries.webp",
+    "itemId": "peri-peri-french-fries",
+    "itemName": "Peri Peri French Fries",
+    "price": 0,
+    "category": "starters",
+    "isVeg": false,
+    "desc": "Freshly prepared Peri Peri French Fries."
+  },
+  "peri-peri-fried-chicken.webp": {
+    "file": "/assets/images_processed/peri-peri-fried-chicken.webp",
+    "itemId": "peri-peri-fried-chicken",
+    "itemName": "Peri Peri Fried Chicken",
+    "price": 0,
+    "category": "starters",
+    "isVeg": false,
+    "desc": "Freshly prepared Peri Peri Fried Chicken."
+  },
+  "prawns-65.webp": {
+    "file": "/assets/images_processed/prawns-65.webp",
+    "itemId": "prawns-65",
+    "itemName": "Prawns 65",
+    "price": 0,
+    "category": "starters",
+    "isVeg": false,
+    "desc": "Freshly prepared Prawns 65."
+  },
+  "prawns-biryani.webp": {
+    "file": "/assets/images_processed/prawns-biryani.webp",
+    "itemId": "prawns-biryani",
+    "itemName": "Prawns Biryani",
+    "price": 0,
+    "category": "biryani",
+    "isVeg": false,
+    "desc": "Freshly prepared Prawns Biryani."
+  },
+  "prawns-noodles.webp": {
+    "file": "/assets/images_processed/prawns-noodles.webp",
+    "itemId": "prawns-noodles",
+    "itemName": "Prawns Noodles",
+    "price": 0,
+    "category": "starters",
+    "isVeg": false,
+    "desc": "Freshly prepared Prawns Noodles."
+  },
+  "rayalaseema-chicken-curry.webp": {
+    "file": "/assets/images_processed/rayalaseema-chicken-curry.webp",
+    "itemId": "rayalaseema-chicken-curry",
+    "itemName": "Rayalaseema Chicken Curry",
+    "price": 0,
+    "category": "curries",
+    "isVeg": false,
+    "desc": "Freshly prepared Rayalaseema Chicken Curry."
+  },
+  "sahi-paneer.webp": {
+    "file": "/assets/images_processed/sahi-paneer.webp",
+    "itemId": "sahi-paneer",
+    "itemName": "Sahi Paneer",
+    "price": 0,
+    "category": "starters",
+    "isVeg": true,
+    "desc": "Freshly prepared Sahi Paneer."
+  },
+  "special-chicken-fried-rice.webp": {
+    "file": "/assets/images_processed/special-chicken-fried-rice.webp",
+    "itemId": "special-chicken-fried-rice",
+    "itemName": "Special Chicken Fried Rice",
+    "price": 0,
+    "category": "rice-noodles",
+    "isVeg": false,
+    "desc": "Freshly prepared Special Chicken Fried Rice."
+  },
+  "special-curd-rice.webp": {
+    "file": "/assets/images_processed/special-curd-rice.webp",
+    "itemId": "special-curd-rice",
+    "itemName": "Special Curd Rice",
+    "price": 0,
+    "category": "rice-noodles",
+    "isVeg": false,
+    "desc": "Freshly prepared Special Curd Rice."
+  },
+  "special-omlette.webp": {
+    "file": "/assets/images_processed/special-omlette.webp",
+    "itemId": "special-omlette",
+    "itemName": "Special Omlette",
+    "price": 0,
+    "category": "starters",
+    "isVeg": false,
+    "desc": "Freshly prepared Special Omlette."
+  },
+  "strawberry-milkshake.webp": {
+    "file": "/assets/images_processed/strawberry-milkshake.webp",
+    "itemId": "strawberry-milkshake",
+    "itemName": "Strawberry Milkshake",
+    "price": 0,
+    "category": "beverages",
+    "isVeg": true,
+    "desc": "Freshly prepared Strawberry Milkshake."
+  },
+  "tandoori-chicken.webp": {
+    "file": "/assets/images_processed/tandoori-chicken.webp",
+    "itemId": "tandoori-chicken",
+    "itemName": "Tandoori Chicken",
+    "price": 0,
+    "category": "starters",
+    "isVeg": false,
+    "desc": "Freshly prepared Tandoori Chicken."
+  },
+  "veg-fried-rice.webp": {
+    "file": "/assets/images_processed/veg-fried-rice.webp",
+    "itemId": "veg-fried-rice",
+    "itemName": "Veg Fried Rice",
+    "price": 0,
+    "category": "rice-noodles",
+    "isVeg": false,
+    "desc": "Freshly prepared Veg Fried Rice."
+  },
+  "veg-noodles.webp": {
+    "file": "/assets/images_processed/veg-noodles.webp",
+    "itemId": "veg-noodles",
+    "itemName": "Veg Noodles",
+    "price": 0,
+    "category": "starters",
+    "isVeg": false,
+    "desc": "Freshly prepared Veg Noodles."
+  }
+}

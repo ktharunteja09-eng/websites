@@ -45,14 +45,14 @@ export const ContactSection: React.FC = () => {
             <div className="space-y-4">
               
               {/* Phone Card */}
-              <div className="bg-[#F7F3EB] rounded-2xl p-5 sm:p-6 border border-[#2E4823]/10 shadow-sm flex items-start gap-4">
+              <article className="bg-[#F7F3EB] rounded-2xl p-5 sm:p-6 border border-[#2E4823]/10 shadow-sm flex items-start gap-4">
                 <div className="w-12 h-12 rounded-xl bg-[#2E4823] text-white flex items-center justify-center shrink-0">
                   <Phone className="w-6 h-6" />
                 </div>
                 <div>
-                  <span className="text-xs font-semibold uppercase tracking-wider text-gray-500">
+                  <h3 className="text-xs font-semibold uppercase tracking-wider text-gray-500">
                     Direct Telephone
-                  </span>
+                  </h3>
                   <div className="mt-1">
                     <a
                       href="tel:7947142432"
@@ -66,17 +66,17 @@ export const ContactSection: React.FC = () => {
                     Tap to call for table reservations, takeaway parcels, or bulk catering.
                   </p>
                 </div>
-              </div>
+              </article>
 
               {/* Email Card */}
-              <div className="bg-[#F7F3EB] rounded-2xl p-5 sm:p-6 border border-[#2E4823]/10 shadow-sm flex items-start gap-4">
+              <article className="bg-[#F7F3EB] rounded-2xl p-5 sm:p-6 border border-[#2E4823]/10 shadow-sm flex items-start gap-4">
                 <div className="w-12 h-12 rounded-xl bg-[#2E4823] text-white flex items-center justify-center shrink-0">
                   <Mail className="w-6 h-6" />
                 </div>
                 <div>
-                  <span className="text-xs font-semibold uppercase tracking-wider text-gray-500">
+                  <h3 className="text-xs font-semibold uppercase tracking-wider text-gray-500">
                     Email Inquiries
-                  </span>
+                  </h3>
                   <div className="mt-1">
                     <a
                       href={`mailto:${RESTAURANT_INFO.email}`}
@@ -89,17 +89,17 @@ export const ContactSection: React.FC = () => {
                     For corporate dining contracts and feedback.
                   </p>
                 </div>
-              </div>
+              </article>
 
               {/* Address Card */}
-              <div className="bg-[#F7F3EB] rounded-2xl p-5 sm:p-6 border border-[#2E4823]/10 shadow-sm flex items-start gap-4">
+              <article className="bg-[#F7F3EB] rounded-2xl p-5 sm:p-6 border border-[#2E4823]/10 shadow-sm flex items-start gap-4">
                 <div className="w-12 h-12 rounded-xl bg-[#D3452B] text-white flex items-center justify-center shrink-0">
                   <MapPin className="w-6 h-6" />
                 </div>
                 <div>
-                  <span className="text-xs font-semibold uppercase tracking-wider text-gray-500">
+                  <h3 className="text-xs font-semibold uppercase tracking-wider text-gray-500">
                     Restaurant Address
-                  </span>
+                  </h3>
                   <p className="mt-1 text-sm sm:text-base font-medium text-[#1C1C1C] leading-relaxed">
                     {RESTAURANT_INFO.address}
                   </p>
@@ -107,17 +107,17 @@ export const ContactSection: React.FC = () => {
                     {RESTAURANT_INFO.landmark}
                   </span>
                 </div>
-              </div>
+              </article>
 
               {/* Hours Card */}
-              <div className="bg-[#F7F3EB] rounded-2xl p-5 sm:p-6 border border-[#2E4823]/10 shadow-sm flex items-start gap-4">
+              <article className="bg-[#F7F3EB] rounded-2xl p-5 sm:p-6 border border-[#2E4823]/10 shadow-sm flex items-start gap-4">
                 <div className="w-12 h-12 rounded-xl bg-[#2E4823] text-white flex items-center justify-center shrink-0">
                   <Clock className="w-6 h-6" />
                 </div>
                 <div>
-                  <span className="text-xs font-semibold uppercase tracking-wider text-gray-500">
+                  <h3 className="text-xs font-semibold uppercase tracking-wider text-gray-500">
                     Operating Hours
-                  </span>
+                  </h3>
                   <p className="mt-1 text-base sm:text-lg font-bold text-[#2E4823]">
                     {RESTAURANT_INFO.hours}
                   </p>
@@ -125,15 +125,15 @@ export const ContactSection: React.FC = () => {
                     Continuous dining service through lunch, high tea, and late dinner.
                   </p>
                 </div>
-              </div>
+              </article>
             </div>
 
             {/* Social Channels Bar */}
-            <div className="bg-white rounded-2xl p-5 border border-[#2E4823]/10 shadow-sm flex items-center justify-between">
+            <aside className="bg-white rounded-2xl p-5 border border-[#2E4823]/10 shadow-sm flex items-center justify-between">
               <div>
-                <span className="text-xs font-semibold text-gray-500 uppercase tracking-wider block">
+                <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider block">
                   Connect on Social
-                </span>
+                </h3>
                 <span className="text-sm font-bold text-[#2E4823]">
                   {RESTAURANT_INFO.instagramHandle}
                 </span>
@@ -158,7 +158,7 @@ export const ContactSection: React.FC = () => {
                   <Facebook className="w-5 h-5" />
                 </a>
               </div>
-            </div>
+            </aside>
           </motion.div>
 
           {/* Right Column: Embedded Interactive Google Map */}
@@ -174,11 +174,11 @@ export const ContactSection: React.FC = () => {
               {/* Interactive Iframe */}
               <iframe
                 title="Vaibhav Grand Family Restaurant Location on Google Maps"
-                src="https://maps.google.com/maps?q=13.6508,79.5144+(Vaibhav+Grand+Family+Restaurant)&t=&z=15&ie=UTF8&iwloc=B&output=embed"
+                src={RESTAURANT_INFO.googleMapsEmbedUrl}
                 width="100%"
                 height="100%"
                 style={{ border: 0 }}
-                allowFullScreen={false}
+                allowFullScreen={true}
                 loading="lazy"
                 referrerPolicy="no-referrer-when-downgrade"
                 className="w-full h-full"
@@ -188,9 +188,9 @@ export const ContactSection: React.FC = () => {
               <div className="absolute bottom-4 left-4 right-4 sm:right-auto sm:max-w-xs bg-white/95 backdrop-blur-md rounded-2xl p-4 shadow-xl border border-[#2E4823]/10">
                 <div className="flex items-center justify-between gap-3">
                   <div>
-                    <h4 className="font-['Playfair_Display'] text-sm font-bold text-[#2E4823]">
+                    <h3 className="font-['Playfair_Display'] text-sm font-bold text-[#2E4823]">
                       Vaibhav Grand
-                    </h4>
+                    </h3>
                     <p className="text-[11px] text-gray-500">
                       Ramana Vilas Circle, Renigunta
                     </p>

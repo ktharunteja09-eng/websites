@@ -1,14 +1,15 @@
 import React, { useState, useMemo } from 'react';
-import { MENU_ITEMS, MENU_CATEGORIES, RESTAURANT_INFO } from '../data/restaurantData';
-import { Search, ExternalLink, Phone, Sparkles, Filter, BookOpen, ListOrdered } from 'lucide-react';
+import { MENU_ITEMS, MENU_CATEGORIES, RESTAURANT_INFO, PHOTO_MENU_ITEMS } from '../data/restaurantData';
+import { Search, ExternalLink, Phone, Sparkles, Camera, ListOrdered, Utensils } from 'lucide-react';
 import { motion } from 'motion/react';
-import { DigitalMenuCards } from './DigitalMenuCards';
+import { PhotoMenu } from './PhotoMenu';
+import { MenuCategoryType } from '../types';
 
 export const MenuSection: React.FC = () => {
   const [menuViewMode, setMenuViewMode] = useState<'list' | 'cards'>('list');
-  const [selectedCategory, setSelectedCategory] = useState<string>('all');
+  const [selectedCategory, setSelectedCategory] = useState<MenuCategoryType>('all');
   const [searchQuery, setSearchQuery] = useState<string>('');
-  const [vegOnlyFilter, setVegOnlyFilter] = useState<boolean>(false);
+  const [dietFilter, setDietFilter] = useState<'all' | 'veg' | 'non-veg'>('all');
 
   // Filtered menu items
   const filteredDishes = useMemo(() => {
@@ -17,8 +18,13 @@ export const MenuSection: React.FC = () => {
       const matchesCategory =
         selectedCategory === 'all' || item.category === selectedCategory;
 
-      // Veg only toggle
-      const matchesVeg = vegOnlyFilter ? item.isVeg : true;
+      // Dietary filter
+      const matchesDiet =
+        dietFilter === 'all'
+          ? true
+          : dietFilter === 'veg'
+          ? item.isVeg
+          : !item.isVeg;
 
       // Search query filter
       const q = searchQuery.toLowerCase().trim();
@@ -28,9 +34,9 @@ export const MenuSection: React.FC = () => {
         item.description.toLowerCase().includes(q) ||
         (item.portionNote && item.portionNote.toLowerCase().includes(q));
 
-      return matchesCategory && matchesVeg && matchesQuery;
+      return matchesCategory && matchesDiet && matchesQuery;
     });
-  }, [selectedCategory, searchQuery, vegOnlyFilter]);
+  }, [selectedCategory, searchQuery, dietFilter]);
 
   // Order buttons component to reuse at TOP and BOTTOM
   const OrderBanner = ({ idPrefix }: { idPrefix: string }) => (
@@ -39,11 +45,11 @@ export const MenuSection: React.FC = () => {
       className="bg-[#F7F3EB] rounded-2xl p-6 border border-[#2E4823]/10 shadow-[0_4px_16px_rgba(0,0,0,0.03)] flex flex-col sm:flex-row items-center justify-between gap-4"
     >
       <div className="text-center sm:text-left">
-        <h4 className="font-['Playfair_Display'] text-lg sm:text-xl font-bold text-[#2E4823]">
-          Craving Our Flavors at Home?
-        </h4>
+        <h3 className="font-['Playfair_Display'] text-lg sm:text-xl font-bold text-[#2E4823]">
+          Craving Our Firewood Flavors at Home?
+        </h3>
         <p className="text-sm text-[#1C1C1C]/75 mt-0.5">
-          Get steaming hot biryanis, tandoor &amp; curries delivered directly to your doorstep.
+          Steaming hot Mandi platters, Hyderabadi biryanis &amp; tandoor curries delivered to your doorstep.
         </p>
       </div>
 
@@ -88,7 +94,7 @@ export const MenuSection: React.FC = () => {
       aria-label="Full Culinary Menu"
     >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        {/* Section Header with Buttery Smooth Scroll Reveal */}
+        {/* Section Header */}
         <motion.div
           initial={{ opacity: 0, y: 24 }}
           whileInView={{ opacity: 1, y: 0 }}
@@ -100,15 +106,15 @@ export const MenuSection: React.FC = () => {
             OUR CULINARY MENU
           </span>
           <h2 className="font-['Playfair_Display'] text-3xl sm:text-4xl lg:text-5xl font-bold text-[#2E4823] tracking-tight">
-            Culinary Menu
+            Explore Our Grand Menu
           </h2>
           <div className="w-16 h-1 bg-[#D3452B] mx-auto mt-4 rounded-full" />
           <p className="mt-4 text-base sm:text-lg text-[#1C1C1C]/80 font-normal leading-relaxed">
-            Explore authentic Mughlai specialties, slow-cooked Hyderabadi biryanis, aromatic Mandi platters, and clay oven tandoors.
+            From Arabian Mandi feasts and aged basmati Dum Biryanis to sizzling tandoor grills, rich gravies &amp; thick milkshakes.
           </p>
         </motion.div>
 
-        {/* View Mode Toggle: Interactive Item List vs Digital Menu Cards Booklet */}
+        {/* View Mode Toggle: Classic A La Carte Menu vs Visual Photo Menu */}
         <div className="flex justify-center mb-8">
           <div className="inline-flex p-1.5 rounded-2xl bg-[#F7F3EB] border border-[#2E4823]/15 shadow-inner">
             <button
@@ -121,7 +127,7 @@ export const MenuSection: React.FC = () => {
               }`}
             >
               <ListOrdered className="w-4 h-4" />
-              <span>A La Carte Dish List</span>
+              <span>Classic Menu</span>
             </button>
             <button
               type="button"
@@ -132,8 +138,8 @@ export const MenuSection: React.FC = () => {
                   : 'text-gray-700 hover:text-[#2E4823]'
               }`}
             >
-              <BookOpen className="w-4 h-4" />
-              <span>Digital Menu Booklet &amp; Photo Cards</span>
+              <Camera className="w-4 h-4 text-amber-300" />
+              <span>Photo Menu</span>
             </button>
           </div>
         </div>
@@ -153,9 +159,9 @@ export const MenuSection: React.FC = () => {
           </div>
         </div>
 
-        {/* CONDITIONALLY RENDER DIGITAL MENU CARDS (PHOTO UPLOADS) OR INTERACTIVE LIST */}
+        {/* CONDITIONALLY RENDER PHOTO MENU (62 PROCESSED WEBP DISHES) OR INTERACTIVE LIST */}
         {menuViewMode === 'cards' ? (
-          <DigitalMenuCards />
+          <PhotoMenu />
         ) : (
           <>
             {/* SEARCH / FILTER CONTROLS BAR */}
@@ -182,19 +188,44 @@ export const MenuSection: React.FC = () => {
                   )}
                 </div>
 
-                {/* Veg Only Switch */}
-                <button
-                  type="button"
-                  onClick={() => setVegOnlyFilter((prev) => !prev)}
-                  className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-semibold border transition-all ${
-                    vegOnlyFilter
-                      ? 'bg-green-700 text-white border-green-700 shadow-sm'
-                      : 'bg-white text-gray-700 border-gray-200 hover:border-green-600'
-                  }`}
-                >
-                  <span className={`w-2.5 h-2.5 rounded-full ${vegOnlyFilter ? 'bg-white' : 'bg-green-600'}`} />
-                  <span>Vegetarian Only</span>
-                </button>
+                {/* Dietary Filter Segmented Control */}
+                <div className="flex items-center gap-1.5 bg-white p-1 rounded-xl border border-gray-200">
+                  <button
+                    type="button"
+                    onClick={() => setDietFilter('all')}
+                    className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+                      dietFilter === 'all'
+                        ? 'bg-[#2E4823] text-white shadow-xs'
+                        : 'text-gray-600 hover:text-[#2E4823]'
+                    }`}
+                  >
+                    All
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setDietFilter('veg')}
+                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+                      dietFilter === 'veg'
+                        ? 'bg-green-700 text-white shadow-xs'
+                        : 'text-gray-600 hover:text-green-700'
+                    }`}
+                  >
+                    <span className="w-2 h-2 rounded-full bg-green-500" />
+                    <span>Veg</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setDietFilter('non-veg')}
+                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+                      dietFilter === 'non-veg'
+                        ? 'bg-[#D3452B] text-white shadow-xs'
+                        : 'text-gray-600 hover:text-[#D3452B]'
+                    }`}
+                  >
+                    <span className="w-2 h-2 rounded-full bg-[#D3452B]" />
+                    <span>Non-Veg</span>
+                  </button>
+                </div>
               </div>
 
               {/* Category Filter Tabs */}
@@ -219,9 +250,30 @@ export const MenuSection: React.FC = () => {
               </div>
             </div>
 
+            {/* Dishes Count Indicator */}
+            <div className="flex items-center justify-between mb-6 px-2 text-xs text-gray-500 font-medium">
+              <span>
+                Showing <strong className="text-[#2E4823]">{filteredDishes.length}</strong> delicious dishes
+              </span>
+              {(searchQuery || dietFilter !== 'all' || selectedCategory !== 'all') && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSearchQuery('');
+                    setDietFilter('all');
+                    setSelectedCategory('all');
+                  }}
+                  className="text-[#D3452B] hover:underline font-semibold"
+                >
+                  Reset all filters
+                </button>
+              )}
+            </div>
+
             {/* CATEGORIZED 2-COLUMN GRID */}
             {filteredDishes.length === 0 ? (
               <div className="text-center py-16 bg-[#F7F3EB] rounded-2xl p-8 border border-dashed border-gray-300">
+                <Utensils className="w-10 h-10 text-gray-400 mx-auto mb-3" />
                 <p className="font-['Playfair_Display'] text-xl text-[#2E4823] font-bold">
                   No dishes found matching your search
                 </p>
@@ -233,7 +285,7 @@ export const MenuSection: React.FC = () => {
                   onClick={() => {
                     setSearchQuery('');
                     setSelectedCategory('all');
-                    setVegOnlyFilter(false);
+                    setDietFilter('all');
                   }}
                   className="mt-4 px-4 py-2 bg-[#2E4823] text-white text-xs font-semibold rounded-xl hover:bg-[#223719] transition-colors"
                 >
@@ -243,7 +295,7 @@ export const MenuSection: React.FC = () => {
             ) : (
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-x-12 gap-y-6">
                 {filteredDishes.map((item) => (
-                  <div
+                  <article
                     key={item.id}
                     className="p-4 rounded-xl transition-colors duration-200 hover:bg-[#F7F3EB]/60 flex flex-col justify-between border-b border-[#2E4823]/10 pb-4"
                   >
@@ -253,7 +305,7 @@ export const MenuSection: React.FC = () => {
                         <div className="flex items-center gap-2">
                           {/* Green square for Veg, Red triangle for Non-veg */}
                           <span
-                            className={`w-3 h-3 rounded-xs border flex items-center justify-center shrink-0 ${
+                            className={`w-3.5 h-3.5 rounded-xs border flex items-center justify-center shrink-0 ${
                               item.isVeg ? 'border-green-600' : 'border-[#D3452B]'
                             }`}
                             title={item.isVeg ? 'Vegetarian' : 'Non-Vegetarian'}
@@ -265,9 +317,9 @@ export const MenuSection: React.FC = () => {
                             />
                           </span>
 
-                          <h4 className="font-['Playfair_Display'] text-base sm:text-lg font-bold text-[#1C1C1C] hover:text-[#2E4823] transition-colors">
+                          <h3 className="font-['Playfair_Display'] text-base sm:text-lg font-bold text-[#1C1C1C] hover:text-[#2E4823] transition-colors">
                             {item.name}
-                          </h4>
+                          </h3>
 
                           {item.isChefSpecial && (
                             <span className="hidden sm:inline-block text-[10px] uppercase font-bold text-[#D3452B] bg-[#D3452B]/10 px-2 py-0.5 rounded-md">
@@ -284,7 +336,7 @@ export const MenuSection: React.FC = () => {
                         </div>
                       </div>
 
-                      {/* Italicized gray short description */}
+                      {/* Italicized short description */}
                       <p className="mt-1 text-xs sm:text-sm text-gray-500 italic font-normal leading-relaxed pl-5">
                         {item.description}
                       </p>
@@ -297,7 +349,7 @@ export const MenuSection: React.FC = () => {
                         </span>
                       </div>
                     )}
-                  </div>
+                  </article>
                 ))}
               </div>
             )}
@@ -321,13 +373,10 @@ export const MenuSection: React.FC = () => {
 
         {/* MENU PRICING & INGREDIENT DISCLAIMER */}
         <div className="mt-8 text-center max-w-3xl mx-auto px-4">
-          <p className="text-xs text-gray-400 leading-relaxed italic border-t border-gray-200/60 pt-4">
-            * Disclaimer: Prices, menu items, and availability are subject to change without notice. 
-            Delivery prices on Swiggy and Zomato may vary from our dine-in menu card due to platform fees and packaging. 
-            Please inform our service staff about any food allergies or spice preferences.
+          <p className="text-xs text-gray-500 leading-relaxed italic border-t border-gray-200/80 pt-4">
+            Prices, menu items, and availability are subject to change without notice. Delivery prices on Swiggy and Zomato may vary from our dine-in menu.
           </p>
         </div>
-
       </div>
     </section>
   );

@@ -1,6 +1,206 @@
 {
   "name": "Vaibhav Grand Family Restaurant",
-  "description": "Authentic Indian, Mughlai, Arabic Mandi, Tandoor & Biryani family dining in Renigunta, Tirupati.",
+  "shortName": "Vaibhav Grand",
+  "tagline": "Authentic Flavor, Fresh Ingredients",
+  "description": "Authentic Indian, Mughlai, Arabic Mandi, Tandoor & Biryani family dining in Renigunta, Tirupati. Open daily 12:00 PM - 11:00 PM. Dine-in, Takeaway & Online Delivery on Swiggy and Zomato.",
+  "siteUrl": "https://vaibhavgrand.com",
+  "defaultOgImage": "https://vaibhavgrand.com/assets/vaibhav-grand-webp-images/front6.webp",
+  "phone": "+91-7947142432",
+  "email": "vaibhavgrand91@gmail.com",
+  "address": "Plot 157, Near Ramana Vilas Circle, Srikalahasthi Road, Renigunta, Tirupati-517520, Andhra Pradesh",
   "requestFramePermissions": [],
-  "majorCapabilities": []
+  "majorCapabilities": [],
+  "routes": {
+    "/": {
+      "title": "Vaibhav Grand Family Restaurant | Renigunta, Tirupati",
+      "description": "Welcome to Vaibhav Grand Family Restaurant in Renigunta, Tirupati. Relish authentic Arabic Mandi platters, firewood Hyderabadi Dum Biryani, clay-oven tandoor, and royal curries. 100% Halal, AC family dining.",
+      "canonical": "https://vaibhavgrand.com/",
+      "ogType": "restaurant",
+      "keywords": [
+        "Vaibhav Grand",
+        "Vaibhav Grand Renigunta",
+        "family restaurant in Renigunta",
+        "family restaurant in Tirupati",
+        "biryani in Renigunta",
+        "biryani in Tirupati",
+        "mandi in Tirupati",
+        "mandi in Renigunta",
+        "best restaurant near Ramana Vilas Circle",
+        "Tirupati highway restaurant",
+        "halal food Tirupati",
+        "halal restaurant Renigunta"
+      ]
+    },
+    "/menu": {
+      "title": "Biryani & Mandi Menu | Renigunta, Tirupati - Vaibhav Grand",
+      "description": "Explore the full culinary menu of Vaibhav Grand Family Restaurant in Renigunta, serving Tirupati with Arabic Mandi, firewood Hyderabadi dum biryani buckets, starters, curries, tandoori breads & mocktails.",
+      "canonical": "https://vaibhavgrand.com/menu",
+      "ogType": "restaurant.menu",
+      "keywords": [
+        "Vaibhav Grand menu",
+        "biryani and mandi menu Renigunta Tirupati",
+        "chicken dum biryani price",
+        "mandi platter price",
+        "tandoori chicken Renigunta",
+        "biryani in Tirupati",
+        "Vaibhav Grand food rates"
+      ]
+    },
+    "/dishes": {
+      "title": "Signature Dishes | Vaibhav Grand, Renigunta, Tirupati",
+      "description": "Taste the signature dishes of Vaibhav Grand Family Restaurant in Renigunta, Tirupati — from our famous Arabian Mandi and Dum Biryani to clay-oven Tandoori specials.",
+      "canonical": "https://vaibhavgrand.com/menu",
+      "ogType": "restaurant.menu",
+      "keywords": [
+        "signature dishes Renigunta",
+        "signature dishes Tirupati",
+        "special mandi Renigunta",
+        "tandoori chicken Tirupati"
+      ]
+    },
+    "/our-dishes": {
+      "title": "Signature Dishes | Vaibhav Grand, Renigunta, Tirupati",
+      "description": "Taste the signature dishes of Vaibhav Grand Family Restaurant in Renigunta, Tirupati — from our famous Arabian Mandi and Dum Biryani to clay-oven Tandoori specials.",
+      "canonical": "https://vaibhavgrand.com/menu",
+      "ogType": "restaurant.menu",
+      "keywords": [
+        "signature dishes Renigunta",
+        "signature dishes Tirupati"
+      ]
+    },
+    "/about": {
+      "title": "About Us | Family Restaurant in Renigunta, Tirupati",
+      "description": "Discover the story of Vaibhav Grand Family Restaurant at Ramana Vilas Circle. Slow-cooked firewood dum biryani, certified fresh Halal meats, authentic Arabic spices, and hospitable family dining serving Renigunta and the greater Tirupati area.",
+      "canonical": "https://vaibhavgrand.com/about",
+      "ogType": "website",
+      "keywords": [
+        "about Vaibhav Grand",
+        "family restaurant in Renigunta",
+        "family restaurant in Tirupati",
+        "firewood biryani history Renigunta",
+        "halal restaurant Tirupati",
+        "family dining hall Renigunta"
+      ]
+    },
+    "/why-us": {
+      "title": "About Us | Family Restaurant in Renigunta, Tirupati",
+      "description": "Discover why diners across Renigunta and the greater Tirupati area choose Vaibhav Grand for authentic Arabic Mandi, firewood Dum Biryani, and hospitable family dining.",
+      "canonical": "https://vaibhavgrand.com/about",
+      "ogType": "website",
+      "keywords": [
+        "why choose Vaibhav Grand",
+        "best family dining Renigunta",
+        "restaurant in Tirupati"
+      ]
+    },
+    "/specialties": {
+      "title": "About Us | Family Restaurant in Renigunta, Tirupati",
+      "description": "Culinary specialties of Vaibhav Grand Family Restaurant, proudly serving food lovers in Renigunta and the greater Tirupati area.",
+      "canonical": "https://vaibhavgrand.com/about",
+      "ogType": "website",
+      "keywords": [
+        "Vaibhav Grand specialties",
+        "mandi Renigunta",
+        "biryani Tirupati"
+      ]
+    },
+    "/catering": {
+      "title": "Catering & Private Events | Renigunta, Tirupati - Vaibhav Grand",
+      "description": "Book outdoor catering, birthday banquets, wedding feasts, and family gathering party packs in Renigunta & Tirupati. Custom menus with Arabic Mandi, Biryani buckets, and starters.",
+      "canonical": "https://vaibhavgrand.com/catering",
+      "ogType": "website",
+      "keywords": [
+        "catering services Renigunta",
+        "catering services Tirupati",
+        "party hall booking Tirupati",
+        "bulk biryani order Tirupati",
+        "bulk biryani order Renigunta",
+        "wedding catering Renigunta Tirupati"
+      ]
+    },
+    "/events": {
+      "title": "Catering & Private Events | Renigunta, Tirupati - Vaibhav Grand",
+      "description": "Host unforgettable private events, birthday parties, and corporate banquets with Vaibhav Grand Family Restaurant in Renigunta & Tirupati.",
+      "canonical": "https://vaibhavgrand.com/catering",
+      "ogType": "website",
+      "keywords": [
+        "events in Renigunta",
+        "events in Tirupati",
+        "party catering Tirupati"
+      ]
+    },
+    "/reviews": {
+      "title": "Guest Reviews & Google Ratings | Renigunta, Tirupati - Vaibhav Grand",
+      "description": "Read verified customer reviews of Vaibhav Grand Family Restaurant in Renigunta, Tirupati. Rated 4.3★ by 1,001+ food lovers on Google Maps and JustDial.",
+      "canonical": "https://vaibhavgrand.com/reviews",
+      "ogType": "website",
+      "keywords": [
+        "Vaibhav Grand reviews",
+        "Google ratings Renigunta",
+        "best food reviews Renigunta Tirupati",
+        "restaurant ratings Tirupati"
+      ]
+    },
+    "/testimonials": {
+      "title": "Guest Reviews & Google Ratings | Renigunta, Tirupati - Vaibhav Grand",
+      "description": "Customer testimonials for Vaibhav Grand Family Restaurant, Renigunta, Tirupati.",
+      "canonical": "https://vaibhavgrand.com/reviews",
+      "ogType": "website",
+      "keywords": [
+        "Vaibhav Grand testimonials",
+        "reviews Renigunta Tirupati"
+      ]
+    },
+    "/gallery": {
+      "title": "Photo Gallery & Ambiance | Renigunta, Tirupati - Vaibhav Grand",
+      "description": "Browse authentic interior, exterior, family dining booth, and culinary photos of Vaibhav Grand Family Restaurant near Ramana Vilas Circle, Renigunta, Tirupati.",
+      "canonical": "https://vaibhavgrand.com/gallery",
+      "ogType": "website",
+      "keywords": [
+        "Vaibhav Grand photos",
+        "restaurant interior Renigunta",
+        "dining hall pictures Tirupati"
+      ]
+    },
+    "/contact": {
+      "title": "Contact & Location | Renigunta, Tirupati",
+      "description": "Find Vaibhav Grand Family Restaurant at Plot 157, Ramana Vilas Circle, Srikalahasthi Road, Renigunta, Tirupati. Open daily 12:00 PM – 11:00 PM. Call +91-7947142432 or navigate via Google Maps.",
+      "canonical": "https://vaibhavgrand.com/contact",
+      "ogType": "restaurant",
+      "keywords": [
+        "Vaibhav Grand location",
+        "Vaibhav Grand phone number",
+        "restaurant near Renigunta railway station",
+        "restaurant in Tirupati",
+        "direction to Vaibhav Grand Renigunta Tirupati"
+      ]
+    },
+    "/hours": {
+      "title": "Contact & Location | Renigunta, Tirupati",
+      "description": "Operating hours and location for Vaibhav Grand Family Restaurant in Renigunta, Tirupati. Open daily 12:00 PM - 11:00 PM.",
+      "canonical": "https://vaibhavgrand.com/contact",
+      "ogType": "restaurant",
+      "keywords": [
+        "Vaibhav Grand hours",
+        "restaurant timings Renigunta Tirupati"
+      ]
+    },
+    "/location": {
+      "title": "Contact & Location | Renigunta, Tirupati",
+      "description": "Find Vaibhav Grand Family Restaurant on Srikalahasthi Road, Ramana Vilas Circle, Renigunta, Tirupati.",
+      "canonical": "https://vaibhavgrand.com/contact",
+      "ogType": "restaurant",
+      "keywords": [
+        "Vaibhav Grand location Renigunta Tirupati",
+        "how to reach Vaibhav Grand"
+      ]
+    },
+    "/404": {
+      "title": "Page Not Found | Vaibhav Grand Family Restaurant",
+      "description": "The page you are looking for does not exist. Browse our authentic menu or return to the Vaibhav Grand homepage in Renigunta, Tirupati.",
+      "canonical": "https://vaibhavgrand.com/404",
+      "ogType": "website",
+      "keywords": []
+    }
+  }
 }

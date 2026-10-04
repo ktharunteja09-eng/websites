@@ -1,6 +1,7 @@
-import React, { useEffect } from 'react';
+import React from 'react';
 import { X, ShieldCheck, FileText } from 'lucide-react';
 import { RESTAURANT_INFO } from '../data/restaurantData';
+import { useScrollLock } from '../utils/scrollLock';
 
 interface ModalProps {
   isOpen: boolean;
@@ -10,22 +11,13 @@ interface ModalProps {
 }
 
 export const PolicyModal: React.FC<ModalProps> = ({ isOpen, onClose, title, type }) => {
-  useEffect(() => {
-    if (isOpen) {
-      document.body.style.overflow = 'hidden';
-    } else {
-      document.body.style.overflow = '';
-    }
-    return () => {
-      document.body.style.overflow = '';
-    };
-  }, [isOpen]);
+  useScrollLock(isOpen);
 
   if (!isOpen) return null;
 
   return (
     <div
-      className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4 sm:p-6 animate-in fade-in duration-200"
+      className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm touch-none flex items-center justify-center p-4 sm:p-6 animate-in fade-in duration-200"
       role="dialog"
       aria-modal="true"
       aria-label={title}
@@ -42,9 +34,9 @@ export const PolicyModal: React.FC<ModalProps> = ({ isOpen, onClose, title, type
             ) : (
               <FileText className="w-6 h-6 text-[#2E4823]" />
             )}
-            <h3 className="font-['Playfair_Display'] text-xl font-bold text-[#2E4823]">
+            <p role="heading" aria-level={2} className="font-['Playfair_Display'] text-xl font-bold text-[#2E4823]">
               {title}
-            </h3>
+            </p>
           </div>
           <button
             type="button"
@@ -66,21 +58,21 @@ export const PolicyModal: React.FC<ModalProps> = ({ isOpen, onClose, title, type
               <p>
                 At <strong>{RESTAURANT_INFO.name}</strong>, we respect your privacy and are committed to protecting any personal details you share with us.
               </p>
-              <h4 className="font-bold text-[#2E4823] text-base pt-2">
+              <p className="font-bold text-[#2E4823] text-base pt-2">
                 1. Information Collection
-              </h4>
+              </p>
               <p>
                 We only collect information necessary to fulfill table reservations, handle takeaway phone inquiries, and facilitate delivery through authorized third-party platforms (Swiggy and Zomato).
               </p>
-              <h4 className="font-bold text-[#2E4823] text-base pt-2">
+              <p className="font-bold text-[#2E4823] text-base pt-2">
                 2. Third-Party Deliveries
-              </h4>
+              </p>
               <p>
                 When ordering through Swiggy or Zomato, their respective privacy terms and delivery guidelines govern your payment transactions and location tracking.
               </p>
-              <h4 className="font-bold text-[#2E4823] text-base pt-2">
+              <p className="font-bold text-[#2E4823] text-base pt-2">
                 3. Contact Information
-              </h4>
+              </p>
               <p>
                 If you have questions regarding our privacy practices, please contact us at{' '}
                 <a href={`mailto:${RESTAURANT_INFO.email}`} className="text-[#D3452B] underline">
@@ -99,21 +91,21 @@ export const PolicyModal: React.FC<ModalProps> = ({ isOpen, onClose, title, type
               <p>
                 Welcome to <strong>{RESTAURANT_INFO.name}</strong>. By visiting our restaurant or ordering through our official online links, you agree to these standard terms:
               </p>
-              <h4 className="font-bold text-[#2E4823] text-base pt-2">
+              <p className="font-bold text-[#2E4823] text-base pt-2">
                 1. Menu &amp; Pricing
-              </h4>
+              </p>
               <p>
                 All menu items, ingredients, and pricing are subject to seasonal market availability and may vary without prior notice. Delivery prices on Swiggy and Zomato may differ from our in-restaurant dine-in menu card.
               </p>
-              <h4 className="font-bold text-[#2E4823] text-base pt-2">
+              <p className="font-bold text-[#2E4823] text-base pt-2">
                 2. Dining Reservations &amp; Events
-              </h4>
+              </p>
               <p>
                 Table reservations are held for up to 15 minutes past the scheduled booking time during peak lunch and dinner hours. For large parties and banquets, advance confirmation is appreciated.
               </p>
-              <h4 className="font-bold text-[#2E4823] text-base pt-2">
+              <p className="font-bold text-[#2E4823] text-base pt-2">
                 3. Hygiene &amp; Service
-              </h4>
+              </p>
               <p>
                 We maintain the highest standards of culinary hygiene, Halal preparation, and freshness. Please inform our servers beforehand regarding any dietary restrictions or spice preferences.
               </p>

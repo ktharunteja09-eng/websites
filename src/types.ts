@@ -1,12 +1,27 @@
+export type MenuCategoryType = 
+  | 'all'
+  | 'mandi'
+  | 'biryani'
+  | 'starters'
+  | 'curries'
+  | 'rice-noodles'
+  | 'breads'
+  | 'beverages';
+
 export interface MenuItem {
   id: string;
   name: string;
-  category: 'starters' | 'mains' | 'biryani-mandi' | 'breads' | 'chinese' | 'beverages';
+  category: MenuCategoryType;
   price: number;
   description: string;
   isVeg: boolean;
   isChefSpecial?: boolean;
   portionNote?: string;
+  image?: string;
+}
+
+export interface PhotoMenuItem extends MenuItem {
+  image: string;
 }
 
 export interface SignatureDish {
@@ -29,12 +44,14 @@ export interface Testimonial {
   quote: string;
   rating: number;
   date?: string;
+  isGoogleReview?: boolean;
+  highlightDish?: string;
 }
 
 export interface GalleryPhoto {
   id: string;
   title: string;
-  category: string;
+  category: 'All' | 'Food & Mandi' | 'Ambiance' | 'Celebrations' | 'Front View';
   imageUrl: string;
   altText: string;
 }
@@ -53,9 +70,11 @@ export interface RestaurantInfo {
   swiggyUrl: string;
   zomatoUrl: string;
   googleMapsUrl: string;
+  googleMapsReviewUrl: string;
   googleMapsEmbedUrl: string;
   overallRating: number;
   totalReviews: number;
+  justdialUrl: string;
 }
 
 export interface DigitalMenuPage {

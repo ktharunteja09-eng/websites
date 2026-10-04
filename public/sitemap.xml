@@ -1,9 +1,58 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  <!-- 1. Homepage (Primary Landing & Overview) -->
   <url>
     <loc>https://vaibhavgrand.com/</loc>
-    <lastmod>2026-09-21</lastmod>
+    <lastmod>2026-09-28</lastmod>
     <changefreq>weekly</changefreq>
     <priority>1.0</priority>
+  </url>
+
+  <!-- 2. Culinary Menu (Full catalog of 130+ dishes & prices) -->
+  <url>
+    <loc>https://vaibhavgrand.com/menu</loc>
+    <lastmod>2026-09-28</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.9</priority>
+  </url>
+
+  <!-- 3. About Us (Heritage, firewood cooking, Halal standards) -->
+  <url>
+    <loc>https://vaibhavgrand.com/about</loc>
+    <lastmod>2026-09-28</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+  </url>
+
+  <!-- 4. Catering & Private Events (Banquets, party orders, bulk buckets) -->
+  <url>
+    <loc>https://vaibhavgrand.com/catering</loc>
+    <lastmod>2026-09-28</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+  </url>
+
+  <!-- 5. Guest Reviews & Ratings (1,001+ verified reviews & testimonials) -->
+  <url>
+    <loc>https://vaibhavgrand.com/reviews</loc>
+    <lastmod>2026-09-28</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+
+  <!-- 6. Photo Gallery (Real kitchen, dishes, facade & ambiance) -->
+  <url>
+    <loc>https://vaibhavgrand.com/gallery</loc>
+    <lastmod>2026-09-28</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+  </url>
+
+  <!-- 7. Contact & Hours (Google Maps pin, timings, phone, address) -->
+  <url>
+    <loc>https://vaibhavgrand.com/contact</loc>
+    <lastmod>2026-09-28</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
   </url>
 </urlset>

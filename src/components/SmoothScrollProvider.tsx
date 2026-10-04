@@ -30,7 +30,8 @@ export const SmoothScrollProvider: React.FC<SmoothScrollProviderProps> = ({ chil
       gestureOrientation: 'vertical',
       smoothWheel: true,
       wheelMultiplier: 0.95,
-      touchMultiplier: 1.2,
+      touchMultiplier: 1,
+      syncTouch: false,
       infinite: false,
     });
 
