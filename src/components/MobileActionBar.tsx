@@ -2,6 +2,7 @@ import React from 'react';
 import { Phone, MessageCircle, Utensils, Calendar } from 'lucide-react';
 import { motion } from 'motion/react';
 import { RESTAURANT_INFO } from '../data/restaurantData';
+import { WHATSAPP_NUMBER } from '../utils/supabaseClient';
 
 interface MobileActionBarProps {
   onOpenOrderModal: () => void;
@@ -12,7 +13,7 @@ export const MobileActionBar: React.FC<MobileActionBarProps> = ({
   onOpenOrderModal,
   onOpenBookModal,
 }) => {
-  const whatsappUrl = `https://wa.me/91${RESTAURANT_INFO.phone}?text=Hi%2C%20I%27d%20like%20to%20reserve%20a%20table%20%2F%20order%20food%20at%20Vaibhav%20Grand`;
+  const whatsappUrl = `https://api.whatsapp.com/send?phone=${WHATSAPP_NUMBER}&text=Hi%2C%20I%27d%20like%20to%20reserve%20a%20table%20%2F%20order%20food%20at%20Vaibhav%20Grand`;
 
   return (
     <motion.aside

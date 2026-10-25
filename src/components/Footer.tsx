@@ -1,5 +1,6 @@
 import React from 'react';
 import { RESTAURANT_INFO } from '../data/restaurantData';
+import { WHATSAPP_NUMBER } from '../utils/supabaseClient';
 import { MapPin, Clock, Phone, Mail, Instagram, Facebook, MessageCircle, ExternalLink, Star } from 'lucide-react';
 import { BrandEmblem } from './BrandEmblem';
 
@@ -25,16 +26,15 @@ export const Footer: React.FC<FooterProps> = ({
 
           {/* Column 1: Restaurant Brand & Address */}
           <div className="space-y-4">
-            <div className="flex items-center gap-3">
-              <BrandEmblem className="w-10 h-10 shrink-0" idSuffix="footer" />
-              <div className="flex flex-col">
-                <span className="font-['Playfair_Display'] text-2xl font-bold tracking-tight text-white">
-                  Vaibhav Grand
-                </span>
-                <span className="text-[10px] uppercase tracking-[0.2em] text-[#D3452B] font-semibold mt-0.5">
-                  Family Restaurant • Renigunta
-                </span>
-              </div>
+            <div className="flex items-center">
+              <img
+                src="/assets/images/vaibhav-grand-logo.png"
+                alt="Vaibhav Grand Family Restaurant Logo"
+                width={1766}
+                height={866}
+                loading="lazy"
+                className="h-16 sm:h-18 w-auto object-contain select-none"
+              />
             </div>
 
             <p className="text-xs sm:text-sm text-gray-400 leading-relaxed">
@@ -201,7 +201,7 @@ export const Footer: React.FC<FooterProps> = ({
               <div className="flex items-center gap-2.5">
                 {/* WhatsApp */}
                 <a
-                  href={`https://wa.me/91${RESTAURANT_INFO.phone}?text=Hi%2C%20I%27d%20like%20to%20know%20more%20%2F%20book%20a%20table`}
+                  href={`https://api.whatsapp.com/send?phone=${WHATSAPP_NUMBER}&text=Hi%2C%20I%27d%20like%20to%20know%20more%20%2F%20book%20a%20table`}
                   target="_blank"
                   rel="noopener noreferrer"
                   aria-label="Chat with Vaibhav Grand on WhatsApp"
@@ -271,6 +271,13 @@ export const Footer: React.FC<FooterProps> = ({
               className="hover:text-white transition-colors underline-offset-4 hover:underline text-[11px]"
             >
               Terms of Service
+            </button>
+            <button
+              type="button"
+              onClick={() => onNavigate('/admin')}
+              className="hover:text-amber-300 text-gray-400 transition-colors underline-offset-4 hover:underline text-[11px] font-semibold"
+            >
+              🔒 Owner Portal
             </button>
           </div>
         </div>

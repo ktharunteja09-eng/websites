@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { PHOTO_MENU_ITEMS, RESTAURANT_INFO, MENU_CATEGORIES } from '../data/restaurantData';
+import { PHOTO_MENU_ITEMS, RESTAURANT_INFO, PHOTO_MENU_CATEGORIES } from '../data/restaurantData';
 import { PhotoMenuItem, MenuCategoryType } from '../types';
 import { Search, Filter, ExternalLink, Phone, Sparkles, Utensils, Maximize2, X, ChevronRight } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
@@ -110,7 +110,7 @@ export const PhotoMenu: React.FC = () => {
 
         {/* Category Navigation Pills */}
         <div className="mt-5 pt-4 border-t border-[#2E4823]/10 flex items-center gap-2 overflow-x-auto no-scrollbar pb-1">
-          {MENU_CATEGORIES.map((cat) => {
+          {PHOTO_MENU_CATEGORIES.map((cat) => {
             const isSelected = selectedCategory === cat.id;
             const count = categoryCounts[cat.id] || 0;
             if (cat.id !== 'all' && count === 0) return null;
@@ -328,6 +328,7 @@ export const PhotoMenu: React.FC = () => {
                   alt={activeDish.name}
                   width={800}
                   height={600}
+                  loading="lazy"
                   className="w-full h-full object-cover"
                 />
                 <div className="absolute top-4 left-4 flex items-center gap-1.5 bg-white/95 px-3 py-1 rounded-full text-xs font-bold shadow-md">

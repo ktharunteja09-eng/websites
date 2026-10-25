@@ -211,6 +211,7 @@ export const GallerySection: React.FC = () => {
                 alt={activePhoto.altText}
                 width={1000}
                 height={750}
+                loading="lazy"
                 className="max-h-[75vh] w-auto max-w-full rounded-2xl object-contain shadow-2xl"
               />
               <div className="mt-4 text-center">

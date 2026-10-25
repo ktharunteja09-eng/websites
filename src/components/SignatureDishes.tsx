@@ -1,8 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { SIGNATURE_DISHES, RESTAURANT_INFO } from '../data/restaurantData';
 import { ExternalLink, Sparkles, Flame, Users, Phone, Utensils } from 'lucide-react';
 import { motion } from 'motion/react';
 import { OptimizedImage } from './OptimizedImage';
+import { fetchMenuItems } from '../utils/supabaseClient';
 
 interface SignatureDishesProps {
   onOpenOrderModal?: () => void;
@@ -14,6 +15,30 @@ export const SignatureDishes: React.FC<SignatureDishesProps> = ({
   onNavigateMenu,
 }) => {
   const [activeSlide, setActiveSlide] = useState(0);
+  const [livePrices, setLivePrices] = useState<Map<string, { price: number; aggregator_price?: number | null }>>(() => new Map());
+
+  useEffect(() => {
+    let isMounted = true;
+    async function loadLivePrices() {
+      if (typeof window === 'undefined' || (typeof process !== 'undefined' && Boolean(process.versions?.node))) return;
+      try {
+        const items = await fetchMenuItems();
+        if (!isMounted || !items || items.length === 0) return;
+        const map = new Map<string, { price: number; aggregator_price?: number | null }>();
+        items.forEach((it) => {
+          map.set(it.name.toLowerCase().trim(), {
+            price: it.price,
+            aggregator_price: it.aggregator_price,
+          });
+        });
+        setLivePrices(map);
+      } catch {}
+    }
+    loadLivePrices();
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   return (
     <section
@@ -85,10 +110,24 @@ export const SignatureDishes: React.FC<SignatureDishesProps> = ({
                       {dish.badge}
                     </div>
 
-                    {/* Price Tag Overlay */}
-                    <div className="absolute bottom-2.5 right-2.5 z-10 bg-white/95 backdrop-blur-xs px-2.5 py-1 rounded-xl shadow-xs border border-[#2E4823]/10">
-                      <span className="text-[#D3452B] font-bold text-base">₹{dish.price}</span>
-                    </div>
+                    {/* Price Tag Overlay with Strikethrough & Direct Savings */}
+                    {(() => {
+                      const live = livePrices.get(dish.name.toLowerCase().trim());
+                      const activePrice = live ? live.price : dish.price;
+                      const activeAggPrice = live?.aggregator_price || Math.round((activePrice * 1.25) / 10) * 10;
+                      const activeSavings = activeAggPrice - activePrice;
+                      return (
+                        <div className="absolute bottom-2.5 right-2.5 z-10 bg-white/95 backdrop-blur-xs px-2.5 py-1 rounded-xl shadow-xs border border-[#2E4823]/10 text-right">
+                          <div className="flex items-center gap-1.5 justify-end">
+                            <span className="text-[11px] text-gray-400 line-through">₹{activeAggPrice}</span>
+                            <span className="text-[#D3452B] font-bold text-sm sm:text-base">₹{activePrice}</span>
+                          </div>
+                          <span className="text-[9px] font-bold text-emerald-700 bg-emerald-50 px-1 py-0.2 rounded block text-center">
+                            Save ₹{activeSavings} Direct
+                          </span>
+                        </div>
+                      );
+                    })()}
                   </div>
 
                   {/* Content */}
@@ -123,25 +162,35 @@ export const SignatureDishes: React.FC<SignatureDishesProps> = ({
                   </div>
 
                   {/* Action Links */}
-                  <div className="grid grid-cols-2 gap-2 pt-1">
-                    <a
-                      href={RESTAURANT_INFO.swiggyUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="flex items-center justify-center gap-1.5 text-xs font-bold py-2 px-2.5 rounded-xl bg-[#FC8019]/10 text-[#FC8019] border border-[#FC8019]/25 hover:bg-[#FC8019] hover:text-white shadow-xs active:scale-95 transition-all"
+                  <div className="flex flex-col gap-1.5 pt-1">
+                    <button
+                      type="button"
+                      onClick={onOpenOrderModal}
+                      className="btn-shimmer w-full py-2.5 px-3 rounded-xl bg-[#D3452B] hover:bg-[#bd3b22] text-white font-bold text-xs flex items-center justify-center gap-1.5 shadow-sm active:scale-95 transition-all"
                     >
-                      <span>Swiggy</span>
-                      <ExternalLink className="w-3 h-3" />
-                    </a>
-                    <a
-                      href={RESTAURANT_INFO.zomatoUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="flex items-center justify-center gap-1.5 text-xs font-bold py-2 px-2.5 rounded-xl bg-[#E23744]/10 text-[#E23744] border border-[#E23744]/25 hover:bg-[#E23744] hover:text-white shadow-xs active:scale-95 transition-all"
-                    >
-                      <span>Zomato</span>
-                      <ExternalLink className="w-3 h-3" />
-                    </a>
+                      <Utensils className="w-3.5 h-3.5" />
+                      <span>Order Direct • Save ₹{Math.round((dish.price * 1.25) / 10) * 10 - dish.price}</span>
+                    </button>
+                    <div className="flex items-center justify-center gap-2.5 text-[10px] text-gray-500 pt-0.5">
+                      <span>Or via apps:</span>
+                      <a
+                        href={RESTAURANT_INFO.swiggyUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-[#FC8019] hover:underline font-semibold flex items-center gap-0.5"
+                      >
+                        Swiggy <ExternalLink className="w-2.5 h-2.5" />
+                      </a>
+                      <span>•</span>
+                      <a
+                        href={RESTAURANT_INFO.zomatoUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-[#E23744] hover:underline font-semibold flex items-center gap-0.5"
+                      >
+                        Zomato <ExternalLink className="w-2.5 h-2.5" />
+                      </a>
+                    </div>
                   </div>
                 </div>
               </article>
@@ -209,10 +258,24 @@ export const SignatureDishes: React.FC<SignatureDishesProps> = ({
                     {dish.badge}
                   </div>
 
-                  {/* Price Tag Overlay */}
-                  <div className="absolute bottom-2.5 right-2.5 z-10 bg-white/95 backdrop-blur-xs px-3 py-1 rounded-xl shadow-xs border border-[#2E4823]/10">
-                    <span className="text-[#D3452B] font-bold text-base">₹{dish.price}</span>
-                  </div>
+                  {/* Price Tag Overlay with Strikethrough & Direct Savings */}
+                  {(() => {
+                    const live = livePrices.get(dish.name.toLowerCase().trim());
+                    const activePrice = live ? live.price : dish.price;
+                    const activeAggPrice = live?.aggregator_price || Math.round((activePrice * 1.25) / 10) * 10;
+                    const activeSavings = activeAggPrice - activePrice;
+                    return (
+                      <div className="absolute bottom-2.5 right-2.5 z-10 bg-white/95 backdrop-blur-xs px-3 py-1 rounded-xl shadow-xs border border-[#2E4823]/10 text-right">
+                        <div className="flex items-center gap-1.5 justify-end">
+                          <span className="text-xs text-gray-400 line-through">₹{activeAggPrice}</span>
+                          <span className="text-[#D3452B] font-bold text-base">₹{activePrice}</span>
+                        </div>
+                        <span className="text-[9px] font-bold text-emerald-700 bg-emerald-50 px-1.5 py-0.2 rounded block text-center">
+                          Save ₹{activeSavings} Direct
+                        </span>
+                      </div>
+                    );
+                  })()}
                 </div>
 
                 {/* Content */}
@@ -247,25 +310,36 @@ export const SignatureDishes: React.FC<SignatureDishesProps> = ({
                 </div>
 
                 {/* Action Links */}
-                <div className="grid grid-cols-2 gap-2 pt-1">
-                  <a
-                    href={RESTAURANT_INFO.swiggyUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="flex items-center justify-center gap-1.5 text-xs font-bold py-2.5 px-3 rounded-xl bg-[#FC8019]/10 text-[#FC8019] border border-[#FC8019]/25 hover:bg-[#FC8019] hover:text-white shadow-xs hover:shadow-md transition-all duration-200 transform hover:scale-[1.02] active:scale-[0.98]"
+                <div className="flex flex-col gap-2 pt-1">
+                  <button
+                    type="button"
+                    onClick={onOpenOrderModal}
+                    className="btn-shimmer w-full py-2.5 px-3 rounded-xl bg-[#D3452B] hover:bg-[#bd3b22] text-white font-bold text-xs sm:text-sm flex items-center justify-center gap-2 shadow-sm hover:shadow-md transition-all duration-200 transform hover:scale-[1.02] active:scale-[0.98]"
                   >
-                    <span>Swiggy</span>
-                    <ExternalLink className="w-3 h-3" />
-                  </a>
-                  <a
-                    href={RESTAURANT_INFO.zomatoUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="flex items-center justify-center gap-1.5 text-xs font-bold py-2.5 px-3 rounded-xl bg-[#E23744]/10 text-[#E23744] border border-[#E23744]/25 hover:bg-[#E23744] hover:text-white shadow-xs hover:shadow-md transition-all duration-200 transform hover:scale-[1.02] active:scale-[0.98]"
-                  >
-                    <span>Zomato</span>
-                    <ExternalLink className="w-3 h-3" />
-                  </a>
+                    <Utensils className="w-4 h-4" />
+                    <span>Order Direct • Save ₹{Math.round((dish.price * 1.25) / 10) * 10 - dish.price}</span>
+                  </button>
+
+                  <div className="flex items-center justify-center gap-3 text-[11px] text-gray-500 pt-0.5">
+                    <span>Or order via:</span>
+                    <a
+                      href={RESTAURANT_INFO.swiggyUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-[#FC8019] hover:underline font-semibold flex items-center gap-1"
+                    >
+                      Swiggy <ExternalLink className="w-2.5 h-2.5" />
+                    </a>
+                    <span>•</span>
+                    <a
+                      href={RESTAURANT_INFO.zomatoUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-[#E23744] hover:underline font-semibold flex items-center gap-1"
+                    >
+                      Zomato <ExternalLink className="w-2.5 h-2.5" />
+                    </a>
+                  </div>
                 </div>
               </div>
             </motion.article>

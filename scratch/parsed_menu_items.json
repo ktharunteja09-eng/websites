@@ -1,0 +1,3090 @@
+{
+  "categories": [
+    {
+      "num": 1,
+      "name": "VEG. SOUPS",
+      "label": "Veg. Soups",
+      "slug": "veg-soups",
+      "isVegDefault": true
+    },
+    {
+      "num": 2,
+      "name": "NON-VEG. SOUPS",
+      "label": "Non-Veg. Soups",
+      "slug": "non-veg-soups",
+      "isVegDefault": false
+    },
+    {
+      "num": 3,
+      "name": "VAIBHAV SPECIAL STARTERS",
+      "label": "Vaibhav Special Starters",
+      "slug": "vaibhav-special-starters",
+      "isVegDefault": false
+    },
+    {
+      "num": 4,
+      "name": "VAIBHAV'S NATTU SPECIALS",
+      "label": "Vaibhav's Nattu Specials",
+      "slug": "nattu-specials",
+      "isVegDefault": false
+    },
+    {
+      "num": 5,
+      "name": "CHICKEN STARTERS",
+      "label": "Chicken Starters",
+      "slug": "chicken-starters",
+      "isVegDefault": false
+    },
+    {
+      "num": 6,
+      "name": "MUTTON STARTERS",
+      "label": "Mutton Starters",
+      "slug": "mutton-starters",
+      "isVegDefault": false
+    },
+    {
+      "num": 7,
+      "name": "FISH STARTERS",
+      "label": "Fish Starters",
+      "slug": "fish-starters",
+      "isVegDefault": false
+    },
+    {
+      "num": 8,
+      "name": "PRAWNS STARTERS",
+      "label": "Prawns Starters",
+      "slug": "prawns-starters",
+      "isVegDefault": false
+    },
+    {
+      "num": 9,
+      "name": "EGG STARTERS",
+      "label": "Egg Starters",
+      "slug": "egg-starters",
+      "isVegDefault": false
+    },
+    {
+      "num": 10,
+      "name": "VEG. STARTERS",
+      "label": "Veg. Starters",
+      "slug": "veg-starters",
+      "isVegDefault": true
+    },
+    {
+      "num": 11,
+      "name": "TANDOORI FUSION",
+      "label": "Tandoori Fusion",
+      "slug": "tandoori-fusion",
+      "isVegDefault": false
+    },
+    {
+      "num": 12,
+      "name": "SHAWARMAS",
+      "label": "Shawarmas",
+      "slug": "shawarmas",
+      "isVegDefault": false
+    },
+    {
+      "num": 13,
+      "name": "BIRIYANIS",
+      "label": "Biriyanis",
+      "slug": "biriyanis",
+      "isVegDefault": false
+    },
+    {
+      "num": 14,
+      "name": "VEG. BIRYANI",
+      "label": "Veg. Biryani",
+      "slug": "veg-biryani",
+      "isVegDefault": true
+    },
+    {
+      "num": 15,
+      "name": "ARABIC MANDI",
+      "label": "Arabic Mandi",
+      "slug": "arabic-mandi",
+      "isVegDefault": false
+    },
+    {
+      "num": 16,
+      "name": "NON-VEG. FRIED RICE",
+      "label": "Non-Veg. Fried Rice",
+      "slug": "non-veg-fried-rice",
+      "isVegDefault": false
+    },
+    {
+      "num": 17,
+      "name": "VEG. FRIED RICE",
+      "label": "Veg. Fried Rice",
+      "slug": "veg-fried-rice",
+      "isVegDefault": true
+    },
+    {
+      "num": 18,
+      "name": "NON-VEG. NOODLES",
+      "label": "Non-Veg. Noodles",
+      "slug": "non-veg-noodles",
+      "isVegDefault": false
+    },
+    {
+      "num": 19,
+      "name": "VEG. NOODLES",
+      "label": "Veg. Noodles",
+      "slug": "veg-noodles",
+      "isVegDefault": true
+    },
+    {
+      "num": 20,
+      "name": "VEG. PULAVS",
+      "label": "Veg. Pulavs",
+      "slug": "veg-pulavs",
+      "isVegDefault": true
+    },
+    {
+      "num": 21,
+      "name": "INDIAN BREADS",
+      "label": "Indian Breads",
+      "slug": "indian-breads",
+      "isVegDefault": true
+    },
+    {
+      "num": 22,
+      "name": "VEG. CURRIES",
+      "label": "Veg. Curries",
+      "slug": "veg-curries",
+      "isVegDefault": true
+    },
+    {
+      "num": 23,
+      "name": "NON-VEG. CURRIES — CHICKEN",
+      "label": "Chicken Curries",
+      "slug": "chicken-curries",
+      "isVegDefault": false
+    },
+    {
+      "num": 24,
+      "name": "MUTTON CURRY",
+      "label": "Mutton Curry",
+      "slug": "mutton-curry",
+      "isVegDefault": false
+    },
+    {
+      "num": 25,
+      "name": "MILKSHAKES",
+      "label": "Milkshakes",
+      "slug": "milkshakes",
+      "isVegDefault": true
+    },
+    {
+      "num": 26,
+      "name": "BEVERAGES",
+      "label": "Beverages",
+      "slug": "beverages",
+      "isVegDefault": true
+    },
+    {
+      "num": 27,
+      "name": "MOCKTAILS",
+      "label": "Mocktails",
+      "slug": "mocktails",
+      "isVegDefault": true
+    },
+    {
+      "num": 28,
+      "name": "DESSERTS",
+      "label": "Desserts",
+      "slug": "desserts",
+      "isVegDefault": true
+    },
+    {
+      "num": 29,
+      "name": "ICE CREAMS",
+      "label": "Ice Creams",
+      "slug": "ice-creams",
+      "isVegDefault": true
+    },
+    {
+      "num": 30,
+      "name": "BUCKET BIRYANI — PORTIONS ONLY",
+      "label": "Bucket Biryani (Portions)",
+      "slug": "bucket-biryani",
+      "isVegDefault": false
+    }
+  ],
+  "items": [
+    {
+      "itemNumber": 1,
+      "name": "Mushroom Corn Soup",
+      "category": "veg-soups",
+      "categoryLabel": "Veg. Soups",
+      "categoryNum": 1,
+      "price": 140,
+      "isVeg": true,
+      "isChefSpecial": false
+    },
+    {
+      "itemNumber": 2,
+      "name": "Sweet Corn Soup",
+      "category": "veg-soups",
+      "categoryLabel": "Veg. Soups",
+      "categoryNum": 1,
+      "price": 140,
+      "isVeg": true,
+      "isChefSpecial": false
+    },
+    {
+      "itemNumber": 3,
+      "name": "Veg. Hot & Sour Soup",
+      "category": "veg-soups",
+      "categoryLabel": "Veg. Soups",
+      "categoryNum": 1,
+      "price": 140,
+      "isVeg": true,
+      "isChefSpecial": false
+    },
+    {
+      "itemNumber": 4,
+      "name": "Veg. Manchow Soup",
+      "category": "veg-soups",
+      "categoryLabel": "Veg. Soups",
+      "categoryNum": 1,
+      "price": 150,
+      "isVeg": true,
+      "isChefSpecial": false
+    },
+    {
+      "itemNumber": 5,
+      "name": "Cream of Mushroom Soup",
+      "category": "veg-soups",
+      "categoryLabel": "Veg. Soups",
+      "categoryNum": 1,
+      "price": 190,
+      "isVeg": true,
+      "isChefSpecial": false
+    },
+    {
+      "itemNumber": 6,
+      "name": "Lemon Coriander Soup",
+      "category": "veg-soups",
+      "categoryLabel": "Veg. Soups",
+      "categoryNum": 1,
+      "price": 190,
+      "isVeg": true,
+      "isChefSpecial": false
+    },
+    {
+      "itemNumber": 7,
+      "name": "Tomato Soup",
+      "category": "veg-soups",
+      "categoryLabel": "Veg. Soups",
+      "categoryNum": 1,
+      "price": 140,
+      "isVeg": true,
+      "isChefSpecial": false
+    },
+    {
+      "itemNumber": 8,
+      "name": "Chicken Hot & Sour Soup",
+      "category": "non-veg-soups",
+      "categoryLabel": "Non-Veg. Soups",
+      "categoryNum": 2,
+      "price": 140,
+      "isVeg": false,
+      "isChefSpecial": false
+    },
+    {
+      "itemNumber": 9,
+      "name": "Chicken Manchow Soup",
+      "category": "non-veg-soups",
+      "categoryLabel": "Non-Veg. Soups",
+      "categoryNum": 2,
+      "price": 140,
+      "isVeg": false,
+      "isChefSpecial": false
+    },
+    {
+      "itemNumber": 10,
+      "name": "Chicken Corn Soup",
+      "category": "non-veg-soups",
+      "categoryLabel": "Non-Veg. Soups",
+      "categoryNum": 2,
+      "price": 140,
+      "isVeg": false,
+      "isChefSpecial": false
+    },
+    {
+      "itemNumber": 11,
+      "name": "Chicken Coriander Soup",
+      "category": "non-veg-soups",
+      "categoryLabel": "Non-Veg. Soups",
+      "categoryNum": 2,
+      "price": 150,
+      "isVeg": false,
+      "isChefSpecial": false
+    },
+    {
+      "itemNumber": 12,
+      "name": "Mutton Bone Soup",
+      "category": "non-veg-soups",
+      "categoryLabel": "Non-Veg. Soups",
+      "categoryNum": 2,
+      "price": 190,
+      "isVeg": false,
+      "isChefSpecial": false
+    },
+    {
+      "itemNumber": 13,
+      "name": "Mutton Pepper Soup",
+      "category": "non-veg-soups",
+      "categoryLabel": "Non-Veg. Soups",
+      "categoryNum": 2,
+      "price": 190,
+      "isVeg": false,
+      "isChefSpecial": false
+    },
+    {
+      "itemNumber": 13,
+      "name": "Andhra Karivepaku Mutton",
+      "category": "vaibhav-special-starters",
+      "categoryLabel": "Vaibhav Special Starters",
+      "categoryNum": 3,
+      "price": 499,
+      "isVeg": false,
+      "isChefSpecial": true
+    },
+    {
+      "itemNumber": 14,
+      "name": "Andhra Karivepaku Chicken",
+      "category": "vaibhav-special-starters",
+      "categoryLabel": "Vaibhav Special Starters",
+      "categoryNum": 3,
+      "price": 399,
+      "isVeg": false,
+      "isChefSpecial": true
+    },
+    {
+      "itemNumber": 15,
+      "name": "Butterfly Chicken",
+      "category": "vaibhav-special-starters",
+      "categoryLabel": "Vaibhav Special Starters",
+      "categoryNum": 3,
+      "price": 399,
+      "isVeg": false,
+      "isChefSpecial": true
+    },
+    {
+      "itemNumber": 16,
+      "name": "Garlic Chicken Keema Balls",
+      "category": "vaibhav-special-starters",
+      "categoryLabel": "Vaibhav Special Starters",
+      "categoryNum": 3,
+      "price": 399,
+      "isVeg": false,
+      "isChefSpecial": true
+    },
+    {
+      "itemNumber": 17,
+      "name": "Dragon Crispy Chicken",
+      "category": "vaibhav-special-starters",
+      "categoryLabel": "Vaibhav Special Starters",
+      "categoryNum": 3,
+      "price": 399,
+      "isVeg": false,
+      "isChefSpecial": true
+    },
+    {
+      "itemNumber": 18,
+      "name": "Arabian Prawns",
+      "category": "vaibhav-special-starters",
+      "categoryLabel": "Vaibhav Special Starters",
+      "categoryNum": 3,
+      "price": 499,
+      "isVeg": false,
+      "isChefSpecial": true
+    },
+    {
+      "itemNumber": 19,
+      "name": "Arabian Fish",
+      "category": "vaibhav-special-starters",
+      "categoryLabel": "Vaibhav Special Starters",
+      "categoryNum": 3,
+      "price": 499,
+      "isVeg": false,
+      "isChefSpecial": true
+    },
+    {
+      "itemNumber": 20,
+      "name": "Vaibhav's Non-Veg. Platter",
+      "category": "vaibhav-special-starters",
+      "categoryLabel": "Vaibhav Special Starters",
+      "categoryNum": 3,
+      "price": 999,
+      "isVeg": false,
+      "isChefSpecial": true
+    },
+    {
+      "itemNumber": 22,
+      "name": "Chitti Muthyalu Mutton Biryani",
+      "category": "nattu-specials",
+      "categoryLabel": "Vaibhav's Nattu Specials",
+      "categoryNum": 4,
+      "price": 420,
+      "isVeg": false,
+      "isChefSpecial": true
+    },
+    {
+      "itemNumber": 23,
+      "name": "Chitti Muthyalu Chicken Biryani",
+      "category": "nattu-specials",
+      "categoryLabel": "Vaibhav's Nattu Specials",
+      "categoryNum": 4,
+      "price": 270,
+      "isVeg": false,
+      "isChefSpecial": true
+    },
+    {
+      "itemNumber": 24,
+      "name": "Rayalaseema Chicken Curry with Ragi Sangati",
+      "category": "nattu-specials",
+      "categoryLabel": "Vaibhav's Nattu Specials",
+      "categoryNum": 4,
+      "price": 350,
+      "isVeg": false,
+      "isChefSpecial": true
+    },
+    {
+      "itemNumber": 25,
+      "name": "Mutton Paya with Ragi Sangati",
+      "category": "nattu-specials",
+      "categoryLabel": "Vaibhav's Nattu Specials",
+      "categoryNum": 4,
+      "price": 400,
+      "isVeg": false,
+      "isChefSpecial": true
+    },
+    {
+      "itemNumber": 26,
+      "name": "Chepala Pulusu with Ragi Sangati",
+      "category": "nattu-specials",
+      "categoryLabel": "Vaibhav's Nattu Specials",
+      "categoryNum": 4,
+      "price": 280,
+      "isVeg": false,
+      "isChefSpecial": true
+    },
+    {
+      "itemNumber": 27,
+      "name": "Mutton Pulusu with Ragi Sangati",
+      "category": "nattu-specials",
+      "categoryLabel": "Vaibhav's Nattu Specials",
+      "categoryNum": 4,
+      "price": 420,
+      "isVeg": false,
+      "isChefSpecial": true
+    },
+    {
+      "itemNumber": 28,
+      "name": "Special Curd Rice",
+      "category": "nattu-specials",
+      "categoryLabel": "Vaibhav's Nattu Specials",
+      "categoryNum": 4,
+      "price": 120,
+      "isVeg": true,
+      "isChefSpecial": false
+    },
+    {
+      "itemNumber": 29,
+      "name": "White Rice",
+      "category": "nattu-specials",
+      "categoryLabel": "Vaibhav's Nattu Specials",
+      "categoryNum": 4,
+      "price": 100,
+      "isVeg": true,
+      "isChefSpecial": false
+    },
+    {
+      "itemNumber": 30,
+      "name": "Raagi Ball",
+      "category": "nattu-specials",
+      "categoryLabel": "Vaibhav's Nattu Specials",
+      "categoryNum": 4,
+      "price": 50,
+      "isVeg": true,
+      "isChefSpecial": false
+    },
+    {
+      "itemNumber": 31,
+      "name": "Chilli Chicken",
+      "category": "chicken-starters",
+      "categoryLabel": "Chicken Starters",
+      "categoryNum": 5,
+      "price": 280,
+      "isVeg": false,
+      "isChefSpecial": false
+    },
+    {
+      "itemNumber": 32,
+      "name": "Vaibhav's Special Chicken",
+      "category": "chicken-starters",
+      "categoryLabel": "Chicken Starters",
+      "categoryNum": 5,
+      "price": 320,
+      "isVeg": false,
+      "isChefSpecial": true
+    },
+    {
+      "itemNumber": 33,
+      "name": "Pepper Chicken",
+      "category": "chicken-starters",
+      "categoryLabel": "Chicken Starters",
+      "categoryNum": 5,
+      "price": 320,
+      "isVeg": false,
+      "isChefSpecial": false
+    },
+    {
+      "itemNumber": 34,
+      "name": "Chicken Majestic",
+      "category": "chicken-starters",
+      "categoryLabel": "Chicken Starters",
+      "categoryNum": 5,
+      "price": 320,
+      "isVeg": false,
+      "isChefSpecial": true
+    },
+    {
+      "itemNumber": 35,
+      "name": "Chicken 65",
+      "category": "chicken-starters",
+      "categoryLabel": "Chicken Starters",
+      "categoryNum": 5,
+      "price": 280,
+      "isVeg": false,
+      "isChefSpecial": false
+    },
+    {
+      "itemNumber": 36,
+      "name": "Chicken Lollipop",
+      "category": "chicken-starters",
+      "categoryLabel": "Chicken Starters",
+      "categoryNum": 5,
+      "price": 300,
+      "isVeg": false,
+      "isChefSpecial": false
+    },
+    {
+      "itemNumber": 37,
+      "name": "Chicken Drumstick",
+      "category": "chicken-starters",
+      "categoryLabel": "Chicken Starters",
+      "categoryNum": 5,
+      "price": 310,
+      "isVeg": false,
+      "isChefSpecial": false
+    },
+    {
+      "itemNumber": 38,
+      "name": "Chicken Wings",
+      "category": "chicken-starters",
+      "categoryLabel": "Chicken Starters",
+      "categoryNum": 5,
+      "price": 300,
+      "isVeg": false,
+      "isChefSpecial": false
+    },
+    {
+      "itemNumber": 39,
+      "name": "Cashew Nut Chicken",
+      "category": "chicken-starters",
+      "categoryLabel": "Chicken Starters",
+      "categoryNum": 5,
+      "price": 360,
+      "isVeg": false,
+      "isChefSpecial": false
+    },
+    {
+      "itemNumber": 40,
+      "name": "Chicken Fry",
+      "category": "chicken-starters",
+      "categoryLabel": "Chicken Starters",
+      "categoryNum": 5,
+      "price": 280,
+      "isVeg": false,
+      "isChefSpecial": false
+    },
+    {
+      "itemNumber": 41,
+      "name": "Chicken Roast",
+      "category": "chicken-starters",
+      "categoryLabel": "Chicken Starters",
+      "categoryNum": 5,
+      "price": 280,
+      "isVeg": false,
+      "isChefSpecial": false
+    },
+    {
+      "itemNumber": 42,
+      "name": "Hong Kong Chicken",
+      "category": "chicken-starters",
+      "categoryLabel": "Chicken Starters",
+      "categoryNum": 5,
+      "price": 340,
+      "isVeg": false,
+      "isChefSpecial": false
+    },
+    {
+      "itemNumber": 43,
+      "name": "Dragon Chicken",
+      "category": "chicken-starters",
+      "categoryLabel": "Chicken Starters",
+      "categoryNum": 5,
+      "price": 320,
+      "isVeg": false,
+      "isChefSpecial": false
+    },
+    {
+      "itemNumber": 44,
+      "name": "Schezwan Hong Kong Chicken",
+      "category": "chicken-starters",
+      "categoryLabel": "Chicken Starters",
+      "categoryNum": 5,
+      "price": 360,
+      "isVeg": false,
+      "isChefSpecial": false
+    },
+    {
+      "itemNumber": 45,
+      "name": "Rambo Chicken",
+      "category": "chicken-starters",
+      "categoryLabel": "Chicken Starters",
+      "categoryNum": 5,
+      "price": 340,
+      "isVeg": false,
+      "isChefSpecial": false
+    },
+    {
+      "itemNumber": 46,
+      "name": "Chicken Manchurian",
+      "category": "chicken-starters",
+      "categoryLabel": "Chicken Starters",
+      "categoryNum": 5,
+      "price": 320,
+      "isVeg": false,
+      "isChefSpecial": false
+    },
+    {
+      "itemNumber": 47,
+      "name": "Kaju Mutton Roast",
+      "category": "mutton-starters",
+      "categoryLabel": "Mutton Starters",
+      "categoryNum": 6,
+      "price": 450,
+      "isVeg": false,
+      "isChefSpecial": false
+    },
+    {
+      "itemNumber": 48,
+      "name": "Mutton Ghee Roast",
+      "category": "mutton-starters",
+      "categoryLabel": "Mutton Starters",
+      "categoryNum": 6,
+      "price": 420,
+      "isVeg": false,
+      "isChefSpecial": false
+    },
+    {
+      "itemNumber": 49,
+      "name": "Kaju Mutton Ghee Roast",
+      "category": "mutton-starters",
+      "categoryLabel": "Mutton Starters",
+      "categoryNum": 6,
+      "price": 460,
+      "isVeg": false,
+      "isChefSpecial": false
+    },
+    {
+      "itemNumber": 50,
+      "name": "Mutton Fry",
+      "category": "mutton-starters",
+      "categoryLabel": "Mutton Starters",
+      "categoryNum": 6,
+      "price": 380,
+      "isVeg": false,
+      "isChefSpecial": false
+    },
+    {
+      "itemNumber": 51,
+      "name": "Fish Finger",
+      "category": "fish-starters",
+      "categoryLabel": "Fish Starters",
+      "categoryNum": 7,
+      "price": 320,
+      "isVeg": false,
+      "isChefSpecial": false
+    },
+    {
+      "itemNumber": 52,
+      "name": "Pepper Fish",
+      "category": "fish-starters",
+      "categoryLabel": "Fish Starters",
+      "categoryNum": 7,
+      "price": 320,
+      "isVeg": false,
+      "isChefSpecial": false
+    },
+    {
+      "itemNumber": 53,
+      "name": "Chilli Fish",
+      "category": "fish-starters",
+      "categoryLabel": "Fish Starters",
+      "categoryNum": 7,
+      "price": 320,
+      "isVeg": false,
+      "isChefSpecial": false
+    },
+    {
+      "itemNumber": 54,
+      "name": "Apollo Fish",
+      "category": "fish-starters",
+      "categoryLabel": "Fish Starters",
+      "categoryNum": 7,
+      "price": 330,
+      "isVeg": false,
+      "isChefSpecial": false
+    },
+    {
+      "itemNumber": 55,
+      "name": "Fish 65",
+      "category": "fish-starters",
+      "categoryLabel": "Fish Starters",
+      "categoryNum": 7,
+      "price": 330,
+      "isVeg": false,
+      "isChefSpecial": false
+    },
+    {
+      "itemNumber": 56,
+      "name": "Loose Prawns",
+      "category": "prawns-starters",
+      "categoryLabel": "Prawns Starters",
+      "categoryNum": 8,
+      "price": 350,
+      "isVeg": false,
+      "isChefSpecial": false
+    },
+    {
+      "itemNumber": 57,
+      "name": "Chilli Prawns",
+      "category": "prawns-starters",
+      "categoryLabel": "Prawns Starters",
+      "categoryNum": 8,
+      "price": 350,
+      "isVeg": false,
+      "isChefSpecial": false
+    },
+    {
+      "itemNumber": 58,
+      "name": "Pepper Prawns",
+      "category": "prawns-starters",
+      "categoryLabel": "Prawns Starters",
+      "categoryNum": 8,
+      "price": 350,
+      "isVeg": false,
+      "isChefSpecial": false
+    },
+    {
+      "itemNumber": 59,
+      "name": "Prawns 65",
+      "category": "prawns-starters",
+      "categoryLabel": "Prawns Starters",
+      "categoryNum": 8,
+      "price": 350,
+      "isVeg": false,
+      "isChefSpecial": false
+    },
+    {
+      "itemNumber": 60,
+      "name": "Egg Chilly",
+      "category": "egg-starters",
+      "categoryLabel": "Egg Starters",
+      "categoryNum": 9,
+      "price": 180,
+      "isVeg": false,
+      "isChefSpecial": false
+    },
+    {
+      "itemNumber": 61,
+      "name": "Egg 65",
+      "category": "egg-starters",
+      "categoryLabel": "Egg Starters",
+      "categoryNum": 9,
+      "price": 180,
+      "isVeg": false,
+      "isChefSpecial": false
+    },
+    {
+      "itemNumber": 62,
+      "name": "Omelette",
+      "category": "egg-starters",
+      "categoryLabel": "Egg Starters",
+      "categoryNum": 9,
+      "price": 80,
+      "isVeg": false,
+      "isChefSpecial": false
+    },
+    {
+      "itemNumber": 63,
+      "name": "Special Omelette",
+      "category": "egg-starters",
+      "categoryLabel": "Egg Starters",
+      "categoryNum": 9,
+      "price": 100,
+      "isVeg": false,
+      "isChefSpecial": false
+    },
+    {
+      "itemNumber": 64,
+      "name": "Egg Manchurian",
+      "category": "egg-starters",
+      "categoryLabel": "Egg Starters",
+      "categoryNum": 9,
+      "price": 200,
+      "isVeg": false,
+      "isChefSpecial": false
+    },
+    {
+      "itemNumber": 65,
+      "name": "Boiled Egg",
+      "category": "egg-starters",
+      "categoryLabel": "Egg Starters",
+      "categoryNum": 9,
+      "price": 20,
+      "isVeg": false,
+      "isChefSpecial": false
+    },
+    {
+      "itemNumber": 66,
+      "name": "Dragon Egg",
+      "category": "egg-starters",
+      "categoryLabel": "Egg Starters",
+      "categoryNum": 9,
+      "price": 200,
+      "isVeg": false,
+      "isChefSpecial": false
+    },
+    {
+      "itemNumber": 67,
+      "name": "Veg. Manchurian",
+      "category": "veg-starters",
+      "categoryLabel": "Veg. Starters",
+      "categoryNum": 10,
+      "price": 260,
+      "isVeg": true,
+      "isChefSpecial": false
+    },
+    {
+      "itemNumber": 68,
+      "name": "Veg. 65",
+      "category": "veg-starters",
+      "categoryLabel": "Veg. Starters",
+      "categoryNum": 10,
+      "price": 270,
+      "isVeg": true,
+      "isChefSpecial": false
+    },
+    {
+      "itemNumber": 69,
+      "name": "Baby Corn 65",
+      "category": "veg-starters",
+      "categoryLabel": "Veg. Starters",
+      "categoryNum": 10,
+      "price": 270,
+      "isVeg": true,
+      "isChefSpecial": false
+    },
+    {
+      "itemNumber": 70,
+      "name": "Baby Corn Chilly",
+      "category": "veg-starters",
+      "categoryLabel": "Veg. Starters",
+      "categoryNum": 10,
+      "price": 280,
+      "isVeg": true,
+      "isChefSpecial": false
+    },
+    {
+      "itemNumber": 71,
+      "name": "Crispy Baby Corn",
+      "category": "veg-starters",
+      "categoryLabel": "Veg. Starters",
+      "categoryNum": 10,
+      "price": 280,
+      "isVeg": true,
+      "isChefSpecial": false
+    },
+    {
+      "itemNumber": 72,
+      "name": "Baby Corn 555",
+      "category": "veg-starters",
+      "categoryLabel": "Veg. Starters",
+      "categoryNum": 10,
+      "price": 290,
+      "isVeg": true,
+      "isChefSpecial": false
+    },
+    {
+      "itemNumber": 73,
+      "name": "Crispy Corn",
+      "category": "veg-starters",
+      "categoryLabel": "Veg. Starters",
+      "categoryNum": 10,
+      "price": 260,
+      "isVeg": true,
+      "isChefSpecial": false
+    },
+    {
+      "itemNumber": 74,
+      "name": "Paneer Manchurian",
+      "category": "veg-starters",
+      "categoryLabel": "Veg. Starters",
+      "categoryNum": 10,
+      "price": 290,
+      "isVeg": true,
+      "isChefSpecial": false
+    },
+    {
+      "itemNumber": 75,
+      "name": "Paneer 65",
+      "category": "veg-starters",
+      "categoryLabel": "Veg. Starters",
+      "categoryNum": 10,
+      "price": 280,
+      "isVeg": true,
+      "isChefSpecial": false
+    },
+    {
+      "itemNumber": 76,
+      "name": "Chilli Paneer",
+      "category": "veg-starters",
+      "categoryLabel": "Veg. Starters",
+      "categoryNum": 10,
+      "price": 280,
+      "isVeg": true,
+      "isChefSpecial": false
+    },
+    {
+      "itemNumber": 77,
+      "name": "Paneer Majestic",
+      "category": "veg-starters",
+      "categoryLabel": "Veg. Starters",
+      "categoryNum": 10,
+      "price": 290,
+      "isVeg": true,
+      "isChefSpecial": true
+    },
+    {
+      "itemNumber": 78,
+      "name": "Paneer Pakoda",
+      "category": "veg-starters",
+      "categoryLabel": "Veg. Starters",
+      "categoryNum": 10,
+      "price": 280,
+      "isVeg": true,
+      "isChefSpecial": false
+    },
+    {
+      "itemNumber": 79,
+      "name": "Gobi Manchuria",
+      "category": "veg-starters",
+      "categoryLabel": "Veg. Starters",
+      "categoryNum": 10,
+      "price": 220,
+      "isVeg": true,
+      "isChefSpecial": false
+    },
+    {
+      "itemNumber": 80,
+      "name": "Gobi 65",
+      "category": "veg-starters",
+      "categoryLabel": "Veg. Starters",
+      "categoryNum": 10,
+      "price": 200,
+      "isVeg": true,
+      "isChefSpecial": false
+    },
+    {
+      "itemNumber": 81,
+      "name": "Chilli Gobi",
+      "category": "veg-starters",
+      "categoryLabel": "Veg. Starters",
+      "categoryNum": 10,
+      "price": 180,
+      "isVeg": true,
+      "isChefSpecial": false
+    },
+    {
+      "itemNumber": 82,
+      "name": "Mushroom Manchurian",
+      "category": "veg-starters",
+      "categoryLabel": "Veg. Starters",
+      "categoryNum": 10,
+      "price": 280,
+      "isVeg": true,
+      "isChefSpecial": false
+    },
+    {
+      "itemNumber": 83,
+      "name": "Mushroom 65",
+      "category": "veg-starters",
+      "categoryLabel": "Veg. Starters",
+      "categoryNum": 10,
+      "price": 280,
+      "isVeg": true,
+      "isChefSpecial": false
+    },
+    {
+      "itemNumber": 84,
+      "name": "Mushroom Chilli",
+      "category": "veg-starters",
+      "categoryLabel": "Veg. Starters",
+      "categoryNum": 10,
+      "price": 280,
+      "isVeg": true,
+      "isChefSpecial": false
+    },
+    {
+      "itemNumber": 85,
+      "name": "Mushroom Pepper",
+      "category": "veg-starters",
+      "categoryLabel": "Veg. Starters",
+      "categoryNum": 10,
+      "price": 300,
+      "isVeg": true,
+      "isChefSpecial": false
+    },
+    {
+      "itemNumber": 86,
+      "name": "Veg. Platter",
+      "category": "veg-starters",
+      "categoryLabel": "Veg. Starters",
+      "categoryNum": 10,
+      "price": 570,
+      "isVeg": true,
+      "isChefSpecial": true
+    },
+    {
+      "itemNumber": 87,
+      "name": "French Fries",
+      "category": "veg-starters",
+      "categoryLabel": "Veg. Starters",
+      "categoryNum": 10,
+      "price": 200,
+      "isVeg": true,
+      "isChefSpecial": false
+    },
+    {
+      "itemNumber": 88,
+      "name": "Tandoori Chicken Half",
+      "category": "tandoori-fusion",
+      "categoryLabel": "Tandoori Fusion",
+      "categoryNum": 11,
+      "price": 280,
+      "isVeg": false,
+      "isChefSpecial": false
+    },
+    {
+      "itemNumber": 89,
+      "name": "Tandoori Chicken Full",
+      "category": "tandoori-fusion",
+      "categoryLabel": "Tandoori Fusion",
+      "categoryNum": 11,
+      "price": 500,
+      "isVeg": false,
+      "isChefSpecial": false
+    },
+    {
+      "itemNumber": 90,
+      "name": "Tangdi Kabab Half (2 Pcs.)",
+      "category": "tandoori-fusion",
+      "categoryLabel": "Tandoori Fusion",
+      "categoryNum": 11,
+      "price": 190,
+      "isVeg": false,
+      "isChefSpecial": false,
+      "portionNote": "2 Pieces"
+    },
+    {
+      "itemNumber": 91,
+      "name": "Tangdi Kabab Full (4 Pcs.)",
+      "category": "tandoori-fusion",
+      "categoryLabel": "Tandoori Fusion",
+      "categoryNum": 11,
+      "price": 380,
+      "isVeg": false,
+      "isChefSpecial": false,
+      "portionNote": "4 Pieces"
+    },
+    {
+      "itemNumber": 92,
+      "name": "Grill Chicken Half",
+      "category": "tandoori-fusion",
+      "categoryLabel": "Tandoori Fusion",
+      "categoryNum": 11,
+      "price": 260,
+      "isVeg": false,
+      "isChefSpecial": false
+    },
+    {
+      "itemNumber": 93,
+      "name": "Grill Chicken Full",
+      "category": "tandoori-fusion",
+      "categoryLabel": "Tandoori Fusion",
+      "categoryNum": 11,
+      "price": 500,
+      "isVeg": false,
+      "isChefSpecial": false
+    },
+    {
+      "itemNumber": 94,
+      "name": "Alfaham Chicken Half",
+      "category": "tandoori-fusion",
+      "categoryLabel": "Tandoori Fusion",
+      "categoryNum": 11,
+      "price": 280,
+      "isVeg": false,
+      "isChefSpecial": false
+    },
+    {
+      "itemNumber": 95,
+      "name": "Alfaham Chicken Full",
+      "category": "tandoori-fusion",
+      "categoryLabel": "Tandoori Fusion",
+      "categoryNum": 11,
+      "price": 520,
+      "isVeg": false,
+      "isChefSpecial": false
+    },
+    {
+      "itemNumber": 96,
+      "name": "Chicken Tikka",
+      "category": "tandoori-fusion",
+      "categoryLabel": "Tandoori Fusion",
+      "categoryNum": 11,
+      "price": 360,
+      "isVeg": false,
+      "isChefSpecial": false
+    },
+    {
+      "itemNumber": 97,
+      "name": "Malai Chicken Tikka",
+      "category": "tandoori-fusion",
+      "categoryLabel": "Tandoori Fusion",
+      "categoryNum": 11,
+      "price": 380,
+      "isVeg": false,
+      "isChefSpecial": false
+    },
+    {
+      "itemNumber": 98,
+      "name": "Garlic Chicken Kabab",
+      "category": "tandoori-fusion",
+      "categoryLabel": "Tandoori Fusion",
+      "categoryNum": 11,
+      "price": 380,
+      "isVeg": false,
+      "isChefSpecial": false
+    },
+    {
+      "itemNumber": 99,
+      "name": "Chicken Seekh Kabab",
+      "category": "tandoori-fusion",
+      "categoryLabel": "Tandoori Fusion",
+      "categoryNum": 11,
+      "price": 390,
+      "isVeg": false,
+      "isChefSpecial": false
+    },
+    {
+      "itemNumber": 100,
+      "name": "Garlic Chicken Kabab",
+      "category": "tandoori-fusion",
+      "categoryLabel": "Tandoori Fusion",
+      "categoryNum": 11,
+      "price": 390,
+      "isVeg": false,
+      "isChefSpecial": false
+    },
+    {
+      "itemNumber": 101,
+      "name": "Tiger Prawns Tikka (Sunday)",
+      "category": "tandoori-fusion",
+      "categoryLabel": "Tandoori Fusion",
+      "categoryNum": 11,
+      "price": 499,
+      "isVeg": false,
+      "isChefSpecial": false,
+      "portionNote": "Sunday Special"
+    },
+    {
+      "itemNumber": 102,
+      "name": "Paneer Tikka",
+      "category": "tandoori-fusion",
+      "categoryLabel": "Tandoori Fusion",
+      "categoryNum": 11,
+      "price": 340,
+      "isVeg": true,
+      "isChefSpecial": false
+    },
+    {
+      "itemNumber": 103,
+      "name": "Veg. Seekh Kabab",
+      "category": "tandoori-fusion",
+      "categoryLabel": "Tandoori Fusion",
+      "categoryNum": 11,
+      "price": 320,
+      "isVeg": true,
+      "isChefSpecial": false
+    },
+    {
+      "itemNumber": 104,
+      "name": "Shawarma",
+      "category": "shawarmas",
+      "categoryLabel": "Shawarmas",
+      "categoryNum": 12,
+      "price": 100,
+      "isVeg": false,
+      "isChefSpecial": false
+    },
+    {
+      "itemNumber": 105,
+      "name": "Special Shawarma",
+      "category": "shawarmas",
+      "categoryLabel": "Shawarmas",
+      "categoryNum": 12,
+      "price": 140,
+      "isVeg": false,
+      "isChefSpecial": false
+    },
+    {
+      "itemNumber": 106,
+      "name": "Butter Shawarma",
+      "category": "shawarmas",
+      "categoryLabel": "Shawarmas",
+      "categoryNum": 12,
+      "price": 130,
+      "isVeg": false,
+      "isChefSpecial": false
+    },
+    {
+      "itemNumber": 107,
+      "name": "Special Butter Shawarma",
+      "category": "shawarmas",
+      "categoryLabel": "Shawarmas",
+      "categoryNum": 12,
+      "price": 160,
+      "isVeg": false,
+      "isChefSpecial": false
+    },
+    {
+      "itemNumber": 108,
+      "name": "Kaju Shawarma",
+      "category": "shawarmas",
+      "categoryLabel": "Shawarmas",
+      "categoryNum": 12,
+      "price": 200,
+      "isVeg": false,
+      "isChefSpecial": false
+    },
+    {
+      "itemNumber": 109,
+      "name": "Plate Shawarma",
+      "category": "shawarmas",
+      "categoryLabel": "Shawarmas",
+      "categoryNum": 12,
+      "price": 170,
+      "isVeg": false,
+      "isChefSpecial": false
+    },
+    {
+      "itemNumber": 110,
+      "name": "Chicken Dum Biryani",
+      "category": "biriyanis",
+      "categoryLabel": "Biriyanis",
+      "categoryNum": 13,
+      "price": 230,
+      "isVeg": false,
+      "isChefSpecial": false
+    },
+    {
+      "itemNumber": 111,
+      "name": "Mutton Dum Biryani",
+      "category": "biriyanis",
+      "categoryLabel": "Biriyanis",
+      "categoryNum": 13,
+      "price": 400,
+      "isVeg": false,
+      "isChefSpecial": false
+    },
+    {
+      "itemNumber": 112,
+      "name": "Chicken Fry Biryani",
+      "category": "biriyanis",
+      "categoryLabel": "Biriyanis",
+      "categoryNum": 13,
+      "price": 280,
+      "isVeg": false,
+      "isChefSpecial": false
+    },
+    {
+      "itemNumber": 113,
+      "name": "Mutton Fry Biryani",
+      "category": "biriyanis",
+      "categoryLabel": "Biriyanis",
+      "categoryNum": 13,
+      "price": 420,
+      "isVeg": false,
+      "isChefSpecial": false
+    },
+    {
+      "itemNumber": 114,
+      "name": "Chicken Joint Biryani",
+      "category": "biriyanis",
+      "categoryLabel": "Biriyanis",
+      "categoryNum": 13,
+      "price": 320,
+      "isVeg": false,
+      "isChefSpecial": false
+    },
+    {
+      "itemNumber": 115,
+      "name": "Chicken Kabab Biryani",
+      "category": "biriyanis",
+      "categoryLabel": "Biriyanis",
+      "categoryNum": 13,
+      "price": 320,
+      "isVeg": false,
+      "isChefSpecial": false
+    },
+    {
+      "itemNumber": 116,
+      "name": "Lollipop Biryani",
+      "category": "biriyanis",
+      "categoryLabel": "Biriyanis",
+      "categoryNum": 13,
+      "price": 330,
+      "isVeg": false,
+      "isChefSpecial": false
+    },
+    {
+      "itemNumber": 117,
+      "name": "Special Chicken Biryani",
+      "category": "biriyanis",
+      "categoryLabel": "Biriyanis",
+      "categoryNum": 13,
+      "price": 320,
+      "isVeg": false,
+      "isChefSpecial": false
+    },
+    {
+      "itemNumber": 118,
+      "name": "Mughalai Chicken Biryani",
+      "category": "biriyanis",
+      "categoryLabel": "Biriyanis",
+      "categoryNum": 13,
+      "price": 310,
+      "isVeg": false,
+      "isChefSpecial": false
+    },
+    {
+      "itemNumber": 119,
+      "name": "Gongura Chicken Biryani",
+      "category": "biriyanis",
+      "categoryLabel": "Biriyanis",
+      "categoryNum": 13,
+      "price": 320,
+      "isVeg": false,
+      "isChefSpecial": false
+    },
+    {
+      "itemNumber": 120,
+      "name": "Chicken Tikka Biryani",
+      "category": "biriyanis",
+      "categoryLabel": "Biriyanis",
+      "categoryNum": 13,
+      "price": 330,
+      "isVeg": false,
+      "isChefSpecial": false
+    },
+    {
+      "itemNumber": 121,
+      "name": "Alfaham Chicken Biryani",
+      "category": "biriyanis",
+      "categoryLabel": "Biriyanis",
+      "categoryNum": 13,
+      "price": 330,
+      "isVeg": false,
+      "isChefSpecial": false
+    },
+    {
+      "itemNumber": 122,
+      "name": "Tandoori Chicken Biryani",
+      "category": "biriyanis",
+      "categoryLabel": "Biriyanis",
+      "categoryNum": 13,
+      "price": 300,
+      "isVeg": false,
+      "isChefSpecial": false
+    },
+    {
+      "itemNumber": 123,
+      "name": "Grill Chicken Biryani",
+      "category": "biriyanis",
+      "categoryLabel": "Biriyanis",
+      "categoryNum": 13,
+      "price": 300,
+      "isVeg": false,
+      "isChefSpecial": false
+    },
+    {
+      "itemNumber": 124,
+      "name": "Fish Biryani",
+      "category": "biriyanis",
+      "categoryLabel": "Biriyanis",
+      "categoryNum": 13,
+      "price": 340,
+      "isVeg": false,
+      "isChefSpecial": false
+    },
+    {
+      "itemNumber": 125,
+      "name": "Prawns Biryani",
+      "category": "biriyanis",
+      "categoryLabel": "Biriyanis",
+      "categoryNum": 13,
+      "price": 380,
+      "isVeg": false,
+      "isChefSpecial": false
+    },
+    {
+      "itemNumber": 126,
+      "name": "Egg Biryani",
+      "category": "biriyanis",
+      "categoryLabel": "Biriyanis",
+      "categoryNum": 13,
+      "price": 180,
+      "isVeg": false,
+      "isChefSpecial": false
+    },
+    {
+      "itemNumber": 127,
+      "name": "Mixed Biryani (Non-Veg.)",
+      "category": "biriyanis",
+      "categoryLabel": "Biriyanis",
+      "categoryNum": 13,
+      "price": 420,
+      "isVeg": false,
+      "isChefSpecial": false
+    },
+    {
+      "itemNumber": 128,
+      "name": "Rambo Chicken Biryani",
+      "category": "biriyanis",
+      "categoryLabel": "Biriyanis",
+      "categoryNum": 13,
+      "price": 420,
+      "isVeg": false,
+      "isChefSpecial": false
+    },
+    {
+      "itemNumber": 129,
+      "name": "Biryani Rice",
+      "category": "biriyanis",
+      "categoryLabel": "Biriyanis",
+      "categoryNum": 13,
+      "price": 140,
+      "isVeg": false,
+      "isChefSpecial": false
+    },
+    {
+      "itemNumber": 130,
+      "name": "Veg. Biryani",
+      "category": "veg-biryani",
+      "categoryLabel": "Veg. Biryani",
+      "categoryNum": 14,
+      "price": 220,
+      "isVeg": true,
+      "isChefSpecial": false
+    },
+    {
+      "itemNumber": 131,
+      "name": "Kaju Biryani",
+      "category": "veg-biryani",
+      "categoryLabel": "Veg. Biryani",
+      "categoryNum": 14,
+      "price": 260,
+      "isVeg": true,
+      "isChefSpecial": false
+    },
+    {
+      "itemNumber": 132,
+      "name": "Kaju Paneer Biryani",
+      "category": "veg-biryani",
+      "categoryLabel": "Veg. Biryani",
+      "categoryNum": 14,
+      "price": 300,
+      "isVeg": true,
+      "isChefSpecial": false
+    },
+    {
+      "itemNumber": 133,
+      "name": "Paneer Biryani",
+      "category": "veg-biryani",
+      "categoryLabel": "Veg. Biryani",
+      "categoryNum": 14,
+      "price": 280,
+      "isVeg": true,
+      "isChefSpecial": false
+    },
+    {
+      "itemNumber": 134,
+      "name": "Mushroom Biryani",
+      "category": "veg-biryani",
+      "categoryLabel": "Veg. Biryani",
+      "categoryNum": 14,
+      "price": 280,
+      "isVeg": true,
+      "isChefSpecial": false
+    },
+    {
+      "itemNumber": 135,
+      "name": "Mixed Biryani (Veg.)",
+      "category": "veg-biryani",
+      "categoryLabel": "Veg. Biryani",
+      "categoryNum": 14,
+      "price": 330,
+      "isVeg": true,
+      "isChefSpecial": false
+    },
+    {
+      "itemNumber": 136,
+      "name": "Chicken Mandi (Single)",
+      "category": "arabic-mandi",
+      "categoryLabel": "Arabic Mandi",
+      "categoryNum": 15,
+      "price": 300,
+      "isVeg": false,
+      "isChefSpecial": false,
+      "portionNote": "Single Portion"
+    },
+    {
+      "itemNumber": 137,
+      "name": "Tandoori Mandi (Single)",
+      "category": "arabic-mandi",
+      "categoryLabel": "Arabic Mandi",
+      "categoryNum": 15,
+      "price": 320,
+      "isVeg": false,
+      "isChefSpecial": false,
+      "portionNote": "Single Portion"
+    },
+    {
+      "itemNumber": 138,
+      "name": "Chicken Mandi (Half)",
+      "category": "arabic-mandi",
+      "categoryLabel": "Arabic Mandi",
+      "categoryNum": 15,
+      "price": 500,
+      "isVeg": false,
+      "isChefSpecial": false,
+      "portionNote": "Half Portion"
+    },
+    {
+      "itemNumber": 139,
+      "name": "Chicken Mandi (Full)",
+      "category": "arabic-mandi",
+      "categoryLabel": "Arabic Mandi",
+      "categoryNum": 15,
+      "price": 980,
+      "isVeg": false,
+      "isChefSpecial": false,
+      "portionNote": "Full Portion"
+    },
+    {
+      "itemNumber": 140,
+      "name": "Tandoori Chicken Mandi (Half)",
+      "category": "arabic-mandi",
+      "categoryLabel": "Arabic Mandi",
+      "categoryNum": 15,
+      "price": 550,
+      "isVeg": false,
+      "isChefSpecial": false,
+      "portionNote": "Half Portion"
+    },
+    {
+      "itemNumber": 141,
+      "name": "Tandoori Chicken Mandi (Full)",
+      "category": "arabic-mandi",
+      "categoryLabel": "Arabic Mandi",
+      "categoryNum": 15,
+      "price": 1000,
+      "isVeg": false,
+      "isChefSpecial": false,
+      "portionNote": "Full Portion"
+    },
+    {
+      "itemNumber": 142,
+      "name": "Alfaham Chicken Mandi (Half)",
+      "category": "arabic-mandi",
+      "categoryLabel": "Arabic Mandi",
+      "categoryNum": 15,
+      "price": 580,
+      "isVeg": false,
+      "isChefSpecial": false,
+      "portionNote": "Half Portion"
+    },
+    {
+      "itemNumber": 143,
+      "name": "Alfaham Chicken Mandi (Full)",
+      "category": "arabic-mandi",
+      "categoryLabel": "Arabic Mandi",
+      "categoryNum": 15,
+      "price": 1050,
+      "isVeg": false,
+      "isChefSpecial": false,
+      "portionNote": "Full Portion"
+    },
+    {
+      "itemNumber": 144,
+      "name": "Vaibhav Special Mandi (Half)",
+      "category": "arabic-mandi",
+      "categoryLabel": "Arabic Mandi",
+      "categoryNum": 15,
+      "price": 1050,
+      "isVeg": false,
+      "isChefSpecial": true,
+      "portionNote": "Half Portion"
+    },
+    {
+      "itemNumber": 145,
+      "name": "Vaibhav Special Mandi (Full)",
+      "category": "arabic-mandi",
+      "categoryLabel": "Arabic Mandi",
+      "categoryNum": 15,
+      "price": 1990,
+      "isVeg": false,
+      "isChefSpecial": true,
+      "portionNote": "Full Portion"
+    },
+    {
+      "itemNumber": 146,
+      "name": "Alfaham Juicy Mandi (Half)",
+      "category": "arabic-mandi",
+      "categoryLabel": "Arabic Mandi",
+      "categoryNum": 15,
+      "price": 680,
+      "isVeg": false,
+      "isChefSpecial": true,
+      "portionNote": "Half Portion"
+    },
+    {
+      "itemNumber": 147,
+      "name": "Alfaham Juicy Mandi (Full)",
+      "category": "arabic-mandi",
+      "categoryLabel": "Arabic Mandi",
+      "categoryNum": 15,
+      "price": 1290,
+      "isVeg": false,
+      "isChefSpecial": true,
+      "portionNote": "Full Portion"
+    },
+    {
+      "itemNumber": 148,
+      "name": "Mutton Juicy Mandi (Half)",
+      "category": "arabic-mandi",
+      "categoryLabel": "Arabic Mandi",
+      "categoryNum": 15,
+      "price": 990,
+      "isVeg": false,
+      "isChefSpecial": false,
+      "portionNote": "Half Portion"
+    },
+    {
+      "itemNumber": 149,
+      "name": "Mutton Juicy Mandi (Full)",
+      "category": "arabic-mandi",
+      "categoryLabel": "Arabic Mandi",
+      "categoryNum": 15,
+      "price": 1950,
+      "isVeg": false,
+      "isChefSpecial": false,
+      "portionNote": "Full Portion"
+    },
+    {
+      "itemNumber": 150,
+      "name": "Chicken Fried Rice",
+      "category": "non-veg-fried-rice",
+      "categoryLabel": "Non-Veg. Fried Rice",
+      "categoryNum": 16,
+      "price": 240,
+      "isVeg": false,
+      "isChefSpecial": false
+    },
+    {
+      "itemNumber": 151,
+      "name": "Schezwan Chicken Fried Rice",
+      "category": "non-veg-fried-rice",
+      "categoryLabel": "Non-Veg. Fried Rice",
+      "categoryNum": 16,
+      "price": 260,
+      "isVeg": false,
+      "isChefSpecial": false
+    },
+    {
+      "itemNumber": 152,
+      "name": "Prawns Fried Rice",
+      "category": "non-veg-fried-rice",
+      "categoryLabel": "Non-Veg. Fried Rice",
+      "categoryNum": 16,
+      "price": 320,
+      "isVeg": false,
+      "isChefSpecial": false
+    },
+    {
+      "itemNumber": 153,
+      "name": "Egg Fried Rice",
+      "category": "non-veg-fried-rice",
+      "categoryLabel": "Non-Veg. Fried Rice",
+      "categoryNum": 16,
+      "price": 190,
+      "isVeg": false,
+      "isChefSpecial": false
+    },
+    {
+      "itemNumber": 154,
+      "name": "Schezwan Egg Fried Rice",
+      "category": "non-veg-fried-rice",
+      "categoryLabel": "Non-Veg. Fried Rice",
+      "categoryNum": 16,
+      "price": 210,
+      "isVeg": false,
+      "isChefSpecial": false
+    },
+    {
+      "itemNumber": 155,
+      "name": "Special Chicken Fried Rice",
+      "category": "non-veg-fried-rice",
+      "categoryLabel": "Non-Veg. Fried Rice",
+      "categoryNum": 16,
+      "price": 280,
+      "isVeg": false,
+      "isChefSpecial": false
+    },
+    {
+      "itemNumber": 156,
+      "name": "Veg. Fried Rice",
+      "category": "veg-fried-rice",
+      "categoryLabel": "Veg. Fried Rice",
+      "categoryNum": 17,
+      "price": 170,
+      "isVeg": true,
+      "isChefSpecial": false
+    },
+    {
+      "itemNumber": 157,
+      "name": "Gobi Fried Rice",
+      "category": "veg-fried-rice",
+      "categoryLabel": "Veg. Fried Rice",
+      "categoryNum": 17,
+      "price": 180,
+      "isVeg": true,
+      "isChefSpecial": false
+    },
+    {
+      "itemNumber": 158,
+      "name": "Zeera Rice",
+      "category": "veg-fried-rice",
+      "categoryLabel": "Veg. Fried Rice",
+      "categoryNum": 17,
+      "price": 180,
+      "isVeg": true,
+      "isChefSpecial": false
+    },
+    {
+      "itemNumber": 159,
+      "name": "Ghee Rice",
+      "category": "veg-fried-rice",
+      "categoryLabel": "Veg. Fried Rice",
+      "categoryNum": 17,
+      "price": 210,
+      "isVeg": true,
+      "isChefSpecial": false
+    },
+    {
+      "itemNumber": 160,
+      "name": "Mushroom Fried Rice",
+      "category": "veg-fried-rice",
+      "categoryLabel": "Veg. Fried Rice",
+      "categoryNum": 17,
+      "price": 240,
+      "isVeg": true,
+      "isChefSpecial": false
+    },
+    {
+      "itemNumber": 161,
+      "name": "Paneer Fried Rice",
+      "category": "veg-fried-rice",
+      "categoryLabel": "Veg. Fried Rice",
+      "categoryNum": 17,
+      "price": 240,
+      "isVeg": true,
+      "isChefSpecial": false
+    },
+    {
+      "itemNumber": 162,
+      "name": "Kaju Fried Rice",
+      "category": "veg-fried-rice",
+      "categoryLabel": "Veg. Fried Rice",
+      "categoryNum": 17,
+      "price": 280,
+      "isVeg": true,
+      "isChefSpecial": false
+    },
+    {
+      "itemNumber": 163,
+      "name": "Schezwan Fried Rice",
+      "category": "veg-fried-rice",
+      "categoryLabel": "Veg. Fried Rice",
+      "categoryNum": 17,
+      "price": 230,
+      "isVeg": true,
+      "isChefSpecial": false
+    },
+    {
+      "itemNumber": 164,
+      "name": "Baby Corn Fried Rice",
+      "category": "veg-fried-rice",
+      "categoryLabel": "Veg. Fried Rice",
+      "categoryNum": 17,
+      "price": 240,
+      "isVeg": true,
+      "isChefSpecial": false
+    },
+    {
+      "itemNumber": 165,
+      "name": "Mixed Veg. Fried Rice",
+      "category": "veg-fried-rice",
+      "categoryLabel": "Veg. Fried Rice",
+      "categoryNum": 17,
+      "price": 260,
+      "isVeg": true,
+      "isChefSpecial": false
+    },
+    {
+      "itemNumber": 166,
+      "name": "Dalkichidi",
+      "category": "veg-fried-rice",
+      "categoryLabel": "Veg. Fried Rice",
+      "categoryNum": 17,
+      "price": 220,
+      "isVeg": true,
+      "isChefSpecial": false
+    },
+    {
+      "itemNumber": 167,
+      "name": "Egg Noodles",
+      "category": "non-veg-noodles",
+      "categoryLabel": "Non-Veg. Noodles",
+      "categoryNum": 18,
+      "price": 220,
+      "isVeg": false,
+      "isChefSpecial": false
+    },
+    {
+      "itemNumber": 168,
+      "name": "Schezwan Egg Noodles",
+      "category": "non-veg-noodles",
+      "categoryLabel": "Non-Veg. Noodles",
+      "categoryNum": 18,
+      "price": 240,
+      "isVeg": false,
+      "isChefSpecial": false
+    },
+    {
+      "itemNumber": 169,
+      "name": "Chicken Noodles",
+      "category": "non-veg-noodles",
+      "categoryLabel": "Non-Veg. Noodles",
+      "categoryNum": 18,
+      "price": 260,
+      "isVeg": false,
+      "isChefSpecial": false
+    },
+    {
+      "itemNumber": 170,
+      "name": "Chicken Schezwan Noodles",
+      "category": "non-veg-noodles",
+      "categoryLabel": "Non-Veg. Noodles",
+      "categoryNum": 18,
+      "price": 280,
+      "isVeg": false,
+      "isChefSpecial": false
+    },
+    {
+      "itemNumber": 171,
+      "name": "Prawns Noodles",
+      "category": "non-veg-noodles",
+      "categoryLabel": "Non-Veg. Noodles",
+      "categoryNum": 18,
+      "price": 350,
+      "isVeg": false,
+      "isChefSpecial": false
+    },
+    {
+      "itemNumber": 172,
+      "name": "Veg. Noodles",
+      "category": "veg-noodles",
+      "categoryLabel": "Veg. Noodles",
+      "categoryNum": 19,
+      "price": 200,
+      "isVeg": true,
+      "isChefSpecial": false
+    },
+    {
+      "itemNumber": 173,
+      "name": "Gobi Noodles",
+      "category": "veg-noodles",
+      "categoryLabel": "Veg. Noodles",
+      "categoryNum": 19,
+      "price": 200,
+      "isVeg": true,
+      "isChefSpecial": false
+    },
+    {
+      "itemNumber": 174,
+      "name": "Paneer Noodles",
+      "category": "veg-noodles",
+      "categoryLabel": "Veg. Noodles",
+      "categoryNum": 19,
+      "price": 250,
+      "isVeg": true,
+      "isChefSpecial": false
+    },
+    {
+      "itemNumber": 175,
+      "name": "Mushroom Noodles",
+      "category": "veg-noodles",
+      "categoryLabel": "Veg. Noodles",
+      "categoryNum": 19,
+      "price": 250,
+      "isVeg": true,
+      "isChefSpecial": false
+    },
+    {
+      "itemNumber": 176,
+      "name": "Manchurian Noodles",
+      "category": "veg-noodles",
+      "categoryLabel": "Veg. Noodles",
+      "categoryNum": 19,
+      "price": 260,
+      "isVeg": true,
+      "isChefSpecial": false
+    },
+    {
+      "itemNumber": 177,
+      "name": "Veg. Hakka Noodles",
+      "category": "veg-noodles",
+      "categoryLabel": "Veg. Noodles",
+      "categoryNum": 19,
+      "price": 250,
+      "isVeg": true,
+      "isChefSpecial": false
+    },
+    {
+      "itemNumber": 178,
+      "name": "Veg. Pulav",
+      "category": "veg-pulavs",
+      "categoryLabel": "Veg. Pulavs",
+      "categoryNum": 20,
+      "price": 200,
+      "isVeg": true,
+      "isChefSpecial": false
+    },
+    {
+      "itemNumber": 179,
+      "name": "Kaju Pulav",
+      "category": "veg-pulavs",
+      "categoryLabel": "Veg. Pulavs",
+      "categoryNum": 20,
+      "price": 280,
+      "isVeg": true,
+      "isChefSpecial": false
+    },
+    {
+      "itemNumber": 180,
+      "name": "Paneer Pulav",
+      "category": "veg-pulavs",
+      "categoryLabel": "Veg. Pulavs",
+      "categoryNum": 20,
+      "price": 280,
+      "isVeg": true,
+      "isChefSpecial": false
+    },
+    {
+      "itemNumber": 181,
+      "name": "Mushroom Pulav",
+      "category": "veg-pulavs",
+      "categoryLabel": "Veg. Pulavs",
+      "categoryNum": 20,
+      "price": 280,
+      "isVeg": true,
+      "isChefSpecial": false
+    },
+    {
+      "itemNumber": 182,
+      "name": "Tandoori Roti",
+      "category": "indian-breads",
+      "categoryLabel": "Indian Breads",
+      "categoryNum": 21,
+      "price": 30,
+      "isVeg": true,
+      "isChefSpecial": false
+    },
+    {
+      "itemNumber": 183,
+      "name": "Butter Roti",
+      "category": "indian-breads",
+      "categoryLabel": "Indian Breads",
+      "categoryNum": 21,
+      "price": 35,
+      "isVeg": true,
+      "isChefSpecial": false
+    },
+    {
+      "itemNumber": 184,
+      "name": "Plain Naan",
+      "category": "indian-breads",
+      "categoryLabel": "Indian Breads",
+      "categoryNum": 21,
+      "price": 55,
+      "isVeg": true,
+      "isChefSpecial": false
+    },
+    {
+      "itemNumber": 185,
+      "name": "Butter Naan",
+      "category": "indian-breads",
+      "categoryLabel": "Indian Breads",
+      "categoryNum": 21,
+      "price": 65,
+      "isVeg": true,
+      "isChefSpecial": false
+    },
+    {
+      "itemNumber": 186,
+      "name": "Garlic Naan",
+      "category": "indian-breads",
+      "categoryLabel": "Indian Breads",
+      "categoryNum": 21,
+      "price": 70,
+      "isVeg": true,
+      "isChefSpecial": false
+    },
+    {
+      "itemNumber": 187,
+      "name": "Rumali Roti",
+      "category": "indian-breads",
+      "categoryLabel": "Indian Breads",
+      "categoryNum": 21,
+      "price": 55,
+      "isVeg": true,
+      "isChefSpecial": false
+    },
+    {
+      "itemNumber": 188,
+      "name": "Kulcha",
+      "category": "indian-breads",
+      "categoryLabel": "Indian Breads",
+      "categoryNum": 21,
+      "price": 50,
+      "isVeg": true,
+      "isChefSpecial": false
+    },
+    {
+      "itemNumber": 189,
+      "name": "Butter Kulcha",
+      "category": "indian-breads",
+      "categoryLabel": "Indian Breads",
+      "categoryNum": 21,
+      "price": 55,
+      "isVeg": true,
+      "isChefSpecial": false
+    },
+    {
+      "itemNumber": 190,
+      "name": "Onion Kulcha",
+      "category": "indian-breads",
+      "categoryLabel": "Indian Breads",
+      "categoryNum": 21,
+      "price": 70,
+      "isVeg": true,
+      "isChefSpecial": false
+    },
+    {
+      "itemNumber": 191,
+      "name": "Masala Kulcha",
+      "category": "indian-breads",
+      "categoryLabel": "Indian Breads",
+      "categoryNum": 21,
+      "price": 90,
+      "isVeg": true,
+      "isChefSpecial": false
+    },
+    {
+      "itemNumber": 192,
+      "name": "Paneer Kulcha",
+      "category": "indian-breads",
+      "categoryLabel": "Indian Breads",
+      "categoryNum": 21,
+      "price": 90,
+      "isVeg": true,
+      "isChefSpecial": false
+    },
+    {
+      "itemNumber": 193,
+      "name": "Aloo Parota",
+      "category": "indian-breads",
+      "categoryLabel": "Indian Breads",
+      "categoryNum": 21,
+      "price": 90,
+      "isVeg": true,
+      "isChefSpecial": false
+    },
+    {
+      "itemNumber": 194,
+      "name": "Parota",
+      "category": "indian-breads",
+      "categoryLabel": "Indian Breads",
+      "categoryNum": 21,
+      "price": 50,
+      "isVeg": true,
+      "isChefSpecial": false
+    },
+    {
+      "itemNumber": 195,
+      "name": "Plain Papad",
+      "category": "indian-breads",
+      "categoryLabel": "Indian Breads",
+      "categoryNum": 21,
+      "price": 40,
+      "isVeg": true,
+      "isChefSpecial": false
+    },
+    {
+      "itemNumber": 196,
+      "name": "Masala Papad",
+      "category": "indian-breads",
+      "categoryLabel": "Indian Breads",
+      "categoryNum": 21,
+      "price": 80,
+      "isVeg": true,
+      "isChefSpecial": false
+    },
+    {
+      "itemNumber": 197,
+      "name": "Kadai Veg.",
+      "category": "veg-curries",
+      "categoryLabel": "Veg. Curries",
+      "categoryNum": 22,
+      "price": 250,
+      "isVeg": true,
+      "isChefSpecial": false
+    },
+    {
+      "itemNumber": 198,
+      "name": "Mixed Veg. Curry",
+      "category": "veg-curries",
+      "categoryLabel": "Veg. Curries",
+      "categoryNum": 22,
+      "price": 240,
+      "isVeg": true,
+      "isChefSpecial": false
+    },
+    {
+      "itemNumber": 199,
+      "name": "Veg. Mughlai Curry",
+      "category": "veg-curries",
+      "categoryLabel": "Veg. Curries",
+      "categoryNum": 22,
+      "price": 280,
+      "isVeg": true,
+      "isChefSpecial": false
+    },
+    {
+      "itemNumber": 200,
+      "name": "Veg. Kofta Curry",
+      "category": "veg-curries",
+      "categoryLabel": "Veg. Curries",
+      "categoryNum": 22,
+      "price": 270,
+      "isVeg": true,
+      "isChefSpecial": false
+    },
+    {
+      "itemNumber": 201,
+      "name": "Malai Kofta Curry",
+      "category": "veg-curries",
+      "categoryLabel": "Veg. Curries",
+      "categoryNum": 22,
+      "price": 250,
+      "isVeg": true,
+      "isChefSpecial": false
+    },
+    {
+      "itemNumber": 202,
+      "name": "Shahi Paneer",
+      "category": "veg-curries",
+      "categoryLabel": "Veg. Curries",
+      "categoryNum": 22,
+      "price": 270,
+      "isVeg": true,
+      "isChefSpecial": false
+    },
+    {
+      "itemNumber": 203,
+      "name": "Paneer Butter Masala",
+      "category": "veg-curries",
+      "categoryLabel": "Veg. Curries",
+      "categoryNum": 22,
+      "price": 250,
+      "isVeg": true,
+      "isChefSpecial": false
+    },
+    {
+      "itemNumber": 204,
+      "name": "Kadai Paneer",
+      "category": "veg-curries",
+      "categoryLabel": "Veg. Curries",
+      "categoryNum": 22,
+      "price": 280,
+      "isVeg": true,
+      "isChefSpecial": false
+    },
+    {
+      "itemNumber": 205,
+      "name": "Methi Chaman",
+      "category": "veg-curries",
+      "categoryLabel": "Veg. Curries",
+      "categoryNum": 22,
+      "price": 270,
+      "isVeg": true,
+      "isChefSpecial": false
+    },
+    {
+      "itemNumber": 206,
+      "name": "Kaju Paneer Masala",
+      "category": "veg-curries",
+      "categoryLabel": "Veg. Curries",
+      "categoryNum": 22,
+      "price": 280,
+      "isVeg": true,
+      "isChefSpecial": false
+    },
+    {
+      "itemNumber": 207,
+      "name": "Kaju Masala Curry",
+      "category": "veg-curries",
+      "categoryLabel": "Veg. Curries",
+      "categoryNum": 22,
+      "price": 280,
+      "isVeg": true,
+      "isChefSpecial": false
+    },
+    {
+      "itemNumber": 208,
+      "name": "Mutter Paneer",
+      "category": "veg-curries",
+      "categoryLabel": "Veg. Curries",
+      "categoryNum": 22,
+      "price": 280,
+      "isVeg": true,
+      "isChefSpecial": false
+    },
+    {
+      "itemNumber": 209,
+      "name": "Aloo Gobi",
+      "category": "veg-curries",
+      "categoryLabel": "Veg. Curries",
+      "categoryNum": 22,
+      "price": 180,
+      "isVeg": true,
+      "isChefSpecial": false
+    },
+    {
+      "itemNumber": 210,
+      "name": "Aloo Mutter",
+      "category": "veg-curries",
+      "categoryLabel": "Veg. Curries",
+      "categoryNum": 22,
+      "price": 200,
+      "isVeg": true,
+      "isChefSpecial": false
+    },
+    {
+      "itemNumber": 211,
+      "name": "Aloo Palak",
+      "category": "veg-curries",
+      "categoryLabel": "Veg. Curries",
+      "categoryNum": 22,
+      "price": 260,
+      "isVeg": true,
+      "isChefSpecial": false
+    },
+    {
+      "itemNumber": 212,
+      "name": "Paneer Kheema Masala",
+      "category": "veg-curries",
+      "categoryLabel": "Veg. Curries",
+      "categoryNum": 22,
+      "price": 280,
+      "isVeg": true,
+      "isChefSpecial": false
+    },
+    {
+      "itemNumber": 213,
+      "name": "Palak Paneer",
+      "category": "veg-curries",
+      "categoryLabel": "Veg. Curries",
+      "categoryNum": 22,
+      "price": 270,
+      "isVeg": true,
+      "isChefSpecial": false
+    },
+    {
+      "itemNumber": 214,
+      "name": "Plain Palak",
+      "category": "veg-curries",
+      "categoryLabel": "Veg. Curries",
+      "categoryNum": 22,
+      "price": 220,
+      "isVeg": true,
+      "isChefSpecial": false
+    },
+    {
+      "itemNumber": 215,
+      "name": "Methi Paneer",
+      "category": "veg-curries",
+      "categoryLabel": "Veg. Curries",
+      "categoryNum": 22,
+      "price": 280,
+      "isVeg": true,
+      "isChefSpecial": false
+    },
+    {
+      "itemNumber": 216,
+      "name": "Paneer Tikka Masala",
+      "category": "veg-curries",
+      "categoryLabel": "Veg. Curries",
+      "categoryNum": 22,
+      "price": 290,
+      "isVeg": true,
+      "isChefSpecial": false
+    },
+    {
+      "itemNumber": 217,
+      "name": "Dal Fry",
+      "category": "veg-curries",
+      "categoryLabel": "Veg. Curries",
+      "categoryNum": 22,
+      "price": 200,
+      "isVeg": true,
+      "isChefSpecial": false
+    },
+    {
+      "itemNumber": 218,
+      "name": "Dal Tadka",
+      "category": "veg-curries",
+      "categoryLabel": "Veg. Curries",
+      "categoryNum": 22,
+      "price": 220,
+      "isVeg": true,
+      "isChefSpecial": false
+    },
+    {
+      "itemNumber": 219,
+      "name": "Kadai Mushroom",
+      "category": "veg-curries",
+      "categoryLabel": "Veg. Curries",
+      "categoryNum": 22,
+      "price": 280,
+      "isVeg": true,
+      "isChefSpecial": false
+    },
+    {
+      "itemNumber": 220,
+      "name": "Mushroom Masala",
+      "category": "veg-curries",
+      "categoryLabel": "Veg. Curries",
+      "categoryNum": 22,
+      "price": 250,
+      "isVeg": true,
+      "isChefSpecial": false
+    },
+    {
+      "itemNumber": 221,
+      "name": "Baby Corn Masala",
+      "category": "veg-curries",
+      "categoryLabel": "Veg. Curries",
+      "categoryNum": 22,
+      "price": 260,
+      "isVeg": true,
+      "isChefSpecial": false
+    },
+    {
+      "itemNumber": 222,
+      "name": "Paneer Makhani",
+      "category": "veg-curries",
+      "categoryLabel": "Veg. Curries",
+      "categoryNum": 22,
+      "price": 280,
+      "isVeg": true,
+      "isChefSpecial": false
+    },
+    {
+      "itemNumber": 223,
+      "name": "Chicken Curry (Bone)",
+      "category": "chicken-curries",
+      "categoryLabel": "Chicken Curries",
+      "categoryNum": 23,
+      "price": 240,
+      "isVeg": false,
+      "isChefSpecial": false,
+      "portionNote": "With Bone"
+    },
+    {
+      "itemNumber": 224,
+      "name": "Chicken Curry (Boneless)",
+      "category": "chicken-curries",
+      "categoryLabel": "Chicken Curries",
+      "categoryNum": 23,
+      "price": 290,
+      "isVeg": false,
+      "isChefSpecial": false,
+      "portionNote": "Boneless"
+    },
+    {
+      "itemNumber": 225,
+      "name": "Andhra Chicken Curry (Spicy)",
+      "category": "chicken-curries",
+      "categoryLabel": "Chicken Curries",
+      "categoryNum": 23,
+      "price": 260,
+      "isVeg": false,
+      "isChefSpecial": false,
+      "portionNote": "Chef Spicy Style"
+    },
+    {
+      "itemNumber": 226,
+      "name": "Chicken Rayalaseema",
+      "category": "chicken-curries",
+      "categoryLabel": "Chicken Curries",
+      "categoryNum": 23,
+      "price": 280,
+      "isVeg": false,
+      "isChefSpecial": false
+    },
+    {
+      "itemNumber": 227,
+      "name": "Special Chicken Curry",
+      "category": "chicken-curries",
+      "categoryLabel": "Chicken Curries",
+      "categoryNum": 23,
+      "price": 280,
+      "isVeg": false,
+      "isChefSpecial": false
+    },
+    {
+      "itemNumber": 228,
+      "name": "Kadai Chicken",
+      "category": "chicken-curries",
+      "categoryLabel": "Chicken Curries",
+      "categoryNum": 23,
+      "price": 280,
+      "isVeg": false,
+      "isChefSpecial": false
+    },
+    {
+      "itemNumber": 229,
+      "name": "Butter Chicken",
+      "category": "chicken-curries",
+      "categoryLabel": "Chicken Curries",
+      "categoryNum": 23,
+      "price": 280,
+      "isVeg": false,
+      "isChefSpecial": false
+    },
+    {
+      "itemNumber": 230,
+      "name": "Chicken Murgh Masala",
+      "category": "chicken-curries",
+      "categoryLabel": "Chicken Curries",
+      "categoryNum": 23,
+      "price": 300,
+      "isVeg": false,
+      "isChefSpecial": false
+    },
+    {
+      "itemNumber": 231,
+      "name": "Chicken Kheema Curry",
+      "category": "chicken-curries",
+      "categoryLabel": "Chicken Curries",
+      "categoryNum": 23,
+      "price": 320,
+      "isVeg": false,
+      "isChefSpecial": false
+    },
+    {
+      "itemNumber": 232,
+      "name": "Chicken Tikka Masala",
+      "category": "chicken-curries",
+      "categoryLabel": "Chicken Curries",
+      "categoryNum": 23,
+      "price": 320,
+      "isVeg": false,
+      "isChefSpecial": false
+    },
+    {
+      "itemNumber": 233,
+      "name": "Wings Masala",
+      "category": "chicken-curries",
+      "categoryLabel": "Chicken Curries",
+      "categoryNum": 23,
+      "price": 320,
+      "isVeg": false,
+      "isChefSpecial": false
+    },
+    {
+      "itemNumber": 234,
+      "name": "Chicken Mughalai Curry",
+      "category": "chicken-curries",
+      "categoryLabel": "Chicken Curries",
+      "categoryNum": 23,
+      "price": 320,
+      "isVeg": false,
+      "isChefSpecial": false
+    },
+    {
+      "itemNumber": 235,
+      "name": "Kaju Chicken Curry",
+      "category": "chicken-curries",
+      "categoryLabel": "Chicken Curries",
+      "categoryNum": 23,
+      "price": 350,
+      "isVeg": false,
+      "isChefSpecial": false
+    },
+    {
+      "itemNumber": 236,
+      "name": "Methi Chicken (Bone)",
+      "category": "chicken-curries",
+      "categoryLabel": "Chicken Curries",
+      "categoryNum": 23,
+      "price": 290,
+      "isVeg": false,
+      "isChefSpecial": false,
+      "portionNote": "With Bone"
+    },
+    {
+      "itemNumber": 237,
+      "name": "Methi Chicken (Boneless)",
+      "category": "chicken-curries",
+      "categoryLabel": "Chicken Curries",
+      "categoryNum": 23,
+      "price": 340,
+      "isVeg": false,
+      "isChefSpecial": false,
+      "portionNote": "Boneless"
+    },
+    {
+      "itemNumber": 238,
+      "name": "Punjabi Chicken Curry",
+      "category": "chicken-curries",
+      "categoryLabel": "Chicken Curries",
+      "categoryNum": 23,
+      "price": 320,
+      "isVeg": false,
+      "isChefSpecial": false
+    },
+    {
+      "itemNumber": 239,
+      "name": "Afgani Chicken (Rambha)",
+      "category": "chicken-curries",
+      "categoryLabel": "Chicken Curries",
+      "categoryNum": 23,
+      "price": 320,
+      "isVeg": false,
+      "isChefSpecial": false
+    },
+    {
+      "itemNumber": 240,
+      "name": "Palak Mutton",
+      "category": "mutton-curry",
+      "categoryLabel": "Mutton Curry",
+      "categoryNum": 24,
+      "price": 350,
+      "isVeg": false,
+      "isChefSpecial": false
+    },
+    {
+      "itemNumber": 241,
+      "name": "Gongura Mutton",
+      "category": "mutton-curry",
+      "categoryLabel": "Mutton Curry",
+      "categoryNum": 24,
+      "price": 370,
+      "isVeg": false,
+      "isChefSpecial": false
+    },
+    {
+      "itemNumber": 242,
+      "name": "Mutton Curry",
+      "category": "mutton-curry",
+      "categoryLabel": "Mutton Curry",
+      "categoryNum": 24,
+      "price": 360,
+      "isVeg": false,
+      "isChefSpecial": false
+    },
+    {
+      "itemNumber": 243,
+      "name": "Kaju Mutton Curry",
+      "category": "mutton-curry",
+      "categoryLabel": "Mutton Curry",
+      "categoryNum": 24,
+      "price": 450,
+      "isVeg": false,
+      "isChefSpecial": false
+    },
+    {
+      "itemNumber": 244,
+      "name": "Methi Mutton",
+      "category": "mutton-curry",
+      "categoryLabel": "Mutton Curry",
+      "categoryNum": 24,
+      "price": 350,
+      "isVeg": false,
+      "isChefSpecial": false
+    },
+    {
+      "itemNumber": 245,
+      "name": "Vanilla Milkshake",
+      "category": "milkshakes",
+      "categoryLabel": "Milkshakes",
+      "categoryNum": 25,
+      "price": 130,
+      "isVeg": true,
+      "isChefSpecial": false
+    },
+    {
+      "itemNumber": 246,
+      "name": "Butterscotch Milkshake",
+      "category": "milkshakes",
+      "categoryLabel": "Milkshakes",
+      "categoryNum": 25,
+      "price": 140,
+      "isVeg": true,
+      "isChefSpecial": false
+    },
+    {
+      "itemNumber": 247,
+      "name": "Chocolate Milkshake",
+      "category": "milkshakes",
+      "categoryLabel": "Milkshakes",
+      "categoryNum": 25,
+      "price": 140,
+      "isVeg": true,
+      "isChefSpecial": false
+    },
+    {
+      "itemNumber": 248,
+      "name": "Oreo Milkshake",
+      "category": "milkshakes",
+      "categoryLabel": "Milkshakes",
+      "categoryNum": 25,
+      "price": 170,
+      "isVeg": true,
+      "isChefSpecial": false
+    },
+    {
+      "itemNumber": 249,
+      "name": "KitKat Milkshake",
+      "category": "milkshakes",
+      "categoryLabel": "Milkshakes",
+      "categoryNum": 25,
+      "price": 170,
+      "isVeg": true,
+      "isChefSpecial": false
+    },
+    {
+      "itemNumber": 250,
+      "name": "Butter Milk",
+      "category": "beverages",
+      "categoryLabel": "Beverages",
+      "categoryNum": 26,
+      "price": 50,
+      "isVeg": true,
+      "isChefSpecial": false
+    },
+    {
+      "itemNumber": 251,
+      "name": "Sweet Lassi",
+      "category": "beverages",
+      "categoryLabel": "Beverages",
+      "categoryNum": 26,
+      "price": 80,
+      "isVeg": true,
+      "isChefSpecial": false
+    },
+    {
+      "itemNumber": 252,
+      "name": "Lassi",
+      "category": "beverages",
+      "categoryLabel": "Beverages",
+      "categoryNum": 26,
+      "price": 80,
+      "isVeg": true,
+      "isChefSpecial": false
+    },
+    {
+      "itemNumber": 253,
+      "name": "Lemon Soda Sweet & Salt",
+      "category": "beverages",
+      "categoryLabel": "Beverages",
+      "categoryNum": 26,
+      "price": 80,
+      "isVeg": true,
+      "isChefSpecial": false
+    },
+    {
+      "itemNumber": 254,
+      "name": "Lemon Juice",
+      "category": "beverages",
+      "categoryLabel": "Beverages",
+      "categoryNum": 26,
+      "price": 70,
+      "isVeg": true,
+      "isChefSpecial": false
+    },
+    {
+      "itemNumber": 255,
+      "name": "Water 1 litre",
+      "category": "beverages",
+      "categoryLabel": "Beverages",
+      "categoryNum": 26,
+      "price": 20,
+      "isVeg": true,
+      "isChefSpecial": false
+    },
+    {
+      "itemNumber": 256,
+      "name": "Thumbs Up 250 ml",
+      "category": "beverages",
+      "categoryLabel": "Beverages",
+      "categoryNum": 26,
+      "price": 20,
+      "isVeg": true,
+      "isChefSpecial": false
+    },
+    {
+      "itemNumber": 257,
+      "name": "Sprite 250 ml",
+      "category": "beverages",
+      "categoryLabel": "Beverages",
+      "categoryNum": 26,
+      "price": 20,
+      "isVeg": true,
+      "isChefSpecial": false
+    },
+    {
+      "itemNumber": 258,
+      "name": "Coco Cola 250 ml",
+      "category": "beverages",
+      "categoryLabel": "Beverages",
+      "categoryNum": 26,
+      "price": 20,
+      "isVeg": true,
+      "isChefSpecial": false
+    },
+    {
+      "itemNumber": 259,
+      "name": "Goli Soda",
+      "category": "beverages",
+      "categoryLabel": "Beverages",
+      "categoryNum": 26,
+      "price": 30,
+      "isVeg": true,
+      "isChefSpecial": false
+    },
+    {
+      "itemNumber": 260,
+      "name": "Blue Lagoon Mocktail",
+      "category": "mocktails",
+      "categoryLabel": "Mocktails",
+      "categoryNum": 27,
+      "price": 130,
+      "isVeg": true,
+      "isChefSpecial": false
+    },
+    {
+      "itemNumber": 261,
+      "name": "Green Mint Mocktail",
+      "category": "mocktails",
+      "categoryLabel": "Mocktails",
+      "categoryNum": 27,
+      "price": 130,
+      "isVeg": true,
+      "isChefSpecial": false
+    },
+    {
+      "itemNumber": 262,
+      "name": "Naughty Water Melon Mocktail",
+      "category": "mocktails",
+      "categoryLabel": "Mocktails",
+      "categoryNum": 27,
+      "price": 150,
+      "isVeg": true,
+      "isChefSpecial": false
+    },
+    {
+      "itemNumber": 263,
+      "name": "Orange Mocktail",
+      "category": "mocktails",
+      "categoryLabel": "Mocktails",
+      "categoryNum": 27,
+      "price": 130,
+      "isVeg": true,
+      "isChefSpecial": false
+    },
+    {
+      "itemNumber": 264,
+      "name": "Gulab Jamun",
+      "category": "desserts",
+      "categoryLabel": "Desserts",
+      "categoryNum": 28,
+      "price": 60,
+      "isVeg": true,
+      "isChefSpecial": false
+    },
+    {
+      "itemNumber": 265,
+      "name": "Gulab Jamun with Ice Cream",
+      "category": "desserts",
+      "categoryLabel": "Desserts",
+      "categoryNum": 28,
+      "price": 150,
+      "isVeg": true,
+      "isChefSpecial": false
+    },
+    {
+      "itemNumber": 266,
+      "name": "Double Ka Meeta",
+      "category": "desserts",
+      "categoryLabel": "Desserts",
+      "categoryNum": 28,
+      "price": 100,
+      "isVeg": true,
+      "isChefSpecial": false
+    },
+    {
+      "itemNumber": 267,
+      "name": "Badham Kheer",
+      "category": "desserts",
+      "categoryLabel": "Desserts",
+      "categoryNum": 28,
+      "price": 100,
+      "isVeg": true,
+      "isChefSpecial": false
+    },
+    {
+      "itemNumber": 268,
+      "name": "Vanilla",
+      "category": "ice-creams",
+      "categoryLabel": "Ice Creams",
+      "categoryNum": 29,
+      "price": 90,
+      "isVeg": true,
+      "isChefSpecial": false
+    },
+    {
+      "itemNumber": 269,
+      "name": "Butterscotch",
+      "category": "ice-creams",
+      "categoryLabel": "Ice Creams",
+      "categoryNum": 29,
+      "price": 90,
+      "isVeg": true,
+      "isChefSpecial": false
+    },
+    {
+      "itemNumber": 270,
+      "name": "Strawberry",
+      "category": "ice-creams",
+      "categoryLabel": "Ice Creams",
+      "categoryNum": 29,
+      "price": 90,
+      "isVeg": true,
+      "isChefSpecial": false
+    },
+    {
+      "itemNumber": 271,
+      "name": "Black Current",
+      "category": "ice-creams",
+      "categoryLabel": "Ice Creams",
+      "categoryNum": 29,
+      "price": 120,
+      "isVeg": true,
+      "isChefSpecial": false
+    },
+    {
+      "itemNumber": 272,
+      "name": "Chocolate",
+      "category": "ice-creams",
+      "categoryLabel": "Ice Creams",
+      "categoryNum": 29,
+      "price": 110,
+      "isVeg": true,
+      "isChefSpecial": false
+    },
+    {
+      "itemNumber": 273,
+      "name": "Chicken Mandi Bucket Half",
+      "category": "bucket-biryani",
+      "categoryLabel": "Bucket Biryani (Portions)",
+      "categoryNum": 30,
+      "price": 550,
+      "isVeg": false,
+      "isChefSpecial": false,
+      "portionNote": "Party Bucket (Serves 2–3)"
+    },
+    {
+      "itemNumber": 274,
+      "name": "Chicken Mandi Bucket Full",
+      "category": "bucket-biryani",
+      "categoryLabel": "Bucket Biryani (Portions)",
+      "categoryNum": 30,
+      "price": 1000,
+      "isVeg": false,
+      "isChefSpecial": false,
+      "portionNote": "Jumbo Bucket (Serves 5–6)"
+    },
+    {
+      "itemNumber": 275,
+      "name": "Alfaham Mandi Bucket Half",
+      "category": "bucket-biryani",
+      "categoryLabel": "Bucket Biryani (Portions)",
+      "categoryNum": 30,
+      "price": 600,
+      "isVeg": false,
+      "isChefSpecial": false,
+      "portionNote": "Party Bucket (Serves 2–3)"
+    },
+    {
+      "itemNumber": 276,
+      "name": "Alfaham Mandi Bucket Full",
+      "category": "bucket-biryani",
+      "categoryLabel": "Bucket Biryani (Portions)",
+      "categoryNum": 30,
+      "price": 1100,
+      "isVeg": false,
+      "isChefSpecial": false,
+      "portionNote": "Jumbo Bucket (Serves 5–6)"
+    },
+    {
+      "itemNumber": 277,
+      "name": "Tandoori Chicken Mandi Bucket Half",
+      "category": "bucket-biryani",
+      "categoryLabel": "Bucket Biryani (Portions)",
+      "categoryNum": 30,
+      "price": 550,
+      "isVeg": false,
+      "isChefSpecial": false,
+      "portionNote": "Party Bucket (Serves 2–3)"
+    },
+    {
+      "itemNumber": 278,
+      "name": "Tandoori Chicken Mandi Bucket Full",
+      "category": "bucket-biryani",
+      "categoryLabel": "Bucket Biryani (Portions)",
+      "categoryNum": 30,
+      "price": 1000,
+      "isVeg": false,
+      "isChefSpecial": false,
+      "portionNote": "Jumbo Bucket (Serves 5–6)"
+    },
+    {
+      "itemNumber": 279,
+      "name": "Alfaham Juicy Mandi Bucket Half",
+      "category": "bucket-biryani",
+      "categoryLabel": "Bucket Biryani (Portions)",
+      "categoryNum": 30,
+      "price": 630,
+      "isVeg": false,
+      "isChefSpecial": true,
+      "portionNote": "Party Bucket (Serves 2–3)"
+    },
+    {
+      "itemNumber": 280,
+      "name": "Alfaham Juicy Mandi Bucket Full",
+      "category": "bucket-biryani",
+      "categoryLabel": "Bucket Biryani (Portions)",
+      "categoryNum": 30,
+      "price": 1290,
+      "isVeg": false,
+      "isChefSpecial": true,
+      "portionNote": "Jumbo Bucket (Serves 5–6)"
+    },
+    {
+      "itemNumber": 281,
+      "name": "Family Chicken Dum Biryani Half",
+      "category": "bucket-biryani",
+      "categoryLabel": "Bucket Biryani (Portions)",
+      "categoryNum": 30,
+      "price": 600,
+      "isVeg": false,
+      "isChefSpecial": false,
+      "portionNote": "Party Bucket (Serves 2–3)"
+    },
+    {
+      "itemNumber": 282,
+      "name": "Family Chicken Dum Biryani Full",
+      "category": "bucket-biryani",
+      "categoryLabel": "Bucket Biryani (Portions)",
+      "categoryNum": 30,
+      "price": 1100,
+      "isVeg": false,
+      "isChefSpecial": false,
+      "portionNote": "Jumbo Bucket (Serves 5–6)"
+    },
+    {
+      "itemNumber": 283,
+      "name": "Mutton Dum Biryani Half",
+      "category": "bucket-biryani",
+      "categoryLabel": "Bucket Biryani (Portions)",
+      "categoryNum": 30,
+      "price": 990,
+      "isVeg": false,
+      "isChefSpecial": false,
+      "portionNote": "Party Bucket (Serves 2–3)"
+    },
+    {
+      "itemNumber": 284,
+      "name": "Mutton Dum Biryani Full",
+      "category": "bucket-biryani",
+      "categoryLabel": "Bucket Biryani (Portions)",
+      "categoryNum": 30,
+      "price": 1990,
+      "isVeg": false,
+      "isChefSpecial": false,
+      "portionNote": "Jumbo Bucket (Serves 5–6)"
+    }
+  ]
+}

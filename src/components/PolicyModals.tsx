@@ -59,10 +59,10 @@ export const PolicyModal: React.FC<ModalProps> = ({ isOpen, onClose, title, type
                 At <strong>{RESTAURANT_INFO.name}</strong>, we respect your privacy and are committed to protecting any personal details you share with us.
               </p>
               <p className="font-bold text-[#2E4823] text-base pt-2">
-                1. Information Collection
+                1. Information Collection &amp; Direct Orders
               </p>
               <p>
-                We only collect information necessary to fulfill table reservations, handle takeaway phone inquiries, and facilitate delivery through authorized third-party platforms (Swiggy and Zomato).
+                We collect your name, phone number, delivery address and coordinates, and customer-entered UPI reference number solely for order fulfillment and payment matching. This information is strictly accessible only to authorized restaurant staff. All direct order records are permanently deleted after 90 days. We also handle table reservations and facilitate deliveries through authorized third-party platforms (Swiggy and Zomato).
               </p>
               <p className="font-bold text-[#2E4823] text-base pt-2">
                 2. Third-Party Deliveries

@@ -21,6 +21,9 @@ import { ReviewsPage } from './pages/ReviewsPage';
 import { GalleryPage } from './pages/GalleryPage';
 import { ContactPage } from './pages/ContactPage';
 import { NotFoundPage } from './pages/NotFoundPage';
+import { FlashOfferBanner } from './components/FlashOfferBanner';
+import { TopUtilityBar } from './components/TopUtilityBar';
+import { AdminDashboard } from './pages/AdminDashboard';
 
 export interface RouteOutletContext {
   onOpenOrderModal: () => void;
@@ -116,6 +119,11 @@ export const NotFoundPageWrapper: React.FC = () => {
   return <NotFoundPage onBackHome={onNavigateHome} />;
 };
 
+export const AdminPageWrapper: React.FC = () => {
+  const { onNavigateHome } = useAppOutletContext();
+  return <AdminDashboard onBackToSite={onNavigateHome} />;
+};
+
 export default function App() {
   const [privacyOpen, setPrivacyOpen] = useState<boolean>(false);
   const [termsOpen, setTermsOpen] = useState<boolean>(false);
@@ -128,12 +136,14 @@ export default function App() {
   const location = useLocation();
   const navigate = useNavigate();
 
+  const isMenuPage = location.pathname === '/menu';
+
   // Scroll to top on route transition
   useEffect(() => {
     if (typeof window !== 'undefined') {
       window.scrollTo({ top: 0, behavior: 'instant' });
     }
-  }, [location.pathname]);
+  }, [location.pathname, location.hash]);
 
   // Derive active page identifier for navbar indicator
   const cleanPath = location.pathname.replace(/^\//, '').toLowerCase();
@@ -149,6 +159,18 @@ export default function App() {
     navigate(target);
   };
 
+  // Check if accessing Owner Admin via /admin or #admin
+  const isHashAdmin = typeof window !== 'undefined' && window.location.hash === '#admin';
+  const isAdminRoute = location.pathname === '/admin' || location.hash === '#admin' || isHashAdmin;
+
+  if (isAdminRoute) {
+    return (
+      <HelmetProvider>
+        <AdminDashboard onBackToSite={() => handleNavigate('/')} />
+      </HelmetProvider>
+    );
+  }
+
   const outletContext: RouteOutletContext = {
     onOpenOrderModal: () => setOrderOpen(true),
     onOpenBookModal: () => setBookOpen(true),
@@ -160,16 +182,25 @@ export default function App() {
     <HelmetProvider>
       <SmoothScrollProvider>
         <div className="min-h-screen bg-[#FDFBF7] text-[#1C1C1C] flex flex-col selection:bg-[#2E4823] selection:text-[#FDFBF7]">
+          {/* Top Utility Bar (scrolls away naturally) */}
+          <TopUtilityBar />
+
+          {/* Unified Sticky Header Container: Holds Offer Banner + Main Navbar with zero overlap */}
+          <header className="sticky top-0 z-50 w-full shadow-xs">
+            {/* Time-Limited Flash Offer Banner with live countdown */}
+            <FlashOfferBanner onExploreOffers={() => handleNavigate('/menu')} />
+
+            {/* 1. Header Navigation with Red Onion NYC style Pages */}
+            <Navbar
+              currentPage={currentPage}
+              onNavigate={handleNavigate}
+              onOpenOrderModal={() => setOrderOpen(true)}
+              onOpenBookModal={() => setBookOpen(true)}
+            />
+          </header>
+
           {/* Luxury Butter Smooth Scroll Reading Progress Indicator */}
           <ScrollProgressBar />
-
-          {/* 1. Header Navigation with Red Onion NYC style Pages */}
-          <Navbar
-            currentPage={currentPage}
-            onNavigate={handleNavigate}
-            onOpenOrderModal={() => setOrderOpen(true)}
-            onOpenBookModal={() => setBookOpen(true)}
-          />
 
           {/* 2. Main Page Views rendered via Router Outlet */}
           <main id="main-content" className="flex-1 w-full flex flex-col">
@@ -185,10 +216,12 @@ export default function App() {
           />
 
           {/* Mobile Sticky Action Bar */}
-          <MobileActionBar
-            onOpenOrderModal={() => setOrderOpen(true)}
-            onOpenBookModal={() => setBookOpen(true)}
-          />
+          {!isMenuPage && (
+            <MobileActionBar
+              onOpenOrderModal={() => setOrderOpen(true)}
+              onOpenBookModal={() => setBookOpen(true)}
+            />
+          )}
 
           {/* Back to Top Button */}
           <BackToTop />
@@ -199,10 +232,11 @@ export default function App() {
             onClose={() => setBookOpen(false)}
           />
 
-          {/* Order Online Modal (Swiggy / Zomato + Call Takeaway) */}
+          {/* Order Online Modal with Location Eligibility Checker */}
           <OrderOnlineModal
             isOpen={orderOpen}
             onClose={() => setOrderOpen(false)}
+            onNavigate={handleNavigate}
           />
 
           {/* Policy Modals */}

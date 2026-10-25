@@ -57,24 +57,50 @@ export const CateringPage: React.FC<CateringPageProps> = ({
           </h1>
           <div className="w-16 h-1 bg-[#D3452B] mx-auto mt-4 rounded-full" />
           <p className="mt-4 text-base sm:text-lg text-white/80 max-w-2xl mx-auto leading-relaxed">
-            From cheerful birthday parties and family reunions to corporate gatherings and bulk biryani bucket feasts in Renigunta and Tirupati.
+            From cheerful birthday parties and family reunions to grand marriage banquets and authentic charcoal-sealed bulk Dum Biryani handis in Renigunta and Tirupati.
           </p>
 
-          <div className="mt-6 flex flex-wrap items-center justify-center gap-3">
+          {/* Key Event Badges */}
+          <div className="mt-5 flex flex-wrap items-center justify-center gap-2">
+            <span className="px-3 py-1 rounded-full text-xs font-semibold bg-white/10 text-white border border-white/15">
+              💍 Marriage &amp; Reception Banquets
+            </span>
+            <span className="px-3 py-1 rounded-full text-xs font-semibold bg-white/10 text-white border border-white/15">
+              🍗 Bulk Dum Biryani Handis
+            </span>
+            <span className="px-3 py-1 rounded-full text-xs font-semibold bg-white/10 text-white border border-white/15">
+              🎉 AC Birthday Party Hall
+            </span>
+            <span className="px-3 py-1 rounded-full text-xs font-semibold bg-white/10 text-white border border-white/15">
+              💼 Corporate Feasts &amp; GST Invoicing
+            </span>
+          </div>
+
+          <div className="mt-7 flex flex-wrap items-center justify-center gap-3">
             <button
               type="button"
               onClick={onOpenBookModal}
-              className="px-6 py-3 rounded-full bg-[#D3452B] hover:bg-[#BD3B22] text-white font-bold text-sm shadow-md transition-all flex items-center gap-2"
+              className="px-6 py-3 rounded-full bg-[#D3452B] hover:bg-[#BD3B22] text-white font-bold text-sm shadow-md transition-all flex items-center gap-2 transform active:scale-95"
             >
               <Calendar className="w-4 h-4 text-amber-200" />
-              <span>Book Your Event: {RESTAURANT_INFO.phone}</span>
+              <span>Book Event: {RESTAURANT_INFO.phone}</span>
             </button>
+            <a
+              href={`https://wa.me/91${(RESTAURANT_INFO.whatsapp || '7702104894').replace(/\D/g, '')}?text=${encodeURIComponent(
+                'Hi Vaibhav Grand! I would like to inquire about bulk catering & wedding banquet services in Renigunta/Tirupati.'
+              )}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="px-6 py-3 rounded-full bg-[#25D366] hover:bg-[#20BE5A] text-white font-bold text-sm shadow-md transition-all flex items-center gap-2 transform active:scale-95"
+            >
+              <span>WhatsApp Catering Desk</span>
+            </a>
           </div>
         </div>
       </div>
 
       {/* Catering Offerings & Real Photos */}
-      <CateringEvents />
+      <CateringEvents onOpenBookModal={onOpenBookModal} />
 
       {/* Closing CTA */}
       <ClosingCTA

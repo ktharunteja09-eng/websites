@@ -1,0 +1,271 @@
+================================================================================
+VAIBHAV GRAND FAMILY RESTAURANT - WEBSITE ARCHITECTURE & FEATURES REPORT
+================================================================================
+Generated Date: October 2026
+Website Domain: https://vaibhavgrand.com
+Location: Renigunta, Tirupati, Andhra Pradesh, India
+Technology: React 19, Vite 8, TypeScript, Tailwind CSS v4, Motion, Supabase
+
+--------------------------------------------------------------------------------
+1. EXECUTIVE OVERVIEW
+--------------------------------------------------------------------------------
+The Vaibhav Grand website is an enterprise-grade culinary web application and
+direct-to-consumer (D2C) online ordering platform. Designed for a landmark family
+restaurant in Renigunta (Tirupati), the platform bridges digital branding with
+commission-free direct revenue generation.
+
+Key Business Objectives:
+- Eliminate 20-30% aggregator commissions (Swiggy / Zomato).
+- Provide customers with transparent price comparisons and direct discounts.
+- Enforce strict delivery zone boundary validation (5.0 km road radius).
+- Provide instant mobile UPI checkout (Google Pay, PhonePe, Paytm) & COD.
+- Direct automated WhatsApp order receipt dispatch to the kitchen counter.
+- Give restaurant management a live, PIN-protected Admin CRM to manage daily stock,
+  flash offers, and incoming orders with audio chime alerts.
+
+--------------------------------------------------------------------------------
+2. TECHNOLOGY STACK & LIBRARIES
+--------------------------------------------------------------------------------
+A. Frontend Core:
+   - React 19 (19.0.1) & React-DOM 19
+   - TypeScript 7 (Strict mode, zero unhandled types)
+   - Vite 8 (8.3.0) with @vitejs/plugin-react
+   - Tailwind CSS v4 (@tailwindcss/vite & tailwindcss 4.3.3)
+   - React Router DOM (v6.28.2)
+
+B. Animation, Physics & Scrolling:
+   - Motion / Framer Motion v12 (12.23.24)
+   - Lenis Smooth Scroll (1.3.26) for buttery smooth viewport scrolling
+   - Lucide React (0.546.0) for vector iconography
+
+C. Static Site Generation (SSG) & SEO:
+   - vite-react-ssg (0.9.2) - pre-renders nested static HTML at build time
+   - React Helmet Async (3.0.0) for dynamic OpenGraph, Twitter & Schema.org tags
+   - Custom Schema.org JSON-LD generators (LocalBusiness, Restaurant, Menu, Review)
+
+D. Backend & Database:
+   - Supabase (@supabase/supabase-js 2.118.0)
+   - PostgreSQL Database Engine with Row Level Security (RLS)
+   - Server-side PostgreSQL SECURITY DEFINER RPC Stored Procedures
+
+E. Geolocation & External Routing:
+   - OpenRouteService (ORS) Driving Directions API
+   - Haversine straight-line spherical distance fallback algorithm
+   - HTML5 Geolocation API
+
+F. Hosting & Edge Network:
+   - Vercel Deployment with clean URLs and 301 alias redirect routing
+   - HSTS, X-Frame-Options, X-Content-Type-Options security headers
+
+--------------------------------------------------------------------------------
+3. HIGH-LEVEL ARCHITECTURAL DESIGN & DATA FLOW
+--------------------------------------------------------------------------------
+The platform follows a resilient Multi-Tier Architecture:
+
+[Client Browser]
+       │
+       ├─► Static SSG Pre-rendered HTML (Instant TTFB, 100% crawlable by Google)
+       │
+       ├─► Cart & Calculation Engine (src/utils/cartMath.ts)
+       │
+       ├─► Geolocation Verification (OpenRouteService API + Haversine Radial Fallback)
+       │
+       ├─► Pre-Checkout Inventory Lock & Pricing Validation (src/utils/supabaseClient.ts)
+       │       │
+       │       ▼
+       │   [Supabase PostgreSQL Backend]
+       │   - Table: menu_items (Stock, completed status, delivery eligibility)
+       │   - Table: store_offers (Active discounts, free item thresholds, countdown)
+       │   - Table: orders (Permanent record of all orders and delivery coords)
+       │   - Table: admin_secrets (Hashed PIN credentials locked from browser)
+       │
+       ├─► Mobile UPI Intent Gateway (upi://pay deep-links / QR fallback)
+       │
+       ├─► Automated WhatsApp Cloud Dispatch (Structured kitchen ticket formatting)
+       │
+       └─► Owner Admin CRM (/admin) (Real-time polling, audio chime, stock toggle)
+
+DUAL-LAYER RESILIENCE & OFFLINE FALLBACK:
+If internet connectivity drops, or Supabase credentials are not configured, the
+app automatically switches to bundled fallback data (src/data/restaurantData.ts,
+photoMenuData.ts, and sessionStorage/localStorage caches). Browsing, cart math,
+discounts, and WhatsApp ordering continue without interruption.
+
+--------------------------------------------------------------------------------
+4. DATABASE & SECURITY ARCHITECTURE
+--------------------------------------------------------------------------------
+Defined in supabase_setup.sql:
+
+1. Table: menu_items
+   - Columns: id, name, category, price, aggregator_price, is_veg,
+     direct_order_eligible, is_completed, last_reset_date.
+   - Purpose: Real-time stock status and direct-delivery eligibility.
+
+2. Table: store_offers
+   - Columns: id, is_active, banner_text, discount_percent, min_order_amount,
+     free_item_name, free_item_min_amount, coupon_code, coupon_flat_discount,
+     starts_at, expires_at.
+   - Purpose: Centralized promotional rules controlling banners & checkout math.
+
+3. Table: orders
+   - Columns: id, order_code, customer_name, customer_phone, order_type,
+     distance_km, address_notes, maps_link, items_json, subtotal,
+     discount_amount, final_total, payment_method, status, created_at.
+   - Purpose: Permanent auditable trail of all direct orders.
+
+4. Table: admin_secrets
+   - Columns: id, passcode (default PIN: '1234').
+   - Purpose: Private table protected from all public access.
+
+ROW LEVEL SECURITY (RLS) & RPC SECURITY:
+- Anonymous public users can ONLY read `menu_items` and `store_offers`.
+- Anonymous public users can ONLY INSERT into `orders` (cannot read other orders).
+- All sensitive management operations run via SECURITY DEFINER PostgreSQL RPCs:
+  * verify_admin_pin(input_pin): Server-side PIN verification.
+  * admin_get_orders(input_pin): Fetches order feed for authenticated counter staff.
+  * admin_update_order_status(input_pin, target_order_id, new_status): Updates order.
+  * admin_update_menu_item(input_pin, item_id, completed_val, eligible_val): Toggles stock.
+  * admin_reset_all_stock(input_pin): Daily morning batch reset.
+  * admin_update_offers(...): Updates active flash sales and countdown timers.
+  * admin_change_pin(input_pin, new_pin): Secure PIN change procedure.
+
+--------------------------------------------------------------------------------
+5. KEY FEATURES BREAKDOWN
+--------------------------------------------------------------------------------
+
+A. DIRECT ONLINE ORDERING SYSTEM (src/components/DirectOrderModal.tsx)
+   - Dual Modes: Doorstep Delivery (5km limit) & Self-Pickup Takeaway.
+   - GPS Road Distance Verification:
+     * Checks OpenRouteService driving API for exact driving distance.
+     * Enforces a strict 4-second Promise.race timeout.
+     * Falls back to Haversine straight-line distance (threshold 3.8 km = 5.0 km road).
+     * Takeaway orders completely bypass GPS distance requirements.
+   - Operating Hours Lock: Orders are restricted to operating hours (11:30 AM to 10:30 PM).
+   - Dynamic Cart Math Engine (src/utils/cartMath.ts):
+     * Dynamically calculates subtotal, applied percentage discounts, and free gifts.
+     * Strips discounts automatically if items are removed below minimum threshold.
+   - Pre-Checkout Inventory Validation:
+     * Queries Supabase before submission to verify no dish was marked sold-out.
+     * Aborts with a clear modal alert if any item is out of stock.
+   - Dual Payment Options:
+     * Mobile UPI Deep-Link: Launches Google Pay, PhonePe, or Paytm with pre-filled amount.
+     * Dynamic UPI QR Code: High-resolution QR code for desktop screen scanning.
+     * Cash on Delivery (COD): Supported for local customers.
+   - Kitchen WhatsApp Dispatch:
+     * Builds a structured bill with Order ID, customer address, Google Maps pin,
+       itemized breakdown, discount, and payment mode sent to WhatsApp counter.
+
+B. AGGREGATOR VS DIRECT PRICE COMPARISON ENGINE (src/components/PriceComparisonModal.tsx)
+   - Displays real-time transparent comparisons against Swiggy and Zomato prices.
+   - Highlights typical 20-25% aggregator inflation (commissions, surge, platform fees).
+   - Illustrates customer savings of ₹100-₹250 per meal when ordering directly.
+
+C. 280+ DISH CULINARY MENU (src/components/MenuSection.tsx & PhotoMenu.tsx)
+   - Categorized by 30+ groups: Arabic Mandi, Hyderabadi Dum Biryani, Clay Oven Tandoor,
+     Starters, Soups, Curries, Breads, Chinese, and Beverages/Coolers.
+   - Dual Viewing Modes:
+     1. Classic A La Carte list with dietary filters (Veg / Non-Veg) and instant search.
+     2. Photo Menu showcasing high-resolution food imagery and portion notes.
+   - Smart Variant Grouping (Single, Half, Full, Family Pack, Jumbo Platter).
+   - Mobile-First Controls:
+     * Floating quick-jump category button.
+     * Slide-over bottom sheet category drawer.
+     * Horizontally scrolling sticky category pills linked to scroll position.
+     * Verified photo bestsellers carousel.
+
+D. DYNAMIC FLASH PROMOTIONS & SCARCITY COUNTDOWN (src/components/FlashOfferBanner.tsx)
+   - Sticky top alert banner with a real-time countdown timer.
+   - Displays threshold progress (e.g. "Add ₹80 more to unlock Free Cool Drink!").
+   - Configurable in seconds via the Owner Admin Dashboard.
+
+E. OWNER ADMIN CRM & KITCHEN PORTAL (/admin or #admin)
+   - PIN Authentication with brute-force lockout protection and 30-min inactivity logout.
+   - Tab 1 (Menu Stock):
+     * 1-click toggle to mark items "Sold Out" (is_completed) or "Delivery Eligible".
+     * "Morning Reset All" button resets the entire inventory for the day in one click.
+   - Tab 2 (Flash Offers):
+     * Edit banner copy, discount percentages, min order amounts, and expiry dates.
+     * Change master admin PIN securely.
+   - Tab 3 (Live Orders CRM):
+     * Auto-polls every 10 seconds for new orders.
+     * Plays an audible bell chime on incoming tickets.
+     * Direct one-click customer phone dialer and WhatsApp message launcher.
+     * Google Maps navigation link to customer drop-off point.
+     * Order status management: Initiated -> Confirmed -> Completed / Rejected.
+
+F. INTERACTIVE CATERING & BANQUET PLANNER (src/components/CateringEvents.tsx)
+   - Tiered packages:
+     * Silver Biryani Feast (₹299-₹349/head, min 30 guests)
+     * Royal Wedding Banquet (₹499-₹599/head, min 100 guests)
+     * Emperor Multi-Course Live Banquet (₹749-₹899/head, min 150 guests)
+     * Bulk Bucket Biryani handis
+   - Interactive guest-count slider and per-head price estimator.
+   - Generates automated WhatsApp quote inquiries with pre-selected menu items.
+
+G. DIGITAL LAMINATED MENU VIEWER (src/components/DigitalMenuCards.tsx)
+   - Replicates the restaurant's physical printed menu booklet.
+   - In-browser image upload tool allowing staff to update menu card photos with
+     instant browser preview saved to localStorage.
+
+--------------------------------------------------------------------------------
+6. PERFORMANCE, SEO & ACCESSIBILITY
+--------------------------------------------------------------------------------
+1. Static Site Generation (SSG):
+   - vite-react-ssg builds nested HTML for all major routes:
+     '/', '/menu', '/about', '/catering', '/reviews', '/gallery', '/contact', '/404'.
+2. SEO & Schema.org Rich Results:
+   - Dynamic meta tags and canonical URLs for every route via React Helmet Async.
+   - Validated Schema.org JSON-LD structured data:
+     * LocalBusiness & Restaurant schemas with coordinates, phone, opening hours.
+     * Detailed Menu & MenuItem schemas for individual dishes.
+     * AggregateRating (4.3★, 1000+ reviews) & verified customer reviews.
+3. Speed & Core Web Vitals:
+   - LCP hero image preloading in index.html.
+   - Modern WebP image compression across all culinary and ambiance photos.
+   - Vendor bundle code-splitting (vendor-react, vendor-motion).
+   - Lenis smooth scroll provider with modal background lock (useScrollLock).
+
+--------------------------------------------------------------------------------
+7. WORKSPACE STRUCTURE SUMMARY
+--------------------------------------------------------------------------------
+├── index.html                  # HTML entry point, preloads, fonts, JSON-LD
+├── metadata.json               # SEO routes, OpenGraph, canonical URLs
+├── package.json                # Project dependencies and build scripts
+├── supabase_setup.sql          # SQL schema, RLS policies, and RPC stored procedures
+├── vercel.json                 # Routing rules, 301 redirects, security headers
+├── vite.config.ts              # Vite SSG configuration and manual chunk splitting
+└── src/
+    ├── App.tsx                 # Root component, layout, navigation & modal wrappers
+    ├── main.tsx                # SSG entry point (ViteReactSSG)
+    ├── routes.tsx              # Router table and 301-equivalent redirect routes
+    ├── types.ts                # TypeScript data models and interfaces
+    ├── components/
+    │   ├── Hero.tsx                    # Hero banner with slide transitions & quick CTAs
+    │   ├── Navbar.tsx                  # Responsive navigation bar with mobile drawer
+    │   ├── DirectOrderTrustBanner.tsx  # Direct order trust & price comparison banner
+    │   ├── DirectOrderModal.tsx        # 5km delivery verification, cart, UPI checkout
+    │   ├── PriceComparisonModal.tsx    # Swiggy/Zomato vs Direct cost breakdown
+    │   ├── MenuSection.tsx             # 280+ dish menu with search & category filters
+    │   ├── PhotoMenu.tsx               # Photographic menu card showcase
+    │   ├── DigitalMenuCards.tsx        # Physical menu booklet viewer & uploader
+    │   ├── CateringEvents.tsx          # Catering package calculator & inquiry tool
+    │   ├── CustomerReviewsMarquee.tsx  # Animated review marquee with Google reviews
+    │   ├── FloatingCartBar.tsx         # Mobile floating checkout bar
+    │   ├── SEO.tsx                     # Dynamic Helmet tags & JSON-LD injector
+    │   └── menu/                       # Mobile menu submodules (Pills, Sheet, Carousel)
+    ├── pages/
+    │   ├── HomePage.tsx                # Conversion-optimized main landing page
+    │   ├── MenuPage.tsx                # Dedicated culinary menu page
+    │   ├── AboutPage.tsx               # Heritage and kitchen story page
+    │   ├── CateringPage.tsx            # Full banquet & party order page
+    │   ├── ReviewsPage.tsx             # Verified customer testimonials page
+    │   ├── GalleryPage.tsx             # Ambiance & food photo gallery
+    │   ├── ContactPage.tsx             # Location, directions & operating hours
+    │   └── AdminDashboard.tsx          # Real-time PIN-protected counter CRM
+    └── utils/
+        ├── supabaseClient.ts           # Supabase connection, RPCs & offline fallbacks
+        ├── cartMath.ts                 # Dynamic cart calculations & operating hours
+        ├── menuVariants.ts             # Dish variant grouping (Single, Half, Full)
+        ├── schemaGenerator.ts          # Schema.org structured data generators
+        └── scrollLock.ts               # Background scroll freeze utility
+================================================================================

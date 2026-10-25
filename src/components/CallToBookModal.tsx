@@ -48,7 +48,7 @@ export const CallToBookModal: React.FC<CallToBookModalProps> = ({ isOpen, onClos
             </button>
 
             <div className="flex items-center gap-3 mb-2">
-              <BrandEmblem className="w-8 h-8 text-amber-400" />
+              <BrandEmblem className="h-8 w-auto object-contain" />
               <span className="text-xs uppercase tracking-widest text-amber-300 font-bold">
                 Table Reservations &amp; Gatherings
               </span>

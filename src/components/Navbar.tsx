@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { RESTAURANT_INFO } from '../data/restaurantData';
+import { WHATSAPP_NUMBER } from '../utils/supabaseClient';
 import {
   Menu,
   X,
@@ -36,7 +37,7 @@ export const Navbar: React.FC<NavbarProps> = ({
   const [orderDropdownOpen, setOrderDropdownOpen] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
-  const headerRef = useRef<HTMLElement>(null);
+  const headerRef = useRef<HTMLDivElement>(null);
   const logoRef = useRef<HTMLButtonElement>(null);
 
   // Lock all background scrolling and pause Lenis when mobile drawer is open
@@ -44,6 +45,7 @@ export const Navbar: React.FC<NavbarProps> = ({
 
   // Smooth GPU-accelerated scroll interpolation for desktop navbar (0px -> 100px)
   useEffect(() => {
+    if (typeof window === 'undefined' || (typeof process !== 'undefined' && Boolean(process.versions?.node))) return;
     let rafId: number | null = null;
     let lastProgress = -1;
     let lastScrolled = window.scrollY > 50;
@@ -76,14 +78,14 @@ export const Navbar: React.FC<NavbarProps> = ({
               : 'none';
           headerRef.current.style.borderBottomColor = `rgba(46, 72, 35, ${(0.08 + progress * 0.06).toFixed(3)})`;
 
-          // Subtle padding compression: 14px down to 12px (py-3.5 to py-3)
-          const padY = 14 - progress * 2;
+          // Subtle padding compression on scroll
+          const padY = 10 - progress * 3;
           headerRef.current.style.paddingTop = `${padY.toFixed(1)}px`;
           headerRef.current.style.paddingBottom = `${padY.toFixed(1)}px`;
 
-          // Subtly scale logo from 1.0 down to 0.92 (~44px down to ~40px)
+          // Subtly scale logo on scroll
           if (logoRef.current) {
-            const logoScale = 1 - progress * 0.08;
+            const logoScale = 1 - progress * 0.06;
             logoRef.current.style.transform = `scale(${logoScale.toFixed(3)})`;
             logoRef.current.style.transformOrigin = 'left center';
           }
@@ -191,40 +193,34 @@ export const Navbar: React.FC<NavbarProps> = ({
         Skip to main content
       </a>
 
-      {/* 1. Thin Utility Bar ABOVE main navigation */}
-      <TopUtilityBar />
-
       {/* 2. Main Navigation Header (Red Onion NYC Exact Header Style) */}
-      <header
+      <div
         id="navbar-header"
         ref={headerRef}
-        className={`sticky top-0 z-40 transition-colors duration-200 ease-in-out bg-[#FDFBF7]/95 backdrop-blur-md border-b border-[#2E4823]/10 text-[#1C1C1C] ${
+        className={`w-full transition-colors duration-200 ease-in-out bg-[#FDFBF7]/95 backdrop-blur-md border-b border-[#2E4823]/10 text-[#1C1C1C] ${
           isScrolled
-            ? 'shadow-[0_4px_20px_rgba(46,72,35,0.08)] py-3'
-            : 'py-3.5'
+            ? 'shadow-[0_4px_20px_rgba(46,72,35,0.08)] py-1.5 sm:py-2'
+            : 'py-2 sm:py-2.5'
         }`}
       >
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex items-center justify-between">
-          {/* Brand Wordmark with Winged Emblem */}
+          {/* Brand Logo - Master Emblem & Wordmark */}
           <button
             ref={logoRef}
             type="button"
             onClick={() => handleLinkClick('home')}
             id="nav-brand-logo"
-            className="group flex items-center gap-2.5 sm:gap-3 focus:outline-none text-left"
+            className="group flex items-center focus:outline-none text-left py-0.5"
+            aria-label="Vaibhav Grand Family Restaurant Home"
           >
-            <BrandEmblem
-              className="w-9 h-9 sm:w-10 sm:h-10 shrink-0 transition-transform duration-300 group-hover:scale-105"
-              idSuffix="nav"
+            <img
+              src="/assets/images/vaibhav-grand-logo.png"
+              alt="Vaibhav Grand Family Restaurant Logo"
+              width={1766}
+              height={866}
+              fetchPriority="high"
+              className="h-13 sm:h-16 md:h-18 lg:h-20 xl:h-[84px] w-auto object-contain transition-transform duration-300 group-hover:scale-105 select-none drop-shadow-sm"
             />
-            <div className="flex flex-col">
-              <span className="font-['Playfair_Display'] text-xl sm:text-2xl font-bold tracking-tight text-[#2E4823] transition-colors duration-200">
-                Vaibhav Grand
-              </span>
-              <span className="text-[9px] sm:text-[10px] uppercase tracking-[0.22em] font-medium text-[#2E4823]/70 transition-colors duration-200">
-                Family Restaurant • Renigunta
-              </span>
-            </div>
           </button>
 
           {/* Desktop Navigation Links */}
@@ -385,7 +381,7 @@ export const Navbar: React.FC<NavbarProps> = ({
             </button>
           </div>
         </div>
-      </header>
+      </div>
 
       {/* Red Onion NYC Exact Mobile Side Drawer & Backdrop Overlay (Rendered outside header to prevent stacking context trap) */}
       <AnimatePresence>
@@ -423,20 +419,16 @@ export const Navbar: React.FC<NavbarProps> = ({
                 <button
                   type="button"
                   onClick={() => handleLinkClick('home')}
-                  className="flex items-center gap-2.5 text-left focus:outline-none group"
+                  className="flex items-center text-left focus:outline-none group py-0.5"
+                  aria-label="Vaibhav Grand Family Restaurant Home"
                 >
-                  <BrandEmblem
-                    className="w-8 h-8 shrink-0 group-hover:scale-105 transition-transform"
-                    idSuffix="drawer"
+                  <img
+                    src="/assets/images/vaibhav-grand-logo.png"
+                    alt="Vaibhav Grand Family Restaurant Logo"
+                    width={1766}
+                    height={866}
+                    className="h-14 sm:h-16 w-auto object-contain group-hover:scale-105 transition-transform select-none"
                   />
-                  <div className="flex flex-col">
-                    <span className="font-['Playfair_Display'] text-lg font-bold text-[#FDFBF7] tracking-tight">
-                      Vaibhav Grand
-                    </span>
-                    <span className="text-[9px] uppercase tracking-[0.2em] text-amber-400 font-medium">
-                      Family Restaurant
-                    </span>
-                  </div>
                 </button>
 
                 <button
@@ -516,7 +508,7 @@ export const Navbar: React.FC<NavbarProps> = ({
 
                 {/* Direct WhatsApp Quick Chat */}
                 <a
-                  href={`https://wa.me/91${RESTAURANT_INFO.phone}?text=Hi%2C%20I%27d%20like%20to%20reserve%20a%20table%20%2F%20order%20food%20at%20Vaibhav%20Grand`}
+                  href={`https://api.whatsapp.com/send?phone=${WHATSAPP_NUMBER}&text=Hi%2C%20I%27d%20like%20to%20reserve%20a%20table%20%2F%20order%20food%20at%20Vaibhav%20Grand`}
                   target="_blank"
                   rel="noopener noreferrer"
                   id="drawer-whatsapp-btn"

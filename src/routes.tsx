@@ -10,6 +10,7 @@ import App, {
   GalleryPageWrapper,
   ContactPageWrapper,
   NotFoundPageWrapper,
+  AdminPageWrapper,
 } from './App';
 
 export const routes: RouteRecord[] = [
@@ -44,6 +45,10 @@ export const routes: RouteRecord[] = [
       {
         path: 'contact',
         element: <ContactPageWrapper />,
+      },
+      {
+        path: 'admin',
+        element: <AdminPageWrapper />,
       },
       // 301-equivalent client and SSG redirects for aliases
       {

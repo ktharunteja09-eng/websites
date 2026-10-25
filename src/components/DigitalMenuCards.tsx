@@ -252,6 +252,7 @@ export const DigitalMenuCards: React.FC = () => {
               alt={activePreview.page.title}
               width={800}
               height={1000}
+              loading="lazy"
               className="max-w-full max-h-[75vh] object-contain rounded-2xl shadow-2xl border border-white/20"
             />
             <div className="mt-4 text-center text-white px-4">
