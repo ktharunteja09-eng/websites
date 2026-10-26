@@ -945,36 +945,6 @@ export const MenuSection: React.FC = () => {
               headerHeight={headerHeight}
             />
 
-            {/* THE REMINDER: 3-Tier Offer Funnel (Phase 3) */}
-            <div className="mb-6 bg-gradient-to-r from-amber-500/10 via-emerald-500/10 to-amber-500/10 border border-emerald-600/25 rounded-2xl sm:rounded-3xl p-3.5 sm:p-4 text-center sm:text-left flex flex-col sm:flex-row items-center justify-between gap-3 shadow-2xs">
-              <div className="flex items-center gap-3">
-                <span className="w-10 h-10 rounded-2xl bg-emerald-700 text-white flex items-center justify-center shrink-0 shadow-xs text-xl">
-                  🎁
-                </span>
-                <div>
-                  <p className="text-xs sm:text-sm font-bold text-[#2E4823]">
-                    Unlock {offer?.discount_percent ?? 10}% OFF or a Free {offer?.free_item_name ?? 'Cool Drink'} on direct orders today!
-                  </p>
-                  <p className="text-[11px] text-gray-600 mt-0.5">
-                    Order directly within 5 km or choose Self-Pickup. Enjoy real kitchen rates with ₹0 hidden charges.
-                  </p>
-                </div>
-              </div>
-              <button
-                type="button"
-                onClick={() => {
-                  if (!isUnlocked) {
-                    handleUnlockDelivery();
-                  } else {
-                    setIsCheckoutOpen(true);
-                  }
-                }}
-                className="px-4 py-2 rounded-xl bg-[#2E4823] hover:bg-[#223719] text-white text-xs font-bold shrink-0 shadow-xs transition-transform active:scale-95"
-              >
-                {isUnlocked ? 'View Cart' : 'Claim Offer'}
-              </button>
-            </div>
-
             {/* SEARCH / FILTER CONTROLS BAR */}
             <div className="bg-[#F7F3EB] rounded-2xl p-4 sm:p-5 border border-[#2E4823]/10 mb-8 shadow-sm">
               <div className="flex flex-col md:flex-row items-center justify-between gap-4">
