@@ -169,65 +169,48 @@ export async function verifyDeliveryDistance(
     return result;
   };
 
-  const apiKey = (import.meta.env.VITE_ORS_API_KEY || '').trim();
-
-  // 2. OpenRouteService Integration with strict [lng, lat] order and 4-second Promise.race timeout
-  if (apiKey && !apiKey.includes('your-openrouteservice')) {
+  // 2. Route distance verification via server route (/api/route-distance) with AbortController timeout
+  if (isBrowser) {
     const controller = new AbortController();
     let timeoutTimer: ReturnType<typeof setTimeout> | null = null;
 
     const timeoutPromise = new Promise<never>((_, reject) => {
       timeoutTimer = setTimeout(() => {
         controller.abort();
-        reject(new Error('ORS 4-second timeout exceeded'));
-      }, 4000);
+        reject(new Error('Distance check 5-second timeout exceeded'));
+      }, 5000);
     });
 
     try {
-      // CRITICAL ORS QUIRK: Coordinates must be [longitude, latitude]
-      const url = `https://api.openrouteservice.org/v2/directions/driving-car?api_key=${encodeURIComponent(
-        apiKey
-      )}&start=${storeLng},${storeLat}&end=${userLng},${userLat}`;
-
-      const fetchPromise = fetch(url, { signal: controller.signal });
+      const apiUrl = `/api/route-distance?lat=${encodeURIComponent(userLat)}&lng=${encodeURIComponent(userLng)}`;
+      const fetchPromise = fetch(apiUrl, { signal: controller.signal });
       const response = await Promise.race([fetchPromise, timeoutPromise]);
       if (timeoutTimer) clearTimeout(timeoutTimer);
 
-      if (!response || !response.ok) {
-        throw new Error(`ORS API returned status ${response?.status || 'unknown'}`);
-      }
-
-      const data = await response.json();
-      const distanceMeters =
-        data?.features?.[0]?.properties?.summary?.distance ??
-        data?.features?.[0]?.properties?.segments?.[0]?.distance;
-
-      if (typeof distanceMeters === 'number') {
-        const roadKm = Number((distanceMeters / 1000).toFixed(2));
-        const eligible = roadKm > 0 && roadKm <= 5.0; // Strictly 5.0 km road driving distance
-        const result: DeliveryVerificationResult = {
-          eligible,
-          distanceKm: roadKm,
-          roadKm,
-          mapsLink,
-          source: 'ors',
-        };
-        if (isBrowser && typeof sessionStorage !== 'undefined') {
-          try {
-            const cacheData = { eligible, distanceKm: roadKm, mapsLink };
-            sessionStorage.setItem(cacheKey, JSON.stringify(cacheData));
-            sessionStorage.setItem('vaibhav_delivery_geo', JSON.stringify(cacheData));
-            sessionStorage.setItem('delivery_gps_cache', JSON.stringify({ distanceKm: roadKm, eligible }));
-          } catch {}
+      if (response && response.ok) {
+        const data = (await response.json()) as DeliveryVerificationResult;
+        if (typeof data.distanceKm === 'number' && typeof data.eligible === 'boolean') {
+          const result: DeliveryVerificationResult = {
+            eligible: Boolean(data.eligible),
+            distanceKm: data.distanceKm,
+            roadKm: typeof data.roadKm === 'number' ? data.roadKm : data.distanceKm,
+            mapsLink: data.mapsLink || mapsLink,
+            source: data.source || 'ors',
+          };
+          if (typeof sessionStorage !== 'undefined') {
+            try {
+              const cacheData = { eligible: result.eligible, distanceKm: result.distanceKm, mapsLink: result.mapsLink };
+              sessionStorage.setItem(cacheKey, JSON.stringify(cacheData));
+              sessionStorage.setItem('vaibhav_delivery_geo', JSON.stringify(cacheData));
+              sessionStorage.setItem('delivery_gps_cache', JSON.stringify({ distanceKm: result.distanceKm, eligible: result.eligible }));
+            } catch {}
+          }
+          return result;
         }
-        return result;
-      } else {
-        throw new Error('Distance missing in ORS response body');
       }
     } catch (err) {
       if (timeoutTimer) clearTimeout(timeoutTimer);
-      console.warn('ORS directions failed or timed out, executing Haversine fallback:', err);
-      // Timeout, 500 error or abort: fall through seamlessly to Haversine fallback
+      console.warn('Server distance check failed or timed out, executing Haversine fallback:', err);
     }
   }
 
@@ -371,6 +354,135 @@ function enrichMenuItems(items: DbMenuItem[]): DbMenuItem[] {
     };
   });
 }
+
+export interface LiveMenuSkuOverride {
+  item_id: string;
+  sku: string;
+  variant: string | null;
+  price: number;
+  mrp: number | null;
+  available: boolean;
+}
+
+export interface LiveSaleSettings {
+  active: boolean;
+  percent: number;
+  ends_at: string | null;
+  min_order?: number;
+  coupon?: string | null;
+  flat_discount?: number;
+}
+
+export interface LiveMenuOverridesResult {
+  loaded: boolean;
+  server_time: string;
+  sale: LiveSaleSettings;
+  overrides: Map<string, LiveMenuSkuOverride>;
+}
+
+let inFlightLiveMenuPromise: Promise<LiveMenuOverridesResult | null> | null = null;
+let lastLiveMenuResult: LiveMenuOverridesResult | null = null;
+let lastLiveMenuFetchTime: number = 0;
+
+/**
+ * Client helper in supabaseClient.ts, fetchLiveMenuOverrides(force = false):
+ * - Deduplicates concurrent in-flight calls with a shared promise.
+ * - Throttles automatic refetches to at most once every 30 seconds unless force is true.
+ * - Returns the map plus the sale settings, or the last good result, or null on failure; never throws into the UI; a short timeout (about 6 seconds).
+ * - Merge rule: an item with no row keeps its static default price and available = true. Mark the result as "loaded" so the UI can tell "not loaded yet" from "item not in database".
+ * - Guarded so it never runs during render or build.
+ */
+export async function fetchLiveMenuOverrides(
+  force: boolean = false
+): Promise<LiveMenuOverridesResult | null> {
+  // Guarded so it never runs during render, build, or SSR
+  if (!isBrowser || !supabase) {
+    return lastLiveMenuResult;
+  }
+
+  const now = Date.now();
+  // Throttles automatic refetches to at most once every 30 seconds unless force is true
+  if (!force && lastLiveMenuResult && now - lastLiveMenuFetchTime < 30000) {
+    return lastLiveMenuResult;
+  }
+
+  // Deduplicates concurrent in-flight calls with a shared promise
+  if (inFlightLiveMenuPromise) {
+    return inFlightLiveMenuPromise;
+  }
+
+  inFlightLiveMenuPromise = (async (): Promise<LiveMenuOverridesResult | null> => {
+    try {
+      // 6-second timeout via Promise.race
+      const fetchWithTimeout = async () => {
+        const timeoutPromise = new Promise<{ data: null; error: Error }>((_, reject) => {
+          setTimeout(() => reject(new Error('Live menu fetch timed out (6s)')), 6000);
+        });
+
+        const rpcPromise = supabase.rpc('get_live_menu');
+        const res: any = await Promise.race([rpcPromise, timeoutPromise]);
+        return res;
+      };
+
+      const { data, error } = await fetchWithTimeout();
+
+      if (error || !data) {
+        console.warn('fetchLiveMenuOverrides RPC error or empty, keeping last good state:', error);
+        return lastLiveMenuResult;
+      }
+
+      const overridesMap = new Map<string, LiveMenuSkuOverride>();
+      const rawItems: any[] = Array.isArray(data.items) ? data.items : [];
+
+      for (const item of rawItems) {
+        const sku = String(item.sku || item.item_id || '').trim();
+        const itemId = String(item.item_id || item.sku || '').trim();
+        if (!sku) continue;
+
+        const override: LiveMenuSkuOverride = {
+          item_id: itemId,
+          sku,
+          variant: item.variant !== undefined ? item.variant : null,
+          price: Number(item.price) || 0,
+          mrp: item.mrp !== null && item.mrp !== undefined ? Number(item.mrp) : null,
+          available: item.available !== false,
+        };
+
+        overridesMap.set(sku, override);
+        if (itemId && !overridesMap.has(itemId)) {
+          overridesMap.set(itemId, override);
+        }
+      }
+
+      const saleData = data.sale || {};
+      const result: LiveMenuOverridesResult = {
+        loaded: true,
+        server_time: data.server_time || new Date().toISOString(),
+        sale: {
+          active: Boolean(saleData.active),
+          percent: typeof saleData.percent === 'number' ? saleData.percent : 10,
+          ends_at: saleData.ends_at || null,
+          min_order: saleData.min_order,
+          coupon: saleData.coupon,
+          flat_discount: saleData.flat_discount,
+        },
+        overrides: overridesMap,
+      };
+
+      lastLiveMenuResult = result;
+      lastLiveMenuFetchTime = Date.now();
+      return result;
+    } catch (err) {
+      console.warn('Failed to fetch live menu overrides, returning last good result:', err);
+      return lastLiveMenuResult;
+    }
+  })().finally(() => {
+    inFlightLiveMenuPromise = null;
+  });
+
+  return inFlightLiveMenuPromise;
+}
+
 
 export interface VerifyPinResult {
   success: boolean;
@@ -666,6 +778,9 @@ export interface CreateOrderResult {
   message?: string;
   soldOutItemIds?: (number | string)[];
   unavailableItems?: string[];
+  unknownItems?: string[];
+  server_total?: number;
+  lines?: Array<{ sku: string; unit_price: number }>;
   free_item_name?: string | null;
   isNetworkError?: boolean;
 }
@@ -757,6 +872,15 @@ export function mapOrderErrorToMessage(
       ? details.items.join(', ')
       : 'One or more items';
     return `${names} is currently sold out.`;
+  }
+  if (status === 'unknown_item') {
+    const names = (details?.items && details.items.length > 0)
+      ? details.items.join(', ')
+      : 'One or more items';
+    return `${names} is currently unavailable.`;
+  }
+  if (status === 'price_changed') {
+    return 'Menu prices were just updated. Please review your updated total.';
   }
   if (status === 'closed') {
     const openStr = formatTimeForDisplay(details?.opens_at || '10:30');
@@ -1015,6 +1139,7 @@ export async function createOrder(
       p_maps_link: String(orderToSave.maps_link || '').trim(),
       p_payment_method: resolvedPaymentMethod,
       p_idempotency_key: resolvedIdempotencyKey,
+      p_expected_total: Number(orderToSave.final_total) || null,
     };
 
     const { data: rpcData, error: rpcError } = await supabase.rpc('submit_verified_order', rpcPayload);
@@ -1078,6 +1203,32 @@ export async function createOrder(
           message: msg,
           unavailableItems,
           soldOutItemIds: unavailableItems,
+          isNetworkError: false,
+        };
+      }
+
+      if (statusVal === 'unknown_item') {
+        const unknownItems: string[] = Array.isArray(rpcData.items) ? rpcData.items : [];
+        const msg = mapOrderErrorToMessage('unknown_item', { items: unknownItems });
+        return {
+          success: false,
+          status: 'unknown_item',
+          error: 'UNKNOWN_ITEM',
+          message: msg,
+          unknownItems,
+          isNetworkError: false,
+        };
+      }
+
+      if (statusVal === 'price_changed') {
+        const msg = mapOrderErrorToMessage('price_changed');
+        return {
+          success: false,
+          status: 'price_changed',
+          error: 'PRICE_CHANGED',
+          message: msg,
+          server_total: Number(rpcData.server_total) || 0,
+          lines: Array.isArray(rpcData.lines) ? rpcData.lines : [],
           isNetworkError: false,
         };
       }

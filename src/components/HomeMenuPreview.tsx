@@ -4,7 +4,7 @@ import { BookOpen, ExternalLink, Phone, ArrowRight, Utensils, TrendingDown, Spar
 import { RESTAURANT_INFO, MENU_ITEMS } from '../data/restaurantData';
 import { PHOTO_MENU_ITEMS } from '../data/photoMenuData';
 import { MenuItem, PhotoMenuItem } from '../types';
-import { fetchMenuItems } from '../utils/supabaseClient';
+import { useLiveMenu } from '../hooks/useLiveMenu';
 
 interface HomeMenuPreviewProps {
   onNavigateMenu: () => void;
@@ -46,30 +46,7 @@ export const HomeMenuPreview: React.FC<HomeMenuPreviewProps> = ({
   onOpenCompareModal,
 }) => {
   const [mobileActiveSlide, setMobileActiveSlide] = useState(0);
-  const [livePrices, setLivePrices] = useState<Map<string, { price: number; aggregator_price?: number | null }>>(() => new Map());
-
-  useEffect(() => {
-    let isMounted = true;
-    async function loadLivePrices() {
-      if (typeof window === 'undefined' || (typeof process !== 'undefined' && Boolean(process.versions?.node))) return;
-      try {
-        const items = await fetchMenuItems();
-        if (!isMounted || !items || items.length === 0) return;
-        const map = new Map<string, { price: number; aggregator_price?: number | null }>();
-        items.forEach((it) => {
-          map.set(it.name.toLowerCase().trim(), {
-            price: it.price,
-            aggregator_price: it.aggregator_price,
-          });
-        });
-        setLivePrices(map);
-      } catch {}
-    }
-    loadLivePrices();
-    return () => {
-      isMounted = false;
-    };
-  }, []);
+  const { getPrice, getMrp, isAvailable, getSavings } = useLiveMenu();
 
   // Desktop dishes (exact original 8 preview dishes)
   const desktopDishes = useMemo(() => {
@@ -195,10 +172,10 @@ export const HomeMenuPreview: React.FC<HomeMenuPreviewProps> = ({
                 }}
               >
                 {mobileDisplayDishes.map((item, idx) => {
-                  const live = livePrices.get(item.name.toLowerCase().trim());
-                  const activePrice = live ? live.price : item.price;
-                  const estimatedAggPrice = live?.aggregator_price || Math.round((activePrice * 1.25) / 10) * 10;
-                  const savings = estimatedAggPrice - activePrice;
+                  const activePrice = getPrice(item.id, item.price);
+                  const estimatedAggPrice = getMrp(item.id, item.aggregator_price, item.price);
+                  const savings = getSavings(activePrice, estimatedAggPrice);
+                  const available = isAvailable(item.id, true);
                   return (
                     <article
                       key={item.id}
@@ -231,13 +208,24 @@ export const HomeMenuPreview: React.FC<HomeMenuPreviewProps> = ({
                           {/* Price Tag with Direct Savings */}
                           <div className="absolute bottom-2 right-2 z-10 bg-white/95 backdrop-blur-xs px-2 py-0.5 rounded-lg shadow-xs border border-[#2E4823]/10 text-right">
                             <div className="flex items-center gap-1 justify-end">
-                              <span className="text-[10px] text-gray-400 line-through">₹{estimatedAggPrice}</span>
+                              {savings > 0 && (
+                                <span className="text-[10px] text-gray-400 line-through">₹{estimatedAggPrice}</span>
+                              )}
                               <span className="text-[#D3452B] font-bold text-xs">₹{activePrice}</span>
                             </div>
-                            <span className="text-[8px] font-bold text-emerald-700 bg-emerald-50 px-1 py-0.2 rounded block text-center">
-                              Save ₹{savings}
-                            </span>
+                            {savings > 0 && (
+                              <span className="text-[8px] font-bold text-emerald-700 bg-emerald-50 px-1 py-0.2 rounded block text-center">
+                                Save ₹{savings}
+                              </span>
+                            )}
                           </div>
+                          {!available && (
+                            <div className="absolute inset-0 bg-black/60 backdrop-blur-xs z-20 flex items-center justify-center">
+                              <span className="bg-[#D3452B] text-white font-bold text-[10px] uppercase tracking-wider px-2.5 py-0.5 rounded-full shadow-md">
+                                Sold Out
+                              </span>
+                            </div>
+                          )}
                         </div>
 
                         {/* Content */}
@@ -436,10 +424,10 @@ export const HomeMenuPreview: React.FC<HomeMenuPreviewProps> = ({
           {/* 2-Column Desktop Grid */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-x-12 gap-y-6">
             {desktopDishes.map((item) => {
-              const live = livePrices.get(item.name.toLowerCase().trim());
-              const activePrice = live ? live.price : item.price;
-              const estimatedAggPrice = live?.aggregator_price || item.aggregator_price || Math.round((activePrice * 1.25) / 10) * 10;
-              const itemSavings = estimatedAggPrice - activePrice;
+              const activePrice = getPrice(item.id, item.price);
+              const estimatedAggPrice = getMrp(item.id, item.aggregator_price, item.price);
+              const itemSavings = getSavings(activePrice, estimatedAggPrice);
+              const available = isAvailable(item.id, true);
               return (
                 <article
                   key={item.id}
@@ -474,14 +462,23 @@ export const HomeMenuPreview: React.FC<HomeMenuPreviewProps> = ({
 
                       <div className="text-right shrink-0">
                         <div className="flex items-center gap-1.5 justify-end">
-                          <span className="text-xs text-gray-400 line-through">₹{estimatedAggPrice}</span>
+                          {itemSavings > 0 && (
+                            <span className="text-xs text-gray-400 line-through">₹{estimatedAggPrice}</span>
+                          )}
                           <span className="font-bold text-base sm:text-lg text-[#D3452B]">
                             ₹{activePrice}
                           </span>
                         </div>
-                        <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-200/60 px-1.5 py-0.2 rounded-full inline-block mt-0.5">
-                          Save ₹{itemSavings} Direct
-                        </span>
+                        {itemSavings > 0 && (
+                          <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-200/60 px-1.5 py-0.2 rounded-full inline-block mt-0.5">
+                            Save ₹{itemSavings} Direct
+                          </span>
+                        )}
+                        {!available && (
+                          <span className="text-[10px] font-bold text-[#D3452B] bg-red-50 border border-red-200/60 px-1.5 py-0.2 rounded-full inline-block mt-0.5 ml-1">
+                            Sold Out
+                          </span>
+                        )}
                       </div>
                     </div>
 

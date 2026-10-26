@@ -1,26 +1,69 @@
 -- =====================================================================
 -- Supabase Setup Script for Vaibhav Grand Family Restaurant
+-- Authoritative Server-Side Single Source of Truth
 -- Includes:
--- 1. Tables: menu_items, store_offers, orders, admin_secrets
+-- 1. Tables: menu_items, menu_prices, sale_settings, menu_price_log, orders, store_settings, store_offers, admin_secrets
 -- 2. Row Level Security (RLS) policies for complete public lockdown
 -- 3. Server-side SECURITY DEFINER RPC functions verified by admin PIN
--- Run this entire script directly in the Supabase SQL Editor.
+-- 4. Public get_live_menu() RPC & authoritative submit_verified_order()
 -- =====================================================================
 
 -- =====================================================================
--- 1. ENSURE TABLES EXIST & FIX ORDER INSERT BUGS
+-- 1. ENSURE TABLES & COLUMNS EXIST (RE-RUNNABLE DDL)
 -- =====================================================================
 
 CREATE TABLE IF NOT EXISTS menu_items (
-  id serial PRIMARY KEY,
+  id serial,
+  item_id text PRIMARY KEY,
   name text NOT NULL,
   category text NOT NULL,
-  price numeric NOT NULL,
+  price numeric NOT NULL DEFAULT 0,
   aggregator_price numeric,
   is_veg boolean DEFAULT false,
   direct_order_eligible boolean DEFAULT true,
   is_completed boolean DEFAULT false,
-  last_reset_date date DEFAULT current_date
+  available boolean NOT NULL DEFAULT true,
+  last_reset_date date DEFAULT current_date,
+  updated_at timestamptz DEFAULT now()
+);
+
+-- Idempotent column upgrades for menu_items
+ALTER TABLE menu_items ADD COLUMN IF NOT EXISTS item_id text;
+ALTER TABLE menu_items ADD COLUMN IF NOT EXISTS available boolean NOT NULL DEFAULT true;
+ALTER TABLE menu_items ADD COLUMN IF NOT EXISTS updated_at timestamptz DEFAULT now();
+CREATE UNIQUE INDEX IF NOT EXISTS idx_menu_items_item_id ON menu_items(item_id) WHERE item_id IS NOT NULL;
+
+-- 1b. Menu Prices Table (Server source of truth for orderable SKUs and portion variants)
+CREATE TABLE IF NOT EXISTS menu_prices (
+  sku text PRIMARY KEY,
+  item_id text NOT NULL,
+  variant text,
+  price integer NOT NULL CHECK (price >= 1 AND price <= 99999),
+  mrp integer,
+  updated_at timestamptz DEFAULT now()
+);
+
+-- 1c. Sale Settings Table (Server source of truth for flash sales & discounts)
+CREATE TABLE IF NOT EXISTS sale_settings (
+  id int PRIMARY KEY DEFAULT 1,
+  sale_active boolean NOT NULL DEFAULT true,
+  sale_percent integer NOT NULL DEFAULT 10 CHECK (sale_percent >= 0 AND sale_percent <= 100),
+  sale_ends_at timestamptz DEFAULT (now() + interval '12 hours'),
+  min_order_amount integer DEFAULT 299,
+  coupon_code text DEFAULT 'DIRECT50',
+  coupon_flat_discount integer DEFAULT 50,
+  free_item_name text DEFAULT 'Free 250ml Cool Drink',
+  free_item_min_amount integer DEFAULT 499,
+  updated_at timestamptz DEFAULT now()
+);
+
+-- 1d. Menu Price Log (Audit trail for price updates)
+CREATE TABLE IF NOT EXISTS menu_price_log (
+  id serial PRIMARY KEY,
+  sku text NOT NULL,
+  old_price integer,
+  new_price integer NOT NULL,
+  changed_at timestamptz DEFAULT now()
 );
 
 CREATE TABLE IF NOT EXISTS store_settings (
@@ -62,6 +105,7 @@ CREATE TABLE IF NOT EXISTS orders (
   address_notes text DEFAULT '',
   maps_link text DEFAULT '',
   items_json text NOT NULL,
+  items_snapshot jsonb,
   subtotal numeric DEFAULT 0,
   discount_amount numeric DEFAULT 0,
   final_total numeric NOT NULL,
@@ -78,498 +122,89 @@ CREATE TABLE IF NOT EXISTS orders (
 ALTER TABLE orders ADD COLUMN IF NOT EXISTS utr text;
 ALTER TABLE orders ADD COLUMN IF NOT EXISTS utr_submitted_at timestamptz;
 ALTER TABLE orders ADD COLUMN IF NOT EXISTS idempotency_key text;
+ALTER TABLE orders ADD COLUMN IF NOT EXISTS items_snapshot jsonb;
 ALTER TABLE orders ADD COLUMN IF NOT EXISTS payment_status text NOT NULL DEFAULT 'pending';
 ALTER TABLE orders ADD COLUMN IF NOT EXISTS payment_method text NOT NULL DEFAULT 'UPI';
 
--- Normalize legacy or null payment_method rows
-UPDATE orders SET payment_method = 'UPI' WHERE payment_method IS NULL OR payment_method NOT IN ('UPI', 'COD');
-
-ALTER TABLE orders ALTER COLUMN payment_method SET NOT NULL;
-ALTER TABLE orders ALTER COLUMN payment_method SET DEFAULT 'UPI';
-
--- Idempotent constraint verification for payment_status
-DO $$
-BEGIN
-  IF NOT EXISTS (
-    SELECT 1 FROM pg_constraint WHERE conname = 'orders_payment_status_check'
-  ) THEN
-    ALTER TABLE orders ADD CONSTRAINT orders_payment_status_check
-      CHECK (payment_status IN ('pending', 'utr_submitted', 'confirmed', 'rejected'));
-  END IF;
-END $$;
-
--- Idempotent constraint verification for payment_method
-DO $$
-BEGIN
-  IF NOT EXISTS (
-    SELECT 1 FROM pg_constraint WHERE conname = 'orders_payment_method_check'
-  ) THEN
-    ALTER TABLE orders ADD CONSTRAINT orders_payment_method_check
-      CHECK (payment_method IN ('UPI', 'COD'));
-  END IF;
-END $$;
-
--- Unique partial indexes (prevent duplicate idempotency keys and duplicate UTR references)
+-- Unique partial indexes
 CREATE UNIQUE INDEX IF NOT EXISTS idx_orders_idempotency_key ON orders(idempotency_key) WHERE idempotency_key IS NOT NULL;
+CREATE UNIQUE INDEX IF NOT EXISTS idx_orders_order_code ON orders(order_code);
 CREATE UNIQUE INDEX IF NOT EXISTS idx_orders_utr_unique ON orders(utr) WHERE utr IS NOT NULL;
 
--- =====================================================================
--- BACKFILL NOTICE (DO NOT RUN AUTOMATICALLY ON RE-RUN):
--- When adding payment_status, existing rows default to 'pending'.
--- For historical orders placed before this hardening migration, run this one-time backfill:
---   UPDATE orders SET payment_status = 'confirmed' WHERE created_at < '<MIGRATION_TIMESTAMP>' AND utr IS NULL;
--- This statement is intentionally NOT executed in this re-runnable setup script so
--- re-running this script in production will never mark real unpaid orders as confirmed.
--- Use the standalone migration block for the initial one-time backfill.
--- =====================================================================
+-- Normalize legacy or null payment_method rows
+UPDATE orders SET payment_method = 'UPI' WHERE payment_method IS NULL OR payment_method NOT IN ('UPI', 'COD');
+ALTER TABLE orders ALTER COLUMN payment_method SET NOT NULL;
+ALTER TABLE orders ALTER COLUMN payment_method SET DEFAULT 'UPI';
 
 -- =====================================================================
 -- 2. PRIVATE ADMIN CREDENTIALS TABLE (HIDDEN FROM BROWSERS)
 -- =====================================================================
 CREATE TABLE IF NOT EXISTS admin_secrets (
   id int PRIMARY KEY DEFAULT 1,
-  passcode text NOT NULL DEFAULT '1234' -- Default Admin PIN/Password
+  passcode text NOT NULL DEFAULT '1234' -- Default Admin PIN
 );
 
 INSERT INTO admin_secrets (id, passcode) VALUES (1, '1234') ON CONFLICT (id) DO NOTHING;
+ALTER TABLE admin_secrets ADD COLUMN IF NOT EXISTS failed_attempts int NOT NULL DEFAULT 0;
+ALTER TABLE admin_secrets ADD COLUMN IF NOT EXISTS locked_until timestamptz DEFAULT NULL;
 
 -- =====================================================================
--- 3. SEED MENU ITEMS (If table is empty)
--- =====================================================================
-DO $$
-BEGIN
-  IF NOT EXISTS (SELECT 1 FROM menu_items LIMIT 1) THEN
-
-    -- Category 1. VEG. SOUPS (7 items)
-    INSERT INTO menu_items (name, category, price, aggregator_price, is_veg, direct_order_eligible, is_completed, last_reset_date) VALUES
-      ('Mushroom Corn Soup', 'veg-soups', 140, 170, true, true, false, current_date),
-      ('Sweet Corn Soup', 'veg-soups', 140, 170, true, true, false, current_date),
-      ('Veg. Hot & Sour Soup', 'veg-soups', 140, 170, true, true, false, current_date),
-      ('Veg. Manchow Soup', 'veg-soups', 150, 180, true, true, false, current_date),
-      ('Cream of Mushroom Soup', 'veg-soups', 190, 230, true, true, false, current_date),
-      ('Lemon Coriander Soup', 'veg-soups', 190, 230, true, true, false, current_date),
-      ('Tomato Soup', 'veg-soups', 140, 170, true, true, false, current_date);
-
-    -- Category 2. NON-VEG. SOUPS (6 items)
-    INSERT INTO menu_items (name, category, price, aggregator_price, is_veg, direct_order_eligible, is_completed, last_reset_date) VALUES
-      ('Chicken Hot & Sour Soup', 'non-veg-soups', 140, 170, false, true, false, current_date),
-      ('Chicken Manchow Soup', 'non-veg-soups', 140, 170, false, true, false, current_date),
-      ('Chicken Corn Soup', 'non-veg-soups', 140, 170, false, true, false, current_date),
-      ('Chicken Coriander Soup', 'non-veg-soups', 150, 180, false, true, false, current_date),
-      ('Mutton Bone Soup', 'non-veg-soups', 190, 230, false, true, false, current_date),
-      ('Mutton Pepper Soup', 'non-veg-soups', 190, 230, false, true, false, current_date);
-
-    -- Category 3. VAIBHAV SPECIAL STARTERS (8 items)
-    INSERT INTO menu_items (name, category, price, aggregator_price, is_veg, direct_order_eligible, is_completed, last_reset_date) VALUES
-      ('Andhra Karivepaku Mutton', 'vaibhav-special-starters', 499, 600, false, true, false, current_date),
-      ('Andhra Karivepaku Chicken', 'vaibhav-special-starters', 399, 480, false, true, false, current_date),
-      ('Butterfly Chicken', 'vaibhav-special-starters', 399, 480, false, true, false, current_date),
-      ('Garlic Chicken Keema Balls', 'vaibhav-special-starters', 399, 480, false, true, false, current_date),
-      ('Dragon Crispy Chicken', 'vaibhav-special-starters', 399, 480, false, true, false, current_date),
-      ('Arabian Prawns', 'vaibhav-special-starters', 499, 600, false, true, false, current_date),
-      ('Arabian Fish', 'vaibhav-special-starters', 499, 600, false, true, false, current_date),
-      ('Vaibhav''s Non-Veg. Platter', 'vaibhav-special-starters', 999, 1200, false, true, false, current_date);
-
-    -- Category 4. VAIBHAV'S NATTU SPECIALS (9 items)
-    INSERT INTO menu_items (name, category, price, aggregator_price, is_veg, direct_order_eligible, is_completed, last_reset_date) VALUES
-      ('Chitti Muthyalu Mutton Biryani', 'nattu-specials', 420, 500, false, true, false, current_date),
-      ('Chitti Muthyalu Chicken Biryani', 'nattu-specials', 270, 320, false, true, false, current_date),
-      ('Rayalaseema Chicken Curry with Ragi Sangati', 'nattu-specials', 350, 420, false, true, false, current_date),
-      ('Mutton Paya with Ragi Sangati', 'nattu-specials', 400, 480, false, true, false, current_date),
-      ('Chepala Pulusu with Ragi Sangati', 'nattu-specials', 280, 340, false, true, false, current_date),
-      ('Mutton Pulusu with Ragi Sangati', 'nattu-specials', 420, 500, false, true, false, current_date),
-      ('Special Curd Rice', 'nattu-specials', 120, 140, true, true, false, current_date),
-      ('White Rice', 'nattu-specials', 100, 120, true, true, false, current_date),
-      ('Raagi Ball', 'nattu-specials', 50, 60, true, true, false, current_date);
-
-    -- Category 5. CHICKEN STARTERS (16 items)
-    INSERT INTO menu_items (name, category, price, aggregator_price, is_veg, direct_order_eligible, is_completed, last_reset_date) VALUES
-      ('Chilli Chicken', 'chicken-starters', 280, 340, false, true, false, current_date),
-      ('Vaibhav''s Special Chicken', 'chicken-starters', 320, 380, false, true, false, current_date),
-      ('Pepper Chicken', 'chicken-starters', 320, 380, false, true, false, current_date),
-      ('Chicken Majestic', 'chicken-starters', 320, 380, false, true, false, current_date),
-      ('Chicken 65', 'chicken-starters', 280, 340, false, true, false, current_date),
-      ('Chicken Lollipop', 'chicken-starters', 300, 360, false, true, false, current_date),
-      ('Chicken Drumstick', 'chicken-starters', 310, 370, false, true, false, current_date),
-      ('Chicken Wings', 'chicken-starters', 300, 360, false, true, false, current_date),
-      ('Cashew Nut Chicken', 'chicken-starters', 360, 430, false, true, false, current_date),
-      ('Chicken Fry', 'chicken-starters', 280, 340, false, true, false, current_date),
-      ('Chicken Roast', 'chicken-starters', 280, 340, false, true, false, current_date),
-      ('Hong Kong Chicken', 'chicken-starters', 340, 410, false, true, false, current_date),
-      ('Dragon Chicken', 'chicken-starters', 320, 380, false, true, false, current_date),
-      ('Schezwan Hong Kong Chicken', 'chicken-starters', 360, 430, false, true, false, current_date),
-      ('Rambo Chicken', 'chicken-starters', 340, 410, false, true, false, current_date),
-      ('Chicken Manchurian', 'chicken-starters', 320, 380, false, true, false, current_date);
-
-    -- Category 6. MUTTON STARTERS (4 items)
-    INSERT INTO menu_items (name, category, price, aggregator_price, is_veg, direct_order_eligible, is_completed, last_reset_date) VALUES
-      ('Kaju Mutton Roast', 'mutton-starters', 450, 540, false, true, false, current_date),
-      ('Mutton Ghee Roast', 'mutton-starters', 420, 500, false, true, false, current_date),
-      ('Kaju Mutton Ghee Roast', 'mutton-starters', 460, 550, false, true, false, current_date),
-      ('Mutton Fry', 'mutton-starters', 380, 460, false, true, false, current_date);
-
-    -- Category 7. FISH STARTERS (5 items)
-    INSERT INTO menu_items (name, category, price, aggregator_price, is_veg, direct_order_eligible, is_completed, last_reset_date) VALUES
-      ('Fish Finger', 'fish-starters', 320, 380, false, true, false, current_date),
-      ('Pepper Fish', 'fish-starters', 320, 380, false, true, false, current_date),
-      ('Chilli Fish', 'fish-starters', 320, 380, false, true, false, current_date),
-      ('Apollo Fish', 'fish-starters', 330, 400, false, true, false, current_date),
-      ('Fish 65', 'fish-starters', 330, 400, false, true, false, current_date);
-
-    -- Category 8. PRAWNS STARTERS (4 items)
-    INSERT INTO menu_items (name, category, price, aggregator_price, is_veg, direct_order_eligible, is_completed, last_reset_date) VALUES
-      ('Loose Prawns', 'prawns-starters', 350, 420, false, true, false, current_date),
-      ('Chilli Prawns', 'prawns-starters', 350, 420, false, true, false, current_date),
-      ('Pepper Prawns', 'prawns-starters', 350, 420, false, true, false, current_date),
-      ('Prawns 65', 'prawns-starters', 350, 420, false, true, false, current_date);
-
-    -- Category 9. EGG STARTERS (7 items)
-    INSERT INTO menu_items (name, category, price, aggregator_price, is_veg, direct_order_eligible, is_completed, last_reset_date) VALUES
-      ('Egg Chilly', 'egg-starters', 180, 220, false, true, false, current_date),
-      ('Egg 65', 'egg-starters', 180, 220, false, true, false, current_date),
-      ('Omelette', 'egg-starters', 80, 100, false, true, false, current_date),
-      ('Special Omelette', 'egg-starters', 100, 120, false, true, false, current_date),
-      ('Egg Manchurian', 'egg-starters', 200, 240, false, true, false, current_date),
-      ('Boiled Egg', 'egg-starters', 20, 20, false, false, false, current_date),
-      ('Dragon Egg', 'egg-starters', 200, 240, false, true, false, current_date);
-
-    -- Category 10. VEG. STARTERS (21 items)
-    INSERT INTO menu_items (name, category, price, aggregator_price, is_veg, direct_order_eligible, is_completed, last_reset_date) VALUES
-      ('Veg. Manchurian', 'veg-starters', 260, 310, true, true, false, current_date),
-      ('Veg. 65', 'veg-starters', 270, 320, true, true, false, current_date),
-      ('Baby Corn 65', 'veg-starters', 270, 320, true, true, false, current_date),
-      ('Baby Corn Chilly', 'veg-starters', 280, 340, true, true, false, current_date),
-      ('Crispy Baby Corn', 'veg-starters', 280, 340, true, true, false, current_date),
-      ('Baby Corn 555', 'veg-starters', 290, 350, true, true, false, current_date),
-      ('Crispy Corn', 'veg-starters', 260, 310, true, true, false, current_date),
-      ('Paneer Manchurian', 'veg-starters', 290, 350, true, true, false, current_date),
-      ('Paneer 65', 'veg-starters', 280, 340, true, true, false, current_date),
-      ('Chilli Paneer', 'veg-starters', 280, 340, true, true, false, current_date),
-      ('Paneer Majestic', 'veg-starters', 290, 350, true, true, false, current_date),
-      ('Paneer Pakoda', 'veg-starters', 280, 340, true, true, false, current_date),
-      ('Gobi Manchuria', 'veg-starters', 220, 260, true, true, false, current_date),
-      ('Gobi 65', 'veg-starters', 200, 240, true, true, false, current_date),
-      ('Chilli Gobi', 'veg-starters', 180, 220, true, true, false, current_date),
-      ('Mushroom Manchurian', 'veg-starters', 280, 340, true, true, false, current_date),
-      ('Mushroom 65', 'veg-starters', 280, 340, true, true, false, current_date),
-      ('Mushroom Chilli', 'veg-starters', 280, 340, true, true, false, current_date),
-      ('Mushroom Pepper', 'veg-starters', 300, 360, true, true, false, current_date),
-      ('Veg. Platter', 'veg-starters', 570, 680, true, true, false, current_date),
-      ('French Fries', 'veg-starters', 200, 240, true, true, false, current_date);
-
-    -- Category 11. TANDOORI FUSION (16 items)
-    INSERT INTO menu_items (name, category, price, aggregator_price, is_veg, direct_order_eligible, is_completed, last_reset_date) VALUES
-      ('Tandoori Chicken Half', 'tandoori-fusion', 280, 340, false, true, false, current_date),
-      ('Tandoori Chicken Full', 'tandoori-fusion', 500, 600, false, true, false, current_date),
-      ('Tangdi Kabab Half (2 Pcs.)', 'tandoori-fusion', 190, 230, false, true, false, current_date),
-      ('Tangdi Kabab Full (4 Pcs.)', 'tandoori-fusion', 380, 460, false, true, false, current_date),
-      ('Grill Chicken Half', 'tandoori-fusion', 260, 310, false, true, false, current_date),
-      ('Grill Chicken Full', 'tandoori-fusion', 500, 600, false, true, false, current_date),
-      ('Alfaham Chicken Half', 'tandoori-fusion', 280, 340, false, true, false, current_date),
-      ('Alfaham Chicken Full', 'tandoori-fusion', 520, 620, false, true, false, current_date),
-      ('Chicken Tikka', 'tandoori-fusion', 360, 430, false, true, false, current_date),
-      ('Malai Chicken Tikka', 'tandoori-fusion', 380, 460, false, true, false, current_date),
-      ('Garlic Chicken Kabab', 'tandoori-fusion', 380, 460, false, true, false, current_date),
-      ('Chicken Seekh Kabab', 'tandoori-fusion', 390, 470, false, true, false, current_date),
-      ('Garlic Chicken Kabab', 'tandoori-fusion', 390, 470, false, true, false, current_date),
-      ('Tiger Prawns Tikka (Sunday)', 'tandoori-fusion', 499, 600, false, true, false, current_date),
-      ('Paneer Tikka', 'tandoori-fusion', 340, 410, true, true, false, current_date),
-      ('Veg. Seekh Kabab', 'tandoori-fusion', 320, 380, true, true, false, current_date);
-
-    -- Category 12. SHAWARMAS (6 items)
-    INSERT INTO menu_items (name, category, price, aggregator_price, is_veg, direct_order_eligible, is_completed, last_reset_date) VALUES
-      ('Shawarma', 'shawarmas', 100, 120, false, true, false, current_date),
-      ('Special Shawarma', 'shawarmas', 140, 170, false, true, false, current_date),
-      ('Butter Shawarma', 'shawarmas', 130, 160, false, true, false, current_date),
-      ('Special Butter Shawarma', 'shawarmas', 160, 190, false, true, false, current_date),
-      ('Kaju Shawarma', 'shawarmas', 200, 240, false, true, false, current_date),
-      ('Plate Shawarma', 'shawarmas', 170, 200, false, true, false, current_date);
-
-    -- Category 13. BIRIYANIS (20 items)
-    INSERT INTO menu_items (name, category, price, aggregator_price, is_veg, direct_order_eligible, is_completed, last_reset_date) VALUES
-      ('Chicken Dum Biryani', 'biriyanis', 230, 280, false, true, false, current_date),
-      ('Mutton Dum Biryani', 'biriyanis', 400, 480, false, true, false, current_date),
-      ('Chicken Fry Biryani', 'biriyanis', 280, 340, false, true, false, current_date),
-      ('Mutton Fry Biryani', 'biriyanis', 420, 500, false, true, false, current_date),
-      ('Chicken Joint Biryani', 'biriyanis', 320, 380, false, true, false, current_date),
-      ('Chicken Kabab Biryani', 'biriyanis', 320, 380, false, true, false, current_date),
-      ('Lollipop Biryani', 'biriyanis', 330, 400, false, true, false, current_date),
-      ('Special Chicken Biryani', 'biriyanis', 320, 380, false, true, false, current_date),
-      ('Mughalai Chicken Biryani', 'biriyanis', 310, 370, false, true, false, current_date),
-      ('Gongura Chicken Biryani', 'biriyanis', 320, 380, false, true, false, current_date),
-      ('Chicken Tikka Biryani', 'biriyanis', 330, 400, false, true, false, current_date),
-      ('Alfaham Chicken Biryani', 'biriyanis', 330, 400, false, true, false, current_date),
-      ('Tandoori Chicken Biryani', 'biriyanis', 300, 360, false, true, false, current_date),
-      ('Grill Chicken Biryani', 'biriyanis', 300, 360, false, true, false, current_date),
-      ('Fish Biryani', 'biriyanis', 340, 410, false, true, false, current_date),
-      ('Prawns Biryani', 'biriyanis', 380, 460, false, true, false, current_date),
-      ('Egg Biryani', 'biriyanis', 180, 220, false, true, false, current_date),
-      ('Mixed Biryani (Non-Veg.)', 'biriyanis', 420, 500, false, true, false, current_date),
-      ('Rambo Chicken Biryani', 'biriyanis', 420, 500, false, true, false, current_date),
-      ('Biryani Rice', 'biriyanis', 140, 170, false, true, false, current_date);
-
-    -- Category 14. VEG. BIRYANI (6 items)
-    INSERT INTO menu_items (name, category, price, aggregator_price, is_veg, direct_order_eligible, is_completed, last_reset_date) VALUES
-      ('Veg. Biryani', 'veg-biryani', 220, 260, true, true, false, current_date),
-      ('Kaju Biryani', 'veg-biryani', 260, 310, true, true, false, current_date),
-      ('Kaju Paneer Biryani', 'veg-biryani', 300, 360, true, true, false, current_date),
-      ('Paneer Biryani', 'veg-biryani', 280, 340, true, true, false, current_date),
-      ('Mushroom Biryani', 'veg-biryani', 280, 340, true, true, false, current_date),
-      ('Mixed Biryani (Veg.)', 'veg-biryani', 330, 400, true, true, false, current_date);
-
-    -- Category 15. ARABIC MANDI (14 items)
-    INSERT INTO menu_items (name, category, price, aggregator_price, is_veg, direct_order_eligible, is_completed, last_reset_date) VALUES
-      ('Chicken Mandi (Single)', 'arabic-mandi', 300, 360, false, true, false, current_date),
-      ('Tandoori Mandi (Single)', 'arabic-mandi', 320, 380, false, true, false, current_date),
-      ('Chicken Mandi (Half)', 'arabic-mandi', 500, 600, false, true, false, current_date),
-      ('Chicken Mandi (Full)', 'arabic-mandi', 980, 1180, false, true, false, current_date),
-      ('Tandoori Chicken Mandi (Half)', 'arabic-mandi', 550, 660, false, true, false, current_date),
-      ('Tandoori Chicken Mandi (Full)', 'arabic-mandi', 1000, 1200, false, true, false, current_date),
-      ('Alfaham Chicken Mandi (Half)', 'arabic-mandi', 580, 700, false, true, false, current_date),
-      ('Alfaham Chicken Mandi (Full)', 'arabic-mandi', 1050, 1260, false, true, false, current_date),
-      ('Vaibhav Special Mandi (Half)', 'arabic-mandi', 1050, 1260, false, true, false, current_date),
-      ('Vaibhav Special Mandi (Full)', 'arabic-mandi', 1990, 2390, false, true, false, current_date),
-      ('Alfaham Juicy Mandi (Half)', 'arabic-mandi', 680, 820, false, true, false, current_date),
-      ('Alfaham Juicy Mandi (Full)', 'arabic-mandi', 1290, 1550, false, true, false, current_date),
-      ('Mutton Juicy Mandi (Half)', 'arabic-mandi', 990, 1190, false, true, false, current_date),
-      ('Mutton Juicy Mandi (Full)', 'arabic-mandi', 1950, 2340, false, true, false, current_date);
-
-    -- Category 16. NON-VEG. FRIED RICE (6 items)
-    INSERT INTO menu_items (name, category, price, aggregator_price, is_veg, direct_order_eligible, is_completed, last_reset_date) VALUES
-      ('Chicken Fried Rice', 'non-veg-fried-rice', 240, 290, false, true, false, current_date),
-      ('Schezwan Chicken Fried Rice', 'non-veg-fried-rice', 260, 310, false, true, false, current_date),
-      ('Prawns Fried Rice', 'non-veg-fried-rice', 320, 380, false, true, false, current_date),
-      ('Egg Fried Rice', 'non-veg-fried-rice', 190, 230, false, true, false, current_date),
-      ('Schezwan Egg Fried Rice', 'non-veg-fried-rice', 210, 250, false, true, false, current_date),
-      ('Special Chicken Fried Rice', 'non-veg-fried-rice', 280, 340, false, true, false, current_date);
-
-    -- Category 17. VEG. FRIED RICE (11 items)
-    INSERT INTO menu_items (name, category, price, aggregator_price, is_veg, direct_order_eligible, is_completed, last_reset_date) VALUES
-      ('Veg. Fried Rice', 'veg-fried-rice', 170, 200, true, true, false, current_date),
-      ('Gobi Fried Rice', 'veg-fried-rice', 180, 220, true, true, false, current_date),
-      ('Zeera Rice', 'veg-fried-rice', 180, 220, true, true, false, current_date),
-      ('Ghee Rice', 'veg-fried-rice', 210, 250, true, true, false, current_date),
-      ('Mushroom Fried Rice', 'veg-fried-rice', 240, 290, true, true, false, current_date),
-      ('Paneer Fried Rice', 'veg-fried-rice', 240, 290, true, true, false, current_date),
-      ('Kaju Fried Rice', 'veg-fried-rice', 280, 340, true, true, false, current_date),
-      ('Schezwan Fried Rice', 'veg-fried-rice', 230, 280, true, true, false, current_date),
-      ('Baby Corn Fried Rice', 'veg-fried-rice', 240, 290, true, true, false, current_date),
-      ('Mixed Veg. Fried Rice', 'veg-fried-rice', 260, 310, true, true, false, current_date),
-      ('Dalkichidi', 'veg-fried-rice', 220, 260, true, true, false, current_date);
-
-    -- Category 18. NON-VEG. NOODLES (5 items)
-    INSERT INTO menu_items (name, category, price, aggregator_price, is_veg, direct_order_eligible, is_completed, last_reset_date) VALUES
-      ('Egg Noodles', 'non-veg-noodles', 220, 260, false, true, false, current_date),
-      ('Schezwan Egg Noodles', 'non-veg-noodles', 240, 290, false, true, false, current_date),
-      ('Chicken Noodles', 'non-veg-noodles', 260, 310, false, true, false, current_date),
-      ('Chicken Schezwan Noodles', 'non-veg-noodles', 280, 340, false, true, false, current_date),
-      ('Prawns Noodles', 'non-veg-noodles', 350, 420, false, true, false, current_date);
-
-    -- Category 19. VEG. NOODLES (6 items)
-    INSERT INTO menu_items (name, category, price, aggregator_price, is_veg, direct_order_eligible, is_completed, last_reset_date) VALUES
-      ('Veg. Noodles', 'veg-noodles', 200, 240, true, true, false, current_date),
-      ('Gobi Noodles', 'veg-noodles', 200, 240, true, true, false, current_date),
-      ('Paneer Noodles', 'veg-noodles', 250, 300, true, true, false, current_date),
-      ('Mushroom Noodles', 'veg-noodles', 250, 300, true, true, false, current_date),
-      ('Manchurian Noodles', 'veg-noodles', 260, 310, true, true, false, current_date),
-      ('Veg. Hakka Noodles', 'veg-noodles', 250, 300, true, true, false, current_date);
-
-    -- Category 20. VEG. PULAVS (4 items)
-    INSERT INTO menu_items (name, category, price, aggregator_price, is_veg, direct_order_eligible, is_completed, last_reset_date) VALUES
-      ('Veg. Pulav', 'veg-pulavs', 200, 240, true, true, false, current_date),
-      ('Kaju Pulav', 'veg-pulavs', 280, 340, true, true, false, current_date),
-      ('Paneer Pulav', 'veg-pulavs', 280, 340, true, true, false, current_date),
-      ('Mushroom Pulav', 'veg-pulavs', 280, 340, true, true, false, current_date);
-
-    -- Category 21. INDIAN BREADS (15 items)
-    INSERT INTO menu_items (name, category, price, aggregator_price, is_veg, direct_order_eligible, is_completed, last_reset_date) VALUES
-      ('Tandoori Roti', 'indian-breads', 30, 40, true, true, false, current_date),
-      ('Butter Roti', 'indian-breads', 35, 40, true, true, false, current_date),
-      ('Plain Naan', 'indian-breads', 55, 70, true, true, false, current_date),
-      ('Butter Naan', 'indian-breads', 65, 80, true, true, false, current_date),
-      ('Garlic Naan', 'indian-breads', 70, 80, true, true, false, current_date),
-      ('Rumali Roti', 'indian-breads', 55, 70, true, true, false, current_date),
-      ('Kulcha', 'indian-breads', 50, 60, true, true, false, current_date),
-      ('Butter Kulcha', 'indian-breads', 55, 70, true, true, false, current_date),
-      ('Onion Kulcha', 'indian-breads', 70, 80, true, true, false, current_date),
-      ('Masala Kulcha', 'indian-breads', 90, 110, true, true, false, current_date),
-      ('Paneer Kulcha', 'indian-breads', 90, 110, true, true, false, current_date),
-      ('Aloo Parota', 'indian-breads', 90, 110, true, true, false, current_date),
-      ('Parota', 'indian-breads', 50, 60, true, true, false, current_date),
-      ('Plain Papad', 'indian-breads', 40, 50, true, false, false, current_date),
-      ('Masala Papad', 'indian-breads', 80, 100, true, true, false, current_date);
-
-    -- Category 22. VEG. CURRIES (26 items)
-    INSERT INTO menu_items (name, category, price, aggregator_price, is_veg, direct_order_eligible, is_completed, last_reset_date) VALUES
-      ('Kadai Veg.', 'veg-curries', 250, 300, true, true, false, current_date),
-      ('Mixed Veg. Curry', 'veg-curries', 240, 290, true, true, false, current_date),
-      ('Veg. Mughlai Curry', 'veg-curries', 280, 340, true, true, false, current_date),
-      ('Veg. Kofta Curry', 'veg-curries', 270, 320, true, true, false, current_date),
-      ('Malai Kofta Curry', 'veg-curries', 250, 300, true, true, false, current_date),
-      ('Shahi Paneer', 'veg-curries', 270, 320, true, true, false, current_date),
-      ('Paneer Butter Masala', 'veg-curries', 250, 300, true, true, false, current_date),
-      ('Kadai Paneer', 'veg-curries', 280, 340, true, true, false, current_date),
-      ('Methi Chaman', 'veg-curries', 270, 320, true, true, false, current_date),
-      ('Kaju Paneer Masala', 'veg-curries', 280, 340, true, true, false, current_date),
-      ('Kaju Masala Curry', 'veg-curries', 280, 340, true, true, false, current_date),
-      ('Mutter Paneer', 'veg-curries', 280, 340, true, true, false, current_date),
-      ('Aloo Gobi', 'veg-curries', 180, 220, true, true, false, current_date),
-      ('Aloo Mutter', 'veg-curries', 200, 240, true, true, false, current_date),
-      ('Aloo Palak', 'veg-curries', 260, 310, true, true, false, current_date),
-      ('Paneer Kheema Masala', 'veg-curries', 280, 340, true, true, false, current_date),
-      ('Palak Paneer', 'veg-curries', 270, 320, true, true, false, current_date),
-      ('Plain Palak', 'veg-curries', 220, 260, true, true, false, current_date),
-      ('Methi Paneer', 'veg-curries', 280, 340, true, true, false, current_date),
-      ('Paneer Tikka Masala', 'veg-curries', 290, 350, true, true, false, current_date),
-      ('Dal Fry', 'veg-curries', 200, 240, true, true, false, current_date),
-      ('Dal Tadka', 'veg-curries', 220, 260, true, true, false, current_date),
-      ('Kadai Mushroom', 'veg-curries', 280, 340, true, true, false, current_date),
-      ('Mushroom Masala', 'veg-curries', 250, 300, true, true, false, current_date),
-      ('Baby Corn Masala', 'veg-curries', 260, 310, true, true, false, current_date),
-      ('Paneer Makhani', 'veg-curries', 280, 340, true, true, false, current_date);
-
-    -- Category 23. NON-VEG. CURRIES — CHICKEN (17 items)
-    INSERT INTO menu_items (name, category, price, aggregator_price, is_veg, direct_order_eligible, is_completed, last_reset_date) VALUES
-      ('Chicken Curry (Bone)', 'chicken-curries', 240, 290, false, true, false, current_date),
-      ('Chicken Curry (Boneless)', 'chicken-curries', 290, 350, false, true, false, current_date),
-      ('Andhra Chicken Curry (Spicy)', 'chicken-curries', 260, 310, false, true, false, current_date),
-      ('Chicken Rayalaseema', 'chicken-curries', 280, 340, false, true, false, current_date),
-      ('Special Chicken Curry', 'chicken-curries', 280, 340, false, true, false, current_date),
-      ('Kadai Chicken', 'chicken-curries', 280, 340, false, true, false, current_date),
-      ('Butter Chicken', 'chicken-curries', 280, 340, false, true, false, current_date),
-      ('Chicken Murgh Masala', 'chicken-curries', 300, 360, false, true, false, current_date),
-      ('Chicken Kheema Curry', 'chicken-curries', 320, 380, false, true, false, current_date),
-      ('Chicken Tikka Masala', 'chicken-curries', 320, 380, false, true, false, current_date),
-      ('Wings Masala', 'chicken-curries', 320, 380, false, true, false, current_date),
-      ('Chicken Mughalai Curry', 'chicken-curries', 320, 380, false, true, false, current_date),
-      ('Kaju Chicken Curry', 'chicken-curries', 350, 420, false, true, false, current_date),
-      ('Methi Chicken (Bone)', 'chicken-curries', 290, 350, false, true, false, current_date),
-      ('Methi Chicken (Boneless)', 'chicken-curries', 340, 410, false, true, false, current_date),
-      ('Punjabi Chicken Curry', 'chicken-curries', 320, 380, false, true, false, current_date),
-      ('Afgani Chicken (Rambha)', 'chicken-curries', 320, 380, false, true, false, current_date);
-
-    -- Category 24. MUTTON CURRY (5 items)
-    INSERT INTO menu_items (name, category, price, aggregator_price, is_veg, direct_order_eligible, is_completed, last_reset_date) VALUES
-      ('Palak Mutton', 'mutton-curry', 350, 420, false, true, false, current_date),
-      ('Gongura Mutton', 'mutton-curry', 370, 440, false, true, false, current_date),
-      ('Mutton Curry', 'mutton-curry', 360, 430, false, true, false, current_date),
-      ('Kaju Mutton Curry', 'mutton-curry', 450, 540, false, true, false, current_date),
-      ('Methi Mutton', 'mutton-curry', 350, 420, false, true, false, current_date);
-
-    -- Category 25. MILKSHAKES (5 items)
-    INSERT INTO menu_items (name, category, price, aggregator_price, is_veg, direct_order_eligible, is_completed, last_reset_date) VALUES
-      ('Vanilla Milkshake', 'milkshakes', 130, 160, true, true, false, current_date),
-      ('Butterscotch Milkshake', 'milkshakes', 140, 170, true, true, false, current_date),
-      ('Chocolate Milkshake', 'milkshakes', 140, 170, true, true, false, current_date),
-      ('Oreo Milkshake', 'milkshakes', 170, 200, true, true, false, current_date),
-      ('KitKat Milkshake', 'milkshakes', 170, 200, true, true, false, current_date);
-
-    -- Category 26. BEVERAGES (10 items)
-    INSERT INTO menu_items (name, category, price, aggregator_price, is_veg, direct_order_eligible, is_completed, last_reset_date) VALUES
-      ('Butter Milk', 'beverages', 50, 60, true, true, false, current_date),
-      ('Sweet Lassi', 'beverages', 80, 100, true, true, false, current_date),
-      ('Lassi', 'beverages', 80, 100, true, true, false, current_date),
-      ('Lemon Soda Sweet & Salt', 'beverages', 80, 100, true, true, false, current_date),
-      ('Lemon Juice', 'beverages', 70, 80, true, true, false, current_date),
-      ('Water 1 litre', 'beverages', 20, 20, true, false, false, current_date),
-      ('Thumbs Up 250 ml', 'beverages', 20, 20, true, true, false, current_date),
-      ('Sprite 250 ml', 'beverages', 20, 20, true, true, false, current_date),
-      ('Coco Cola 250 ml', 'beverages', 20, 20, true, true, false, current_date),
-      ('Goli Soda', 'beverages', 30, 40, true, true, false, current_date);
-
-    -- Category 27. MOCKTAILS (4 items)
-    INSERT INTO menu_items (name, category, price, aggregator_price, is_veg, direct_order_eligible, is_completed, last_reset_date) VALUES
-      ('Blue Lagoon Mocktail', 'mocktails', 130, 160, true, true, false, current_date),
-      ('Green Mint Mocktail', 'mocktails', 130, 160, true, true, false, current_date),
-      ('Naughty Water Melon Mocktail', 'mocktails', 150, 180, true, true, false, current_date),
-      ('Orange Mocktail', 'mocktails', 130, 160, true, true, false, current_date);
-
-    -- Category 28. DESSERTS (4 items)
-    INSERT INTO menu_items (name, category, price, aggregator_price, is_veg, direct_order_eligible, is_completed, last_reset_date) VALUES
-      ('Gulab Jamun', 'desserts', 60, 70, true, true, false, current_date),
-      ('Gulab Jamun with Ice Cream', 'desserts', 150, 180, true, true, false, current_date),
-      ('Double Ka Meeta', 'desserts', 100, 120, true, true, false, current_date),
-      ('Badham Kheer', 'desserts', 100, 120, true, true, false, current_date);
-
-    -- Category 29. ICE CREAMS (5 items)
-    INSERT INTO menu_items (name, category, price, aggregator_price, is_veg, direct_order_eligible, is_completed, last_reset_date) VALUES
-      ('Vanilla', 'ice-creams', 90, 110, true, true, false, current_date),
-      ('Butterscotch', 'ice-creams', 90, 110, true, true, false, current_date),
-      ('Strawberry', 'ice-creams', 90, 110, true, true, false, current_date),
-      ('Black Current', 'ice-creams', 120, 140, true, true, false, current_date),
-      ('Chocolate', 'ice-creams', 110, 130, true, true, false, current_date);
-
-    -- Category 30. BUCKET BIRYANI — PORTIONS ONLY (12 items)
-    INSERT INTO menu_items (name, category, price, aggregator_price, is_veg, direct_order_eligible, is_completed, last_reset_date) VALUES
-      ('Chicken Mandi Bucket Half', 'bucket-biryani', 550, 660, false, true, false, current_date),
-      ('Chicken Mandi Bucket Full', 'bucket-biryani', 1000, 1200, false, true, false, current_date),
-      ('Alfaham Mandi Bucket Half', 'bucket-biryani', 600, 720, false, true, false, current_date),
-      ('Alfaham Mandi Bucket Full', 'bucket-biryani', 1100, 1320, false, true, false, current_date),
-      ('Tandoori Chicken Mandi Bucket Half', 'bucket-biryani', 550, 660, false, true, false, current_date),
-      ('Tandoori Chicken Mandi Bucket Full', 'bucket-biryani', 1000, 1200, false, true, false, current_date),
-      ('Alfaham Juicy Mandi Bucket Half', 'bucket-biryani', 630, 760, false, true, false, current_date),
-      ('Alfaham Juicy Mandi Bucket Full', 'bucket-biryani', 1290, 1550, false, true, false, current_date),
-      ('Family Chicken Dum Biryani Half', 'bucket-biryani', 600, 720, false, true, false, current_date),
-      ('Family Chicken Dum Biryani Full', 'bucket-biryani', 1100, 1320, false, true, false, current_date),
-      ('Mutton Dum Biryani Half', 'bucket-biryani', 990, 1190, false, true, false, current_date),
-      ('Mutton Dum Biryani Full', 'bucket-biryani', 1990, 2390, false, true, false, current_date);
-
-  END IF;
-END $$;
-
--- =====================================================================
--- 4. ENABLE ROW LEVEL SECURITY (RLS) TO LOCK DOWN DATA
+-- 3. ENABLE ROW LEVEL SECURITY (RLS) FOR COMPLETE DATA LOCKDOWN
 -- =====================================================================
 ALTER TABLE menu_items ENABLE ROW LEVEL SECURITY;
+ALTER TABLE menu_prices ENABLE ROW LEVEL SECURITY;
+ALTER TABLE sale_settings ENABLE ROW LEVEL SECURITY;
+ALTER TABLE menu_price_log ENABLE ROW LEVEL SECURITY;
 ALTER TABLE store_settings ENABLE ROW LEVEL SECURITY;
 ALTER TABLE store_offers ENABLE ROW LEVEL SECURITY;
 ALTER TABLE orders ENABLE ROW LEVEL SECURITY;
 ALTER TABLE admin_secrets ENABLE ROW LEVEL SECURITY;
 
--- Ensure columns exist for brute-force lock protection
-ALTER TABLE admin_secrets ADD COLUMN IF NOT EXISTS failed_attempts int NOT NULL DEFAULT 0;
-ALTER TABLE admin_secrets ADD COLUMN IF NOT EXISTS locked_until timestamptz DEFAULT NULL;
-
--- Drop old policies if re-running
-DROP POLICY IF EXISTS "Public can read menu" ON menu_items;
-DROP POLICY IF EXISTS "Public can read offers" ON store_offers;
-DROP POLICY IF EXISTS "Customers can insert orders" ON orders;
+-- A. menu_items: Public read only
 DROP POLICY IF EXISTS "Public read menu_items" ON menu_items;
-DROP POLICY IF EXISTS "Public read store_offers" ON store_offers;
-DROP POLICY IF EXISTS "Public read store_settings" ON store_settings;
-DROP POLICY IF EXISTS "Orders strict insert only" ON orders;
-
--- A. menu_items: Public read only (SELECT). Drop all public write/update/delete.
 CREATE POLICY "Public read menu_items" ON menu_items
   FOR SELECT TO anon, authenticated USING (true);
+REVOKE INSERT, UPDATE, DELETE ON menu_items FROM anon, authenticated, public;
 
--- B. store_offers: Public read only (SELECT). Drop all public write/update/delete.
+-- B. menu_prices: Public read only
+DROP POLICY IF EXISTS "Public read menu_prices" ON menu_prices;
+CREATE POLICY "Public read menu_prices" ON menu_prices
+  FOR SELECT TO anon, authenticated USING (true);
+REVOKE INSERT, UPDATE, DELETE ON menu_prices FROM anon, authenticated, public;
+
+-- C. sale_settings: Public read only
+DROP POLICY IF EXISTS "Public read sale_settings" ON sale_settings;
+CREATE POLICY "Public read sale_settings" ON sale_settings
+  FOR SELECT TO anon, authenticated USING (true);
+REVOKE INSERT, UPDATE, DELETE ON sale_settings FROM anon, authenticated, public;
+
+-- D. menu_price_log: Zero public access (Admin audit only)
+REVOKE ALL ON menu_price_log FROM anon, authenticated, public;
+
+-- E. store_offers: Public read only
+DROP POLICY IF EXISTS "Public read store_offers" ON store_offers;
 CREATE POLICY "Public read store_offers" ON store_offers
   FOR SELECT TO anon, authenticated USING (true);
+REVOKE INSERT, UPDATE, DELETE ON store_offers FROM anon, authenticated, public;
 
--- C. store_settings: Public read only (SELECT). Revoke direct modification.
+-- F. store_settings: Public read only
+DROP POLICY IF EXISTS "Public read store_settings" ON store_settings;
 CREATE POLICY "Public read store_settings" ON store_settings
   FOR SELECT TO anon, authenticated USING (true);
 REVOKE INSERT, UPDATE, DELETE ON store_settings FROM anon, authenticated, public;
 
--- D. admin_secrets: ZERO public policies. Revoke all access from anon and authenticated.
+-- G. admin_secrets: Zero public policies
 REVOKE ALL ON admin_secrets FROM anon, authenticated, public;
 
--- D. orders: Revoke direct SELECT, INSERT, UPDATE, DELETE from anon and authenticated.
--- Orders are completely unreadable and unwritable by direct table access.
--- All operations are performed exclusively through audited SECURITY DEFINER RPCs.
-REVOKE ALL ON orders FROM anon;
-REVOKE ALL ON orders FROM authenticated;
-REVOKE ALL ON orders FROM public;
-
--- Drop all direct policies on orders (no direct access allowed)
+-- H. orders: Zero direct table access. All actions through SECURITY DEFINER RPCs.
+REVOKE ALL ON orders FROM anon, authenticated, public;
 DROP POLICY IF EXISTS "Orders strict insert only" ON orders;
 DROP POLICY IF EXISTS "Customers can insert orders" ON orders;
 DROP POLICY IF EXISTS "Public can read orders" ON orders;
 DROP POLICY IF EXISTS "Public can insert orders" ON orders;
 DROP POLICY IF EXISTS "Public can update orders" ON orders;
 
--- Remove orders table from supabase_realtime publication to protect customer PII
+-- Remove orders table from realtime publication to protect customer PII
 DO $$
 BEGIN
   IF EXISTS (
@@ -581,8 +216,8 @@ BEGIN
 END $$;
 
 -- =====================================================================
--- 5. BRUTE-FORCE LOCKDOWN & PIN VERIFICATION HELPER
--- ===============================================================-- Centralized PIN Verification with Brute-Force Rate Limiting (Returns JSONB to prevent transaction rollback)
+-- 4. BRUTE-FORCE LOCKDOWN & PIN VERIFICATION HELPER
+-- =====================================================================
 CREATE OR REPLACE FUNCTION check_and_verify_pin(input_pin text)
 RETURNS jsonb
 LANGUAGE plpgsql
@@ -602,7 +237,7 @@ BEGIN
     );
   END IF;
 
-  -- 1. Check if account is currently locked out
+  -- Check lockout
   IF v_sec.locked_until IS NOT NULL AND v_sec.locked_until > now() THEN
     RETURN jsonb_build_object(
       'ok', false,
@@ -612,7 +247,7 @@ BEGIN
     );
   END IF;
 
-  -- 2. If input_pin does NOT match passcode
+  -- Incorrect PIN
   IF v_sec.passcode <> input_pin THEN
     v_new_attempts := COALESCE(v_sec.failed_attempts, 0) + 1;
     IF v_new_attempts >= 5 THEN
@@ -646,7 +281,7 @@ BEGIN
     END IF;
   END IF;
 
-  -- 3. If input_pin matches: reset lockouts and failed attempts
+  -- Correct PIN: reset lockouts
   IF COALESCE(v_sec.failed_attempts, 0) > 0 OR v_sec.locked_until IS NOT NULL THEN
     UPDATE admin_secrets
     SET failed_attempts = 0, locked_until = NULL
@@ -657,7 +292,6 @@ BEGIN
 END;
 $$;
 
--- A. Verify Admin PIN (Returns JSONB status without raising exception)
 CREATE OR REPLACE FUNCTION verify_admin_pin(input_pin text)
 RETURNS jsonb
 LANGUAGE plpgsql
@@ -668,7 +302,9 @@ BEGIN
 END;
 $$;
 
--- Drop old signatures to prevent return type mismatch or overload collision (42P13 / 42725)
+-- =====================================================================
+-- 5. ADMIN CRM & ORDER HANDLING RPCS
+-- =====================================================================
 DROP FUNCTION IF EXISTS admin_fetch_orders(text);
 DROP FUNCTION IF EXISTS admin_fetch_orders(text, int);
 DROP FUNCTION IF EXISTS admin_fetch_orders(text, integer);
@@ -676,7 +312,6 @@ DROP FUNCTION IF EXISTS admin_get_orders(text);
 DROP FUNCTION IF EXISTS admin_get_orders(text, int);
 DROP FUNCTION IF EXISTS admin_get_orders(text, integer);
 
--- B. Fetch All Orders for Admin with optional limit (Returns full orders row including payment_method, utr, payment_status)
 CREATE OR REPLACE FUNCTION admin_get_orders(input_pin text, p_limit int DEFAULT 200)
 RETURNS setof orders
 LANGUAGE plpgsql
@@ -713,11 +348,9 @@ BEGIN
 END;
 $$;
 
--- Drop previous signatures of admin_update_payment_status
 DROP FUNCTION IF EXISTS admin_update_payment_status(text, int, text);
 DROP FUNCTION IF EXISTS admin_update_payment_status(text, integer, text);
 
--- C. Update Payment Status (Owner confirms or rejects payment after bank/soundbox verification)
 CREATE OR REPLACE FUNCTION admin_update_payment_status(
   input_pin text,
   p_order_id int,
@@ -732,19 +365,16 @@ DECLARE
   v_auth jsonb;
   v_status text;
 BEGIN
-  -- 1. Check PIN first (returns generic error on wrong PIN)
   v_auth := check_and_verify_pin(input_pin);
   IF (v_auth->>'ok')::boolean IS NOT TRUE THEN
     RETURN jsonb_build_object('ok', false, 'error', 'Unauthorized');
   END IF;
 
-  -- 2. Validate payment status: accepts only 'confirmed' or 'rejected'
   v_status := lower(trim(COALESCE(p_payment_status, '')));
   IF v_status NOT IN ('confirmed', 'rejected') THEN
     RETURN jsonb_build_object('ok', false, 'error', 'Invalid status. Only confirmed or rejected are allowed.');
   END IF;
 
-  -- 3. Update payment_status on order
   UPDATE orders
   SET payment_status = v_status
   WHERE id = p_order_id;
@@ -757,7 +387,6 @@ BEGIN
 END;
 $$;
 
--- C. Update Order Status (Returns boolean without raising exception)
 CREATE OR REPLACE FUNCTION admin_update_order_status(input_pin text, target_order_id int, new_status text)
 RETURNS boolean
 LANGUAGE plpgsql
@@ -776,9 +405,112 @@ BEGIN
 END;
 $$;
 
--- D. Toggle Menu Item Stock, 5km Delivery Eligibility, & Live Direct/Aggregator Price Editing
+-- =====================================================================
+-- 6. AUTHORITATIVE PRICE & AVAILABILITY RPCS (TASKS 6 & 7)
+-- =====================================================================
 
--- Drop previous signatures to prevent conflicts or ambiguities
+-- 6a. Admin Set Available RPC
+DROP FUNCTION IF EXISTS admin_set_available(text, text, boolean);
+CREATE OR REPLACE FUNCTION admin_set_available(
+  input_pin text,
+  p_item_id text,
+  p_available boolean
+)
+RETURNS jsonb
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+DECLARE
+  v_auth jsonb;
+BEGIN
+  v_auth := check_and_verify_pin(input_pin);
+  IF (v_auth->>'ok')::boolean IS NOT TRUE THEN
+    RETURN jsonb_build_object('success', false, 'error', COALESCE(v_auth->>'error', 'Unauthorized'));
+  END IF;
+
+  UPDATE menu_items
+  SET
+    available = p_available,
+    is_completed = NOT p_available,
+    updated_at = now()
+  WHERE item_id = p_item_id OR id::text = p_item_id;
+
+  IF NOT FOUND THEN
+    RETURN jsonb_build_object('success', false, 'error', 'Item not found in menu_items.');
+  END IF;
+
+  RETURN jsonb_build_object(
+    'success', true,
+    'item_id', p_item_id,
+    'available', p_available
+  );
+END;
+$$;
+
+-- 6b. Admin Set Price RPC (Validates 1..99999, logs to menu_price_log, updates updated_at)
+DROP FUNCTION IF EXISTS admin_set_price(text, text, integer);
+DROP FUNCTION IF EXISTS admin_set_price(text, text, int);
+CREATE OR REPLACE FUNCTION admin_set_price(
+  input_pin text,
+  p_sku text,
+  p_price integer
+)
+RETURNS jsonb
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+DECLARE
+  v_auth jsonb;
+  v_old_price integer;
+  v_target_item_id text;
+BEGIN
+  v_auth := check_and_verify_pin(input_pin);
+  IF (v_auth->>'ok')::boolean IS NOT TRUE THEN
+    RETURN jsonb_build_object('success', false, 'error', COALESCE(v_auth->>'error', 'Unauthorized'));
+  END IF;
+
+  -- Validate price range: 1 to 99999
+  IF p_price IS NULL OR p_price < 1 OR p_price > 99999 THEN
+    RETURN jsonb_build_object('success', false, 'error', 'Price must be between ₹1 and ₹99,999.');
+  END IF;
+
+  -- Find current price in menu_prices
+  SELECT price, item_id INTO v_old_price, v_target_item_id
+  FROM menu_prices
+  WHERE sku = p_sku;
+
+  IF NOT FOUND THEN
+    RETURN jsonb_build_object('success', false, 'error', 'SKU not found in menu_prices.');
+  END IF;
+
+  -- Write audit log
+  INSERT INTO menu_price_log (sku, old_price, new_price, changed_at)
+  VALUES (p_sku, v_old_price, p_price, now());
+
+  -- Update menu_prices
+  UPDATE menu_prices
+  SET price = p_price, updated_at = now()
+  WHERE sku = p_sku;
+
+  -- Synchronize menu_items price if sku matches item_id
+  IF v_target_item_id IS NOT NULL AND (p_sku = v_target_item_id OR p_sku NOT LIKE '%:%') THEN
+    UPDATE menu_items
+    SET price = p_price, updated_at = now()
+    WHERE item_id = v_target_item_id;
+  END IF;
+
+  RETURN jsonb_build_object(
+    'success', true,
+    'sku', p_sku,
+    'old_price', v_old_price,
+    'new_price', p_price
+  );
+END;
+$$;
+
+-- 6c. Compatibility update for AdminDashboard.tsx
 DROP FUNCTION IF EXISTS admin_update_menu_item(text, int, boolean, boolean);
 DROP FUNCTION IF EXISTS admin_update_menu_item(text, integer, boolean, boolean);
 DROP FUNCTION IF EXISTS admin_update_menu_item(text, text, boolean, boolean);
@@ -786,7 +518,6 @@ DROP FUNCTION IF EXISTS admin_update_menu_item(text, int, boolean, boolean, nume
 DROP FUNCTION IF EXISTS admin_update_menu_item(text, integer, boolean, boolean, numeric, numeric);
 DROP FUNCTION IF EXISTS admin_update_menu_item(text, text, boolean, boolean, numeric, numeric);
 
--- Primary 6-parameter implementation (int item_id)
 CREATE OR REPLACE FUNCTION admin_update_menu_item(
   input_pin text,
   item_id int,
@@ -802,50 +533,53 @@ AS $$
 DECLARE
   v_auth jsonb;
   v_cur_price numeric;
-  v_val_price numeric;
+  v_target_item_id text;
+  v_old_sku_price int;
 BEGIN
   v_auth := check_and_verify_pin(input_pin);
   IF (v_auth->>'ok')::boolean IS NOT TRUE THEN
     RETURN false;
   END IF;
 
-  -- Verify item exists and get current price
-  SELECT price INTO v_cur_price FROM menu_items WHERE id = item_id;
+  SELECT price, item_id INTO v_cur_price, v_target_item_id FROM menu_items WHERE id = item_id;
   IF NOT FOUND THEN
     RETURN false;
   END IF;
 
-  -- Validate Direct Price bounds: > 0 and <= 10000
   IF new_price IS NOT NULL THEN
-    IF new_price <= 0 OR new_price > 10000 THEN
-      RAISE EXCEPTION 'Price must be greater than 0 and up to 10,000.';
+    IF new_price <= 0 OR new_price > 99999 THEN
+      RAISE EXCEPTION 'Price must be greater than 0 and up to 99,999.';
     END IF;
-    v_val_price := new_price;
-  ELSE
-    v_val_price := v_cur_price;
-  END IF;
 
-  -- Validate Aggregator Price bounds: >= Direct Price and <= 15000
-  IF new_aggregator_price IS NOT NULL THEN
-    IF new_aggregator_price < v_val_price OR new_aggregator_price > 15000 THEN
-      RAISE EXCEPTION 'Aggregator price must be at least the direct price and up to 15,000.';
+    -- Sync to menu_prices and audit log
+    IF v_target_item_id IS NOT NULL THEN
+      SELECT price INTO v_old_sku_price FROM menu_prices WHERE sku = v_target_item_id LIMIT 1;
+      IF FOUND THEN
+        INSERT INTO menu_price_log (sku, old_price, new_price, changed_at)
+        VALUES (v_target_item_id, v_old_sku_price, round(new_price)::integer, now());
+
+        UPDATE menu_prices
+        SET price = round(new_price)::integer, updated_at = now()
+        WHERE sku = v_target_item_id;
+      END IF;
     END IF;
   END IF;
 
   UPDATE menu_items
   SET
     is_completed = completed_val,
+    available = NOT completed_val,
     direct_order_eligible = eligible_val,
     price = COALESCE(new_price, price),
     aggregator_price = COALESCE(new_aggregator_price, aggregator_price),
-    last_reset_date = current_date
+    last_reset_date = current_date,
+    updated_at = now()
   WHERE id = item_id;
 
   RETURN true;
 END;
 $$;
 
--- 6-parameter overload (text item_id)
 CREATE OR REPLACE FUNCTION admin_update_menu_item(
   input_pin text,
   item_id text,
@@ -863,39 +597,6 @@ BEGIN
 END;
 $$;
 
--- 4-parameter backward-compatible overload (int item_id)
-CREATE OR REPLACE FUNCTION admin_update_menu_item(
-  input_pin text,
-  item_id int,
-  completed_val boolean,
-  eligible_val boolean
-)
-RETURNS boolean
-LANGUAGE plpgsql
-SECURITY DEFINER
-AS $$
-BEGIN
-  RETURN admin_update_menu_item(input_pin, item_id, completed_val, eligible_val, NULL::numeric, NULL::numeric);
-END;
-$$;
-
--- 4-parameter backward-compatible overload (text item_id)
-CREATE OR REPLACE FUNCTION admin_update_menu_item(
-  input_pin text,
-  item_id text,
-  completed_val boolean,
-  eligible_val boolean
-)
-RETURNS boolean
-LANGUAGE plpgsql
-SECURITY DEFINER
-AS $$
-BEGIN
-  RETURN admin_update_menu_item(input_pin, item_id::int, completed_val, eligible_val, NULL::numeric, NULL::numeric);
-END;
-$$;
-
--- E. Morning Reset All Items to Available
 CREATE OR REPLACE FUNCTION admin_reset_all_stock(input_pin text)
 RETURNS boolean
 LANGUAGE plpgsql
@@ -909,7 +610,7 @@ BEGIN
     RETURN false;
   END IF;
 
-  UPDATE menu_items SET is_completed = false, last_reset_date = current_date;
+  UPDATE menu_items SET is_completed = false, available = true, last_reset_date = current_date, updated_at = now();
   RETURN true;
 END;
 $$;
@@ -924,7 +625,6 @@ BEGIN
 END;
 $$;
 
--- F. Update Flash Offers & Timer
 CREATE OR REPLACE FUNCTION admin_update_offers(
   input_pin text, active_val boolean, banner_val text, disc_val numeric,
   min_amt numeric, free_item text, free_min numeric, code_val text, flat_val numeric, exp_val timestamptz
@@ -947,6 +647,18 @@ BEGIN
     coupon_code = code_val, coupon_flat_discount = flat_val, expires_at = exp_val
   WHERE id = 1;
 
+  UPDATE sale_settings SET
+    sale_active = active_val,
+    sale_percent = round(disc_val)::integer,
+    min_order_amount = round(min_amt)::integer,
+    free_item_name = free_item,
+    free_item_min_amount = round(free_min)::integer,
+    coupon_code = code_val,
+    coupon_flat_discount = round(flat_val)::integer,
+    sale_ends_at = exp_val,
+    updated_at = now()
+  WHERE id = 1;
+
   RETURN true;
 END;
 $$;
@@ -967,7 +679,6 @@ BEGIN
 END;
 $$;
 
--- G. Change Admin PIN securely
 CREATE OR REPLACE FUNCTION admin_change_pin(input_pin text, new_pin text)
 RETURNS jsonb
 LANGUAGE plpgsql
@@ -991,13 +702,66 @@ END;
 $$;
 
 -- =====================================================================
--- 6. AUTHORITATIVE SERVER-SIDE ORDER & PRICE VERIFICATION RPC
+-- 7. PUBLIC READ: get_live_menu() RPC (TASK 7)
 -- =====================================================================
+DROP FUNCTION IF EXISTS get_live_menu();
+CREATE OR REPLACE FUNCTION get_live_menu()
+RETURNS jsonb
+LANGUAGE plpgsql
+STABLE
+SECURITY DEFINER
+SET search_path = public
+AS $$
+DECLARE
+  v_sale RECORD;
+  v_items jsonb;
+  v_server_time timestamptz := now();
+  v_sale_active boolean := false;
+BEGIN
+  -- 1. Fetch sale settings
+  SELECT sale_active, sale_percent, sale_ends_at, min_order_amount, coupon_code, coupon_flat_discount
+  INTO v_sale
+  FROM sale_settings
+  WHERE id = 1;
 
--- Drop previous signatures of get_order_availability
+  IF FOUND THEN
+    v_sale_active := COALESCE(v_sale.sale_active, false)
+      AND (v_sale.sale_ends_at IS NULL OR v_server_time <= v_sale.sale_ends_at);
+  END IF;
+
+  -- 2. Fetch compact item list
+  -- ONLY: item_id, sku, variant, price, mrp, available
+  SELECT jsonb_agg(
+    jsonb_build_object(
+      'item_id', p.item_id,
+      'sku', p.sku,
+      'variant', p.variant,
+      'price', p.price,
+      'mrp', p.mrp,
+      'available', (COALESCE(m.available, true) AND (m.is_completed IS NOT TRUE))
+    )
+  )
+  INTO v_items
+  FROM menu_prices p
+  LEFT JOIN menu_items m ON m.item_id = p.item_id;
+
+  RETURN jsonb_build_object(
+    'server_time', v_server_time,
+    'sale', jsonb_build_object(
+      'active', v_sale_active,
+      'percent', COALESCE(v_sale.sale_percent, 10),
+      'ends_at', v_sale.sale_ends_at,
+      'min_order', COALESCE(v_sale.min_order_amount, 299),
+      'coupon', v_sale.coupon_code,
+      'flat_discount', v_sale.coupon_flat_discount
+    ),
+    'items', COALESCE(v_items, '[]'::jsonb)
+  );
+END;
+$$;
+
+-- Store operating hours RPC
 DROP FUNCTION IF EXISTS get_order_availability();
-
--- Read-only Public RPC to inspect store operating hours authoritatively computed on server
 CREATE OR REPLACE FUNCTION get_order_availability()
 RETURNS jsonb
 LANGUAGE plpgsql
@@ -1044,9 +808,12 @@ BEGIN
 END;
 $$;
 
--- Drop previous signatures of submit_verified_order to prevent PostgreSQL 42725 ambiguity
+-- =====================================================================
+-- 8. AUTHORITATIVE ORDER SUBMISSION: submit_verified_order() (TASK 5)
+-- =====================================================================
 DROP FUNCTION IF EXISTS submit_verified_order(text, text, text, numeric, jsonb, text, text, text, text);
 DROP FUNCTION IF EXISTS submit_verified_order(text, text, text, numeric, jsonb, text, text, text, text, text);
+DROP FUNCTION IF EXISTS submit_verified_order(text, text, text, numeric, jsonb, text, text, text, text, text, numeric);
 
 CREATE OR REPLACE FUNCTION submit_verified_order(
   p_customer_name text,
@@ -1058,7 +825,8 @@ CREATE OR REPLACE FUNCTION submit_verified_order(
   p_address_notes text DEFAULT '',
   p_maps_link text DEFAULT '',
   p_payment_method text DEFAULT 'UPI',
-  p_idempotency_key text DEFAULT NULL
+  p_idempotency_key text DEFAULT NULL,
+  p_expected_total numeric DEFAULT NULL
 )
 RETURNS jsonb
 LANGUAGE plpgsql
@@ -1066,37 +834,51 @@ SECURITY DEFINER
 SET search_path = public
 AS $$
 DECLARE
-  v_opens_at time;
-  v_closes_at time;
-  v_buffer_mins int;
+  v_opens_at time := '10:30'::time;
+  v_closes_at time := '23:00'::time;
+  v_buffer_mins int := 30;
   v_last_order_at time;
   v_now_time time;
   v_norm_payment_method text;
-  v_unavailable_items text[] := ARRAY[]::text[];
-  v_base_id_text text;
   v_norm_name text;
   v_norm_phone text;
   v_norm_type text;
   v_norm_address text;
   v_norm_idempotency_key text;
   v_is_delivery boolean;
+  
   v_item record;
-  v_db_item record;
-  v_item_name text;
   v_item_qty int;
-  v_unit_price numeric;
-  v_calculated_subtotal numeric := 0;
+  v_input_id text;
+  v_input_sku text;
+  
+  v_price_row record;
+  v_menu_item record;
+  v_item_name text;
+  v_unit_price integer;
+  
+  v_unknown_items text[] := ARRAY[]::text[];
+  v_unavailable_items text[] := ARRAY[]::text[];
+  v_price_lines jsonb[] := ARRAY[]::jsonb[];
+  v_snapshot_lines jsonb[] := ARRAY[]::jsonb[];
+  
+  v_calculated_subtotal integer := 0;
   v_items_formatted_text text := '';
-  v_offer record;
-  v_offer_discount numeric := 0;
-  v_coupon_discount numeric := 0;
-  v_total_discount numeric := 0;
-  v_final_total numeric := 0;
+  v_item_index int := 0;
+  
+  v_sale record;
+  v_sale_discount integer := 0;
+  v_coupon_discount integer := 0;
+  v_total_discount integer := 0;
+  v_final_total integer := 0;
   v_free_item_name text := NULL;
+  
   v_order_code text;
   v_inserted_id int;
-  v_item_index int := 0;
-  -- Return variables for idempotency conflict resolution
+  v_order_snapshot jsonb;
+  
+  -- Idempotency check return variables
+  v_existing_order record;
   v_ret_order_code text;
   v_ret_subtotal numeric;
   v_ret_discount_amount numeric;
@@ -1105,10 +887,6 @@ DECLARE
   v_ret_items_json text;
 BEGIN
   -- 0. Check Operating Hours on Server (Asia/Kolkata)
-  v_opens_at := '10:30'::time;
-  v_closes_at := '23:00'::time;
-  v_buffer_mins := 30;
-
   IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_schema = 'public' AND table_name = 'store_settings') THEN
     SELECT opens_at, closes_at, last_order_buffer_minutes
     INTO v_opens_at, v_closes_at, v_buffer_mins
@@ -1137,19 +915,44 @@ BEGIN
     );
   END IF;
 
-  -- 1. Validate payment method (accepts only 'UPI' or 'COD', default 'UPI')
+  -- 1. Check idempotency BEFORE doing anything else
+  v_norm_idempotency_key := NULLIF(trim(p_idempotency_key), '');
+  IF v_norm_idempotency_key IS NOT NULL THEN
+    SELECT id, order_code, subtotal, discount_amount, final_total, payment_status, payment_method, items_json
+    INTO v_existing_order
+    FROM orders
+    WHERE idempotency_key = v_norm_idempotency_key
+    LIMIT 1;
+
+    IF FOUND THEN
+      RETURN jsonb_build_object(
+        'success', true,
+        'order_id', v_existing_order.id,
+        'order_code', v_existing_order.order_code,
+        'items', v_existing_order.items_json,
+        'subtotal', v_existing_order.subtotal,
+        'discount_amount', v_existing_order.discount_amount,
+        'final_total', v_existing_order.final_total,
+        'payment_status', v_existing_order.payment_status,
+        'payment_method', v_existing_order.payment_method,
+        'idempotent_replay', true
+      );
+    END IF;
+  END IF;
+
+  -- 2. Validate payment method
   v_norm_payment_method := UPPER(TRIM(COALESCE(p_payment_method, 'UPI')));
   IF v_norm_payment_method NOT IN ('UPI', 'COD') THEN
     RAISE EXCEPTION 'Invalid payment method. Only UPI and COD are accepted.';
   END IF;
 
-  -- 2. Validate customer name
+  -- 3. Validate customer name
   v_norm_name := trim(p_customer_name);
   IF length(v_norm_name) < 2 THEN
     RAISE EXCEPTION 'Customer name must be at least 2 characters long.';
   END IF;
 
-  -- 3. Validate Indian phone number (10 digits)
+  -- 4. Validate Indian phone number (10 digits)
   v_norm_phone := regexp_replace(p_customer_phone, '\D', '', 'g');
   IF length(v_norm_phone) = 12 AND v_norm_phone LIKE '91%' THEN
     v_norm_phone := substring(v_norm_phone from 3);
@@ -1158,7 +961,7 @@ BEGIN
     RAISE EXCEPTION 'Please provide a valid 10-digit Indian mobile number.';
   END IF;
 
-  -- 4. Validate order type and delivery bounds
+  -- 5. Validate order type and delivery bounds
   v_norm_type := UPPER(TRIM(p_order_type));
   IF v_norm_type IN ('DELIVERY', 'DELIVERY_5KM') THEN
     v_is_delivery := true;
@@ -1176,16 +979,15 @@ BEGIN
     v_norm_address := COALESCE(NULLIF(trim(p_address_notes), ''), 'Self-Pickup at Restaurant');
   END IF;
 
-  -- 5. Validate items array
+  -- 6. Validate items array
   IF p_items_json IS NULL OR jsonb_typeof(p_items_json) <> 'array' OR jsonb_array_length(p_items_json) = 0 THEN
     RAISE EXCEPTION 'Cart is empty. Please add items to proceed.';
   END IF;
 
-  -- 6. Loop items, resolving by stable id (extracting base item id for variants) and checking stock
-  v_unavailable_items := ARRAY[]::text[];
-
+  -- 7. Authoritatively Resolve Each Item from menu_prices & menu_items
   FOR v_item IN SELECT * FROM jsonb_to_recordset(p_items_json) AS x(
     id text,
+    sku text,
     name text,
     quantity numeric,
     price numeric,
@@ -1193,53 +995,107 @@ BEGIN
     portion text
   )
   LOOP
-    v_item_qty := floor(v_item.quantity);
+    v_item_qty := floor(COALESCE(v_item.quantity, 1));
     IF v_item_qty <= 0 OR v_item_qty > 50 THEN
       RAISE EXCEPTION 'Invalid item quantity (% for "%"). Must be between 1 and 50.', v_item_qty, COALESCE(v_item.name, 'Item');
     END IF;
 
-    -- Extract base item id for items with size variants (e.g. "474:half", "474:full", "group-474")
-    v_base_id_text := split_part(trim(COALESCE(v_item.id, '')), ':', 1);
-    IF v_base_id_text LIKE 'group-%' THEN
-      v_base_id_text := substring(v_base_id_text from 7);
+    v_input_id := trim(COALESCE(v_item.id, ''));
+    v_input_sku := trim(COALESCE(v_item.sku, v_input_id));
+
+    -- Clean group prefixes (e.g. "group-dish-278")
+    IF v_input_sku LIKE 'group-%' THEN
+      v_input_sku := substring(v_input_sku from 7);
+    END IF;
+    IF v_input_id LIKE 'group-%' THEN
+      v_input_id := substring(v_input_id from 7);
     END IF;
 
-    v_db_item := NULL;
-    IF v_base_id_text ~ '^[0-9]+$' THEN
-      SELECT * INTO v_db_item FROM menu_items WHERE id = (v_base_id_text::int);
+    -- Look up in menu_prices
+    v_price_row := NULL;
+
+    -- A. Exact SKU match
+    SELECT * INTO v_price_row FROM menu_prices WHERE sku = v_input_sku;
+
+    -- B. If not found and input_sku != input_id, try input_id
+    IF v_price_row IS NULL AND v_input_id <> '' AND v_input_id <> v_input_sku THEN
+      SELECT * INTO v_price_row FROM menu_prices WHERE sku = v_input_id;
     END IF;
 
-    IF v_db_item IS NULL AND v_item.name IS NOT NULL THEN
-      SELECT * INTO v_db_item FROM menu_items WHERE lower(trim(name)) = lower(trim(v_item.name)) LIMIT 1;
+    -- C. If not found and variant is specified, try sku:variant
+    IF v_price_row IS NULL AND v_item.variant IS NOT NULL AND trim(v_item.variant) <> '' THEN
+      SELECT * INTO v_price_row FROM menu_prices
+      WHERE sku = (v_input_sku || ':' || lower(regexp_replace(v_item.variant, '\s+', '', 'g')));
     END IF;
 
-    -- Check if found in database
-    IF v_db_item IS NOT NULL THEN
-      v_item_name := v_db_item.name;
-
-      -- Check Sold Out (is_completed flag on menu_items)
-      IF v_db_item.is_completed = true THEN
-        IF NOT (v_item_name = ANY(v_unavailable_items)) THEN
-          v_unavailable_items := array_append(v_unavailable_items, v_item_name);
-        END IF;
+    -- D. If not found and input is numeric id (legacy catalog id), lookup item_id from menu_items
+    IF v_price_row IS NULL AND v_input_id ~ '^[0-9]+$' THEN
+      SELECT * INTO v_price_row FROM menu_prices
+      WHERE item_id = ('dish-' || v_input_id) OR sku = ('dish-' || v_input_id)
+      LIMIT 1;
+      IF v_price_row IS NULL THEN
+        SELECT p.* INTO v_price_row
+        FROM menu_prices p
+        JOIN menu_items m ON m.item_id = p.item_id
+        WHERE m.id = v_input_id::int
+        LIMIT 1;
       END IF;
-
-      -- Check Delivery Eligibility
-      IF v_is_delivery AND v_db_item.direct_order_eligible = false THEN
-        RAISE EXCEPTION 'Item "%" is not eligible for delivery. Please choose pickup or select another item.', v_item_name;
-      END IF;
-
-      v_unit_price := v_db_item.price;
-    ELSE
-      -- Fallback to item.name and submitted price if catalog item is a dynamic variant
-      v_item_name := COALESCE(v_item.name, 'Item');
-      v_unit_price := GREATEST(0, COALESCE(v_item.price, 0));
     END IF;
 
-    -- Accrue authoritative subtotal
+    -- E. Name match fallback in menu_items
+    IF v_price_row IS NULL AND v_item.name IS NOT NULL AND trim(v_item.name) <> '' THEN
+      SELECT p.* INTO v_price_row
+      FROM menu_prices p
+      JOIN menu_items m ON m.item_id = p.item_id
+      WHERE lower(trim(m.name)) = lower(trim(v_item.name))
+      LIMIT 1;
+    END IF;
+
+    -- If still not found, record as unknown_item
+    IF v_price_row IS NULL THEN
+      IF NOT (v_input_sku = ANY(v_unknown_items)) THEN
+        v_unknown_items := array_append(v_unknown_items, COALESCE(NULLIF(v_input_sku, ''), v_input_id));
+      END IF;
+      CONTINUE;
+    END IF;
+
+    -- Lookup menu_items for name and availability
+    SELECT * INTO v_menu_item FROM menu_items WHERE item_id = v_price_row.item_id LIMIT 1;
+    v_item_name := COALESCE(v_menu_item.name, v_item.name, v_price_row.sku);
+
+    -- Check sold out / availability
+    IF (v_menu_item IS NOT NULL AND (v_menu_item.available = false OR v_menu_item.is_completed = true)) THEN
+      IF NOT (v_item_name = ANY(v_unavailable_items)) THEN
+        v_unavailable_items := array_append(v_unavailable_items, v_item_name);
+      END IF;
+    END IF;
+
+    -- Check direct order delivery eligibility
+    IF v_is_delivery AND v_menu_item IS NOT NULL AND v_menu_item.direct_order_eligible = false THEN
+      RAISE EXCEPTION 'Item "%" is not eligible for delivery. Please choose pickup or select another item.', v_item_name;
+    END IF;
+
+    -- Authoritative price ONLY from database
+    v_unit_price := v_price_row.price;
     v_calculated_subtotal := v_calculated_subtotal + (v_unit_price * v_item_qty);
 
-    -- Format items text
+    -- Append to price_lines array
+    v_price_lines := array_append(v_price_lines, jsonb_build_object(
+      'sku', v_price_row.sku,
+      'unit_price', v_unit_price
+    ));
+
+    -- Append to order snapshot lines
+    v_snapshot_lines := array_append(v_snapshot_lines, jsonb_build_object(
+      'sku', v_price_row.sku,
+      'item_id', v_price_row.item_id,
+      'name', v_item_name,
+      'quantity', v_item_qty,
+      'unit_price', v_unit_price,
+      'line_total', (v_unit_price * v_item_qty)
+    ));
+
+    -- Format items human-readable text
     IF v_item_index > 0 THEN
       v_items_formatted_text := v_items_formatted_text || ', ';
     END IF;
@@ -1247,7 +1103,15 @@ BEGIN
     v_item_index := v_item_index + 1;
   END LOOP;
 
-  -- Reject the whole order if any item is currently marked finished
+  -- 8. Return structured statuses if any items unknown or unavailable (no free-text exception)
+  IF cardinality(v_unknown_items) > 0 THEN
+    RETURN jsonb_build_object(
+      'success', false,
+      'status', 'unknown_item',
+      'items', to_jsonb(v_unknown_items)
+    );
+  END IF;
+
   IF cardinality(v_unavailable_items) > 0 THEN
     RETURN jsonb_build_object(
       'success', false,
@@ -1256,37 +1120,48 @@ BEGIN
     );
   END IF;
 
-  -- 7. Verify Store Offers & Discounts on Server
-  SELECT * INTO v_offer FROM store_offers WHERE id = 1;
-  IF FOUND AND v_offer.is_active = true AND now() >= v_offer.starts_at AND now() <= v_offer.expires_at THEN
-    -- Percentage discount check
-    IF v_offer.min_order_amount > 0 AND v_calculated_subtotal >= v_offer.min_order_amount AND v_offer.discount_percent > 0 THEN
-      v_offer_discount := round((v_calculated_subtotal * v_offer.discount_percent) / 100);
+  -- 9. Authoritative Server-Side Discount Calculation
+  -- Computed ONLY from sale_settings and server clock now()
+  SELECT * INTO v_sale FROM sale_settings WHERE id = 1;
+  IF FOUND AND v_sale.sale_active = true AND (v_sale.sale_ends_at IS NULL OR now() <= v_sale.sale_ends_at) THEN
+    -- Percentage sale discount
+    IF v_sale.min_order_amount > 0 AND v_calculated_subtotal >= v_sale.min_order_amount AND v_sale.sale_percent > 0 THEN
+      v_sale_discount := round((v_calculated_subtotal * v_sale.sale_percent) / 100.0);
     END IF;
 
-    -- Free item threshold check
-    IF v_offer.free_item_name IS NOT NULL AND trim(v_offer.free_item_name) <> '' THEN
-      IF v_calculated_subtotal >= COALESCE(NULLIF(v_offer.free_item_min_amount, 0), v_offer.min_order_amount) THEN
-        v_free_item_name := trim(v_offer.free_item_name);
+    -- Free item threshold
+    IF v_sale.free_item_name IS NOT NULL AND trim(v_sale.free_item_name) <> '' THEN
+      IF v_calculated_subtotal >= COALESCE(v_sale.free_item_min_amount, v_sale.min_order_amount) THEN
+        v_free_item_name := trim(v_sale.free_item_name);
         v_items_formatted_text := v_items_formatted_text || ', 1x ' || v_free_item_name || ' (₹0 Free Item)';
       END IF;
     END IF;
 
     -- Coupon code check
     IF p_coupon_code IS NOT NULL AND trim(p_coupon_code) <> '' THEN
-      IF UPPER(TRIM(p_coupon_code)) = UPPER(TRIM(v_offer.coupon_code)) THEN
-        IF v_calculated_subtotal >= v_offer.min_order_amount THEN
-          v_coupon_discount := COALESCE(v_offer.coupon_flat_discount, 0);
+      IF upper(trim(p_coupon_code)) = upper(trim(v_sale.coupon_code)) THEN
+        IF v_calculated_subtotal >= v_sale.min_order_amount THEN
+          v_coupon_discount := COALESCE(v_sale.coupon_flat_discount, 0);
         END IF;
       END IF;
     END IF;
   END IF;
 
-  v_total_discount := LEAST(v_calculated_subtotal, v_offer_discount + v_coupon_discount);
+  v_total_discount := LEAST(v_calculated_subtotal, v_sale_discount + v_coupon_discount);
   v_final_total := GREATEST(0, v_calculated_subtotal - v_total_discount);
 
-  -- 8. Generate random, unguessable 8-character uppercase alphanumeric order code (excluding 0, O, 1, I)
-  -- 32 characters: 23456789ABCDEFGHJKLMNPQRSTUVWXYZ (32^8 = 1.09+ trillion combinations)
+  -- 10. Expected Total Verification
+  -- If client sent an expected total that differs from server total, reject with price_changed
+  IF p_expected_total IS NOT NULL AND round(p_expected_total) <> round(v_final_total) THEN
+    RETURN jsonb_build_object(
+      'success', false,
+      'status', 'price_changed',
+      'server_total', v_final_total,
+      'lines', to_jsonb(v_price_lines)
+    );
+  END IF;
+
+  -- 11. Generate Unguessable 8-char Order Code
   LOOP
     v_order_code := '';
     FOR i IN 1..8 LOOP
@@ -1297,9 +1172,17 @@ BEGIN
     END IF;
   END LOOP;
 
-  v_norm_idempotency_key := NULLIF(trim(p_idempotency_key), '');
+  -- 12. Build Snapshot JSON
+  v_order_snapshot := jsonb_build_object(
+    'lines', to_jsonb(v_snapshot_lines),
+    'subtotal', v_calculated_subtotal,
+    'discount', v_total_discount,
+    'final_total', v_final_total,
+    'free_item', v_free_item_name,
+    'created_at', now()
+  );
 
-  -- 9. Insert authoritative order with ON CONFLICT DO NOTHING for idempotency key
+  -- 13. Insert Order with Snapshot
   INSERT INTO orders (
     order_code,
     customer_name,
@@ -1309,6 +1192,7 @@ BEGIN
     address_notes,
     maps_link,
     items_json,
+    items_snapshot,
     subtotal,
     discount_amount,
     final_total,
@@ -1326,6 +1210,7 @@ BEGIN
     v_norm_address,
     COALESCE(NULLIF(trim(p_maps_link), ''), CASE WHEN v_is_delivery THEN 'Delivery' ELSE 'Self-Pickup' END),
     v_items_formatted_text,
+    v_order_snapshot,
     v_calculated_subtotal,
     v_total_discount,
     v_final_total,
@@ -1339,7 +1224,7 @@ BEGIN
   RETURNING id, order_code, subtotal, discount_amount, final_total, payment_status, items_json
   INTO v_inserted_id, v_ret_order_code, v_ret_subtotal, v_ret_discount_amount, v_ret_final_total, v_ret_payment_status, v_ret_items_json;
 
-  -- 10. If conflict occurred on idempotency_key, fetch the existing order row
+  -- If conflict occurred on idempotency key, fetch the existing order
   IF v_inserted_id IS NULL AND v_norm_idempotency_key IS NOT NULL THEN
     SELECT id, order_code, subtotal, discount_amount, final_total, payment_status, items_json
     INTO v_inserted_id, v_ret_order_code, v_ret_subtotal, v_ret_discount_amount, v_ret_final_total, v_ret_payment_status, v_ret_items_json
@@ -1357,7 +1242,6 @@ BEGIN
     END IF;
   END IF;
 
-  -- 11. Return JSON payload to client
   RETURN jsonb_build_object(
     'success', true,
     'order_id', v_inserted_id,
@@ -1373,10 +1257,8 @@ BEGIN
 END;
 $$;
 
--- Drop previous signatures of confirm_order_utr
+-- 8b. Customer UTR Confirmation RPC
 DROP FUNCTION IF EXISTS confirm_order_utr(text, text);
-
--- 7. Confirm Customer UPI Reference (UTR) RPC
 CREATE OR REPLACE FUNCTION confirm_order_utr(p_order_code text, p_utr text)
 RETURNS jsonb
 LANGUAGE plpgsql
@@ -1388,19 +1270,16 @@ DECLARE
   v_clean_utr text;
   v_order record;
 BEGIN
-  -- 1. Validate UTR format: exactly 12 numeric digits
   v_clean_utr := trim(COALESCE(p_utr, ''));
   IF v_clean_utr !~ '^[0-9]{12}$' THEN
     RETURN jsonb_build_object('status', 'invalid_utr');
   END IF;
 
-  -- 2. Validate Order Code
   v_clean_code := trim(COALESCE(p_order_code, ''));
   IF v_clean_code = '' THEN
     RETURN jsonb_build_object('status', 'invalid_order');
   END IF;
 
-  -- 3. Lookup order with lock
   SELECT id, payment_status, utr, payment_method
   INTO v_order
   FROM orders
@@ -1411,22 +1290,18 @@ BEGIN
     RETURN jsonb_build_object('status', 'invalid_order');
   END IF;
 
-  -- 4. Reject COD orders: a COD order can never receive a UTR
   IF v_order.payment_method = 'COD' THEN
     RETURN jsonb_build_object('status', 'not_applicable');
   END IF;
 
-  -- 5. Never modify confirmed or rejected orders
   IF v_order.payment_status IN ('confirmed', 'rejected') THEN
     RETURN jsonb_build_object('status', 'already_processed');
   END IF;
 
-  -- 6. If already submitted with a different UTR, never overwrite
   IF v_order.payment_status = 'utr_submitted' AND v_order.utr IS DISTINCT FROM v_clean_utr THEN
     RETURN jsonb_build_object('status', 'already_processed');
   END IF;
 
-  -- 7. Perform atomic update (catching unique violation on idx_orders_utr_unique)
   BEGIN
     UPDATE orders
     SET
@@ -1452,42 +1327,1416 @@ END;
 $$;
 
 -- =====================================================================
--- 8. GRANT EXECUTE ON RPC FUNCTIONS TO ANON & AUTHENTICATED ROLES
+-- 9. REVOKE & GRANT PERMISSIONS ON RPC FUNCTIONS
 -- =====================================================================
 GRANT EXECUTE ON FUNCTION check_and_verify_pin(text) TO anon, authenticated;
 GRANT EXECUTE ON FUNCTION verify_admin_pin(text) TO anon, authenticated;
+
 REVOKE ALL ON FUNCTION admin_get_orders(text, int) FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION admin_get_orders(text, int) TO anon, authenticated;
+
 REVOKE ALL ON FUNCTION admin_fetch_orders(text, int) FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION admin_fetch_orders(text, int) TO anon, authenticated;
+
 REVOKE ALL ON FUNCTION get_order_availability() FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION get_order_availability() TO anon, authenticated;
+
+REVOKE ALL ON FUNCTION get_live_menu() FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION get_live_menu() TO anon, authenticated;
+
+REVOKE ALL ON FUNCTION admin_set_available(text, text, boolean) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION admin_set_available(text, text, boolean) TO anon, authenticated;
+
+REVOKE ALL ON FUNCTION admin_set_price(text, text, integer) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION admin_set_price(text, text, integer) TO anon, authenticated;
+
+REVOKE ALL ON FUNCTION admin_update_order_status(text, int, text) FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION admin_update_order_status(text, int, text) TO anon, authenticated;
+
 REVOKE ALL ON FUNCTION admin_update_payment_status(text, int, text) FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION admin_update_payment_status(text, int, text) TO anon, authenticated;
-GRANT EXECUTE ON FUNCTION admin_update_menu_item(text, int, boolean, boolean) TO anon, authenticated;
-GRANT EXECUTE ON FUNCTION admin_update_menu_item(text, text, boolean, boolean) TO anon, authenticated;
+
+REVOKE ALL ON FUNCTION admin_update_menu_item(text, int, boolean, boolean, numeric, numeric) FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION admin_update_menu_item(text, int, boolean, boolean, numeric, numeric) TO anon, authenticated;
+
+REVOKE ALL ON FUNCTION admin_update_menu_item(text, text, boolean, boolean, numeric, numeric) FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION admin_update_menu_item(text, text, boolean, boolean, numeric, numeric) TO anon, authenticated;
+
+REVOKE ALL ON FUNCTION admin_reset_all_stock(text) FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION admin_reset_all_stock(text) TO anon, authenticated;
+
+REVOKE ALL ON FUNCTION admin_morning_reset(text) FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION admin_morning_reset(text) TO anon, authenticated;
+
+REVOKE ALL ON FUNCTION admin_update_offers(text, boolean, text, numeric, numeric, text, numeric, text, numeric, timestamptz) FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION admin_update_offers(text, boolean, text, numeric, numeric, text, numeric, text, numeric, timestamptz) TO anon, authenticated;
+
+REVOKE ALL ON FUNCTION admin_update_store_offer(text, boolean, text, numeric, numeric, text, numeric, text, numeric, timestamptz) FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION admin_update_store_offer(text, boolean, text, numeric, numeric, text, numeric, text, numeric, timestamptz) TO anon, authenticated;
+
+REVOKE ALL ON FUNCTION admin_change_pin(text, text) FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION admin_change_pin(text, text) TO anon, authenticated;
-REVOKE ALL ON FUNCTION submit_verified_order(text, text, text, numeric, jsonb, text, text, text, text, text) FROM PUBLIC;
-GRANT EXECUTE ON FUNCTION submit_verified_order(text, text, text, numeric, jsonb, text, text, text, text, text) TO anon, authenticated;
+
+REVOKE ALL ON FUNCTION submit_verified_order(text, text, text, numeric, jsonb, text, text, text, text, text, numeric) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION submit_verified_order(text, text, text, numeric, jsonb, text, text, text, text, text, numeric) TO anon, authenticated;
+
 REVOKE ALL ON FUNCTION confirm_order_utr(text, text) FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION confirm_order_utr(text, text) TO anon, authenticated;
 
+
 -- =====================================================================
--- 9. OPTIONAL DATA RETENTION (pg_cron)
+-- 10. STANDALONE MIGRATION BLOCK (ONE-TIME EXECUTION FOR SUPABASE SQL EDITOR)
 -- =====================================================================
--- To automatically delete old orders older than 90 days:
--- 1. Enable the 'pg_cron' extension in Supabase Dashboard (Database -> Extensions)
--- 2. Uncomment and run the following schedule in the SQL Editor:
---
--- SELECT cron.schedule(
---   'purge-old-orders-90d',
---   '0 3 * * *', -- Runs daily at 03:00 UTC
---   $$DELETE FROM public.orders WHERE created_at < now() - interval '90 days';$$
--- );
+-- Copy and run everything between BEGIN and COMMIT in Supabase SQL Editor.
+-- Idempotent and safe: ON CONFLICT DO NOTHING preserves owner edits.
+-- =====================================================================
+
+BEGIN;
+
+-- 1. Table schema updates & columns
+ALTER TABLE menu_items ADD COLUMN IF NOT EXISTS item_id text;
+ALTER TABLE menu_items ADD COLUMN IF NOT EXISTS available boolean NOT NULL DEFAULT true;
+ALTER TABLE menu_items ADD COLUMN IF NOT EXISTS updated_at timestamptz DEFAULT now();
+CREATE UNIQUE INDEX IF NOT EXISTS idx_menu_items_item_id ON menu_items(item_id) WHERE item_id IS NOT NULL;
+
+CREATE TABLE IF NOT EXISTS menu_prices (
+  sku text PRIMARY KEY,
+  item_id text NOT NULL,
+  variant text,
+  price integer NOT NULL CHECK (price >= 1 AND price <= 99999),
+  mrp integer,
+  updated_at timestamptz DEFAULT now()
+);
+
+CREATE TABLE IF NOT EXISTS sale_settings (
+  id int PRIMARY KEY DEFAULT 1,
+  sale_active boolean NOT NULL DEFAULT true,
+  sale_percent integer NOT NULL DEFAULT 10 CHECK (sale_percent >= 0 AND sale_percent <= 100),
+  sale_ends_at timestamptz DEFAULT (now() + interval '12 hours'),
+  min_order_amount integer DEFAULT 299,
+  coupon_code text DEFAULT 'DIRECT50',
+  coupon_flat_discount integer DEFAULT 50,
+  free_item_name text DEFAULT 'Free 250ml Cool Drink',
+  free_item_min_amount integer DEFAULT 499,
+  updated_at timestamptz DEFAULT now()
+);
+
+CREATE TABLE IF NOT EXISTS menu_price_log (
+  id serial PRIMARY KEY,
+  sku text NOT NULL,
+  old_price integer,
+  new_price integer NOT NULL,
+  changed_at timestamptz DEFAULT now()
+);
+
+ALTER TABLE orders ADD COLUMN IF NOT EXISTS items_snapshot jsonb;
+
+-- 2. Backfill existing items: synchronize available with is_completed
+UPDATE menu_items
+SET available = NOT is_completed, updated_at = now()
+WHERE available IS NULL OR (available = true AND is_completed = true);
+
+-- 3. RLS Lockdown on New Tables
+ALTER TABLE menu_prices ENABLE ROW LEVEL SECURITY;
+ALTER TABLE sale_settings ENABLE ROW LEVEL SECURITY;
+ALTER TABLE menu_price_log ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "Public read menu_prices" ON menu_prices;
+CREATE POLICY "Public read menu_prices" ON menu_prices
+  FOR SELECT TO anon, authenticated USING (true);
+REVOKE INSERT, UPDATE, DELETE ON menu_prices FROM anon, authenticated, public;
+
+DROP POLICY IF EXISTS "Public read sale_settings" ON sale_settings;
+CREATE POLICY "Public read sale_settings" ON sale_settings
+  FOR SELECT TO anon, authenticated USING (true);
+REVOKE INSERT, UPDATE, DELETE ON sale_settings FROM anon, authenticated, public;
+
+REVOKE ALL ON menu_price_log FROM anon, authenticated, public;
+
+-- 4. Seed Canonical menu_items & menu_prices (Idempotent: preserves owner edits)
+-- =====================================================================
+-- AUTOMATICALLY GENERATED MENU SEED SCRIPT (TASK 4)
+-- Generated at: 2026-10-26T07:01:59.647Z
+-- Total items: 306, Total price SKUs: 380
+-- Safe and idempotent: ON CONFLICT DO NOTHING preserves owner edits
+-- =====================================================================
+
+-- 1. Seed Menu Items
+INSERT INTO menu_items (item_id, name, category, is_veg, available)
+VALUES
+  ('dish-1', 'Mushroom Corn Soup', 'veg-soups', true, true),
+  ('dish-2', 'Sweet Corn Soup', 'veg-soups', true, true),
+  ('dish-3', 'Veg. Hot & Sour Soup', 'veg-soups', true, true),
+  ('dish-4', 'Veg. Manchow Soup', 'veg-soups', true, true),
+  ('dish-5', 'Cream of Mushroom Soup', 'veg-soups', true, true),
+  ('dish-6', 'Lemon Coriander Soup', 'veg-soups', true, true),
+  ('dish-7', 'Tomato Soup', 'veg-soups', true, true),
+  ('dish-8', 'Chicken Hot & Sour Soup', 'non-veg-soups', false, true),
+  ('dish-9', 'Chicken Manchow Soup', 'non-veg-soups', false, true),
+  ('dish-10', 'Chicken Corn Soup', 'non-veg-soups', false, true),
+  ('dish-11', 'Chicken Coriander Soup', 'non-veg-soups', false, true),
+  ('dish-12', 'Mutton Bone Soup', 'non-veg-soups', false, true),
+  ('dish-13', 'Mutton Pepper Soup', 'non-veg-soups', false, true),
+  ('dish-14', 'Andhra Karivepaku Chicken', 'vaibhav-special-starters', false, true),
+  ('dish-15', 'Butterfly Chicken', 'vaibhav-special-starters', false, true),
+  ('dish-16', 'Garlic Chicken Keema Balls', 'vaibhav-special-starters', false, true),
+  ('dish-17', 'Dragon Crispy Chicken', 'vaibhav-special-starters', false, true),
+  ('dish-18', 'Arabian Prawns', 'vaibhav-special-starters', false, true),
+  ('dish-19', 'Arabian Fish', 'vaibhav-special-starters', false, true),
+  ('dish-20', 'Vaibhav''s Non-Veg. Platter', 'vaibhav-special-starters', false, true),
+  ('dish-22', 'Chitti Muthyalu Mutton Biryani', 'nattu-specials', false, true),
+  ('dish-23', 'Chitti Muthyalu Chicken Biryani', 'nattu-specials', false, true),
+  ('dish-24', 'Rayalaseema Chicken Curry with Ragi Sangati', 'nattu-specials', false, true),
+  ('dish-25', 'Mutton Paya with Ragi Sangati', 'nattu-specials', false, true),
+  ('dish-26', 'Chepala Pulusu with Ragi Sangati', 'nattu-specials', false, true),
+  ('dish-27', 'Mutton Pulusu with Ragi Sangati', 'nattu-specials', false, true),
+  ('dish-28', 'Special Curd Rice', 'nattu-specials', true, true),
+  ('dish-29', 'White Rice', 'nattu-specials', true, true),
+  ('dish-30', 'Raagi Ball', 'nattu-specials', true, true),
+  ('dish-31', 'Chilli Chicken', 'chicken-starters', false, true),
+  ('dish-32', 'Vaibhav''s Special Chicken', 'chicken-starters', false, true),
+  ('dish-33', 'Pepper Chicken', 'chicken-starters', false, true),
+  ('dish-34', 'Chicken Majestic', 'chicken-starters', false, true),
+  ('dish-35', 'Chicken 65', 'chicken-starters', false, true),
+  ('dish-36', 'Chicken Lollipop', 'chicken-starters', false, true),
+  ('dish-37', 'Chicken Drumstick', 'chicken-starters', false, true),
+  ('dish-38', 'Chicken Wings', 'chicken-starters', false, true),
+  ('dish-39', 'Cashew Nut Chicken', 'chicken-starters', false, true),
+  ('dish-40', 'Chicken Fry', 'chicken-starters', false, true),
+  ('dish-41', 'Chicken Roast', 'chicken-starters', false, true),
+  ('dish-42', 'Hong Kong Chicken', 'chicken-starters', false, true),
+  ('dish-43', 'Dragon Chicken', 'chicken-starters', false, true),
+  ('dish-44', 'Schezwan Hong Kong Chicken', 'chicken-starters', false, true),
+  ('dish-45', 'Rambo Chicken', 'chicken-starters', false, true),
+  ('dish-46', 'Chicken Manchurian', 'chicken-starters', false, true),
+  ('dish-47', 'Kaju Mutton Roast', 'mutton-starters', false, true),
+  ('dish-48', 'Mutton Ghee Roast', 'mutton-starters', false, true),
+  ('dish-49', 'Kaju Mutton Ghee Roast', 'mutton-starters', false, true),
+  ('dish-50', 'Mutton Fry', 'mutton-starters', false, true),
+  ('dish-51', 'Fish Finger', 'fish-starters', false, true),
+  ('dish-52', 'Pepper Fish', 'fish-starters', false, true),
+  ('dish-53', 'Chilli Fish', 'fish-starters', false, true),
+  ('dish-54', 'Apollo Fish', 'fish-starters', false, true),
+  ('dish-55', 'Fish 65', 'fish-starters', false, true),
+  ('dish-56', 'Loose Prawns', 'prawns-starters', false, true),
+  ('dish-57', 'Chilli Prawns', 'prawns-starters', false, true),
+  ('dish-58', 'Pepper Prawns', 'prawns-starters', false, true),
+  ('dish-59', 'Prawns 65', 'prawns-starters', false, true),
+  ('dish-60', 'Egg Chilly', 'egg-starters', false, true),
+  ('dish-61', 'Egg 65', 'egg-starters', false, true),
+  ('dish-62', 'Omelette', 'egg-starters', false, true),
+  ('dish-63', 'Special Omelette', 'egg-starters', false, true),
+  ('dish-64', 'Egg Manchurian', 'egg-starters', false, true),
+  ('dish-65', 'Boiled Egg', 'egg-starters', false, true),
+  ('dish-66', 'Dragon Egg', 'egg-starters', false, true),
+  ('dish-67', 'Veg. Manchurian', 'veg-starters', true, true),
+  ('dish-68', 'Veg. 65', 'veg-starters', true, true),
+  ('dish-69', 'Baby Corn 65', 'veg-starters', true, true),
+  ('dish-70', 'Baby Corn Chilly', 'veg-starters', true, true),
+  ('dish-71', 'Crispy Baby Corn', 'veg-starters', true, true),
+  ('dish-72', 'Baby Corn 555', 'veg-starters', true, true),
+  ('dish-73', 'Crispy Corn', 'veg-starters', true, true),
+  ('dish-74', 'Paneer Manchurian', 'veg-starters', true, true),
+  ('dish-75', 'Paneer 65', 'veg-starters', true, true),
+  ('dish-76', 'Chilli Paneer', 'veg-starters', true, true),
+  ('dish-77', 'Paneer Majestic', 'veg-starters', true, true),
+  ('dish-78', 'Paneer Pakoda', 'veg-starters', true, true),
+  ('dish-79', 'Gobi Manchuria', 'veg-starters', true, true),
+  ('dish-80', 'Gobi 65', 'veg-starters', true, true),
+  ('dish-81', 'Chilli Gobi', 'veg-starters', true, true),
+  ('dish-82', 'Mushroom Manchurian', 'veg-starters', true, true),
+  ('dish-83', 'Mushroom 65', 'veg-starters', true, true),
+  ('dish-84', 'Mushroom Chilli', 'veg-starters', true, true),
+  ('dish-85', 'Mushroom Pepper', 'veg-starters', true, true),
+  ('dish-86', 'Veg. Platter', 'veg-starters', true, true),
+  ('dish-87', 'French Fries', 'veg-starters', true, true),
+  ('dish-88', 'Tandoori Chicken Half', 'tandoori-fusion', false, true),
+  ('dish-89', 'Tandoori Chicken Full', 'tandoori-fusion', false, true),
+  ('dish-90', 'Tangdi Kabab Half (2 Pcs.)', 'tandoori-fusion', false, true),
+  ('dish-91', 'Tangdi Kabab Full (4 Pcs.)', 'tandoori-fusion', false, true),
+  ('dish-92', 'Grill Chicken Half', 'tandoori-fusion', false, true),
+  ('dish-93', 'Grill Chicken Full', 'tandoori-fusion', false, true),
+  ('dish-94', 'Alfaham Chicken Half', 'tandoori-fusion', false, true),
+  ('dish-95', 'Alfaham Chicken Full', 'tandoori-fusion', false, true),
+  ('dish-96', 'Chicken Tikka', 'tandoori-fusion', false, true),
+  ('dish-97', 'Malai Chicken Tikka', 'tandoori-fusion', false, true),
+  ('dish-98', 'Garlic Chicken Kabab', 'tandoori-fusion', false, true),
+  ('dish-99', 'Chicken Seekh Kabab', 'tandoori-fusion', false, true),
+  ('dish-100', 'Garlic Chicken Kabab', 'tandoori-fusion', false, true),
+  ('dish-101', 'Tiger Prawns Tikka (Sunday)', 'tandoori-fusion', false, true),
+  ('dish-102', 'Paneer Tikka', 'tandoori-fusion', true, true),
+  ('dish-103', 'Veg. Seekh Kabab', 'tandoori-fusion', true, true),
+  ('dish-104', 'Shawarma', 'shawarmas', false, true),
+  ('dish-105', 'Special Shawarma', 'shawarmas', false, true),
+  ('dish-106', 'Butter Shawarma', 'shawarmas', false, true),
+  ('dish-107', 'Special Butter Shawarma', 'shawarmas', false, true),
+  ('dish-108', 'Kaju Shawarma', 'shawarmas', false, true),
+  ('dish-109', 'Plate Shawarma', 'shawarmas', false, true),
+  ('dish-110', 'Chicken Dum Biryani', 'biriyanis', false, true),
+  ('dish-111', 'Mutton Dum Biryani', 'biriyanis', false, true),
+  ('dish-112', 'Chicken Fry Biryani', 'biriyanis', false, true),
+  ('dish-113', 'Mutton Fry Biryani', 'biriyanis', false, true),
+  ('dish-114', 'Chicken Joint Biryani', 'biriyanis', false, true),
+  ('dish-115', 'Chicken Kabab Biryani', 'biriyanis', false, true),
+  ('dish-116', 'Lollipop Biryani', 'biriyanis', false, true),
+  ('dish-117', 'Special Chicken Biryani', 'biriyanis', false, true),
+  ('dish-118', 'Mughalai Chicken Biryani', 'biriyanis', false, true),
+  ('dish-119', 'Gongura Chicken Biryani', 'biriyanis', false, true),
+  ('dish-120', 'Chicken Tikka Biryani', 'biriyanis', false, true),
+  ('dish-121', 'Alfaham Chicken Biryani', 'biriyanis', false, true),
+  ('dish-122', 'Tandoori Chicken Biryani', 'biriyanis', false, true),
+  ('dish-123', 'Grill Chicken Biryani', 'biriyanis', false, true),
+  ('dish-124', 'Fish Biryani', 'biriyanis', false, true),
+  ('dish-125', 'Prawns Biryani', 'biriyanis', false, true),
+  ('dish-126', 'Egg Biryani', 'biriyanis', false, true),
+  ('dish-127', 'Mixed Biryani (Non-Veg.)', 'biriyanis', false, true),
+  ('dish-128', 'Rambo Chicken Biryani', 'biriyanis', false, true),
+  ('dish-129', 'Biryani Rice', 'biriyanis', false, true),
+  ('dish-130', 'Veg. Biryani', 'veg-biryani', true, true),
+  ('dish-131', 'Kaju Biryani', 'veg-biryani', true, true),
+  ('dish-132', 'Kaju Paneer Biryani', 'veg-biryani', true, true),
+  ('dish-133', 'Paneer Biryani', 'veg-biryani', true, true),
+  ('dish-134', 'Mushroom Biryani', 'veg-biryani', true, true),
+  ('dish-135', 'Mixed Biryani (Veg.)', 'veg-biryani', true, true),
+  ('dish-136', 'Chicken Mandi (Single)', 'arabic-mandi', false, true),
+  ('dish-137', 'Tandoori Mandi (Single)', 'arabic-mandi', false, true),
+  ('dish-138', 'Chicken Mandi (Half)', 'arabic-mandi', false, true),
+  ('dish-139', 'Chicken Mandi (Full)', 'arabic-mandi', false, true),
+  ('dish-140', 'Tandoori Chicken Mandi (Half)', 'arabic-mandi', false, true),
+  ('dish-141', 'Tandoori Chicken Mandi (Full)', 'arabic-mandi', false, true),
+  ('dish-142', 'Alfaham Chicken Mandi (Half)', 'arabic-mandi', false, true),
+  ('dish-143', 'Alfaham Chicken Mandi (Full)', 'arabic-mandi', false, true),
+  ('dish-144', 'Vaibhav Special Mandi (Half)', 'arabic-mandi', false, true),
+  ('dish-145', 'Vaibhav Special Mandi (Full)', 'arabic-mandi', false, true),
+  ('dish-146', 'Alfaham Juicy Mandi (Half)', 'arabic-mandi', false, true),
+  ('dish-147', 'Alfaham Juicy Mandi (Full)', 'arabic-mandi', false, true),
+  ('dish-148', 'Mutton Juicy Mandi (Half)', 'arabic-mandi', false, true),
+  ('dish-149', 'Mutton Juicy Mandi (Full)', 'arabic-mandi', false, true),
+  ('dish-150', 'Chicken Fried Rice', 'non-veg-fried-rice', false, true),
+  ('dish-151', 'Schezwan Chicken Fried Rice', 'non-veg-fried-rice', false, true),
+  ('dish-152', 'Prawns Fried Rice', 'non-veg-fried-rice', false, true),
+  ('dish-153', 'Egg Fried Rice', 'non-veg-fried-rice', false, true),
+  ('dish-154', 'Schezwan Egg Fried Rice', 'non-veg-fried-rice', false, true),
+  ('dish-155', 'Special Chicken Fried Rice', 'non-veg-fried-rice', false, true),
+  ('dish-156', 'Veg. Fried Rice', 'veg-fried-rice', true, true),
+  ('dish-157', 'Gobi Fried Rice', 'veg-fried-rice', true, true),
+  ('dish-158', 'Zeera Rice', 'veg-fried-rice', true, true),
+  ('dish-159', 'Ghee Rice', 'veg-fried-rice', true, true),
+  ('dish-160', 'Mushroom Fried Rice', 'veg-fried-rice', true, true),
+  ('dish-161', 'Paneer Fried Rice', 'veg-fried-rice', true, true),
+  ('dish-162', 'Kaju Fried Rice', 'veg-fried-rice', true, true),
+  ('dish-163', 'Schezwan Fried Rice', 'veg-fried-rice', true, true),
+  ('dish-164', 'Baby Corn Fried Rice', 'veg-fried-rice', true, true),
+  ('dish-165', 'Mixed Veg. Fried Rice', 'veg-fried-rice', true, true),
+  ('dish-166', 'Dalkichidi', 'veg-fried-rice', true, true),
+  ('dish-167', 'Egg Noodles', 'non-veg-noodles', false, true),
+  ('dish-168', 'Schezwan Egg Noodles', 'non-veg-noodles', false, true),
+  ('dish-169', 'Chicken Noodles', 'non-veg-noodles', false, true),
+  ('dish-170', 'Chicken Schezwan Noodles', 'non-veg-noodles', false, true),
+  ('dish-171', 'Prawns Noodles', 'non-veg-noodles', false, true),
+  ('dish-172', 'Veg. Noodles', 'veg-noodles', true, true),
+  ('dish-173', 'Gobi Noodles', 'veg-noodles', true, true),
+  ('dish-174', 'Paneer Noodles', 'veg-noodles', true, true),
+  ('dish-175', 'Mushroom Noodles', 'veg-noodles', true, true),
+  ('dish-176', 'Manchurian Noodles', 'veg-noodles', true, true),
+  ('dish-177', 'Veg. Hakka Noodles', 'veg-noodles', true, true),
+  ('dish-178', 'Veg. Pulav', 'veg-pulavs', true, true),
+  ('dish-179', 'Kaju Pulav', 'veg-pulavs', true, true),
+  ('dish-180', 'Paneer Pulav', 'veg-pulavs', true, true),
+  ('dish-181', 'Mushroom Pulav', 'veg-pulavs', true, true),
+  ('dish-182', 'Tandoori Roti', 'indian-breads', true, true),
+  ('dish-183', 'Butter Roti', 'indian-breads', true, true),
+  ('dish-184', 'Plain Naan', 'indian-breads', true, true),
+  ('dish-185', 'Butter Naan', 'indian-breads', true, true),
+  ('dish-186', 'Garlic Naan', 'indian-breads', true, true),
+  ('dish-187', 'Rumali Roti', 'indian-breads', true, true),
+  ('dish-188', 'Kulcha', 'indian-breads', true, true),
+  ('dish-189', 'Butter Kulcha', 'indian-breads', true, true),
+  ('dish-190', 'Onion Kulcha', 'indian-breads', true, true),
+  ('dish-191', 'Masala Kulcha', 'indian-breads', true, true),
+  ('dish-192', 'Paneer Kulcha', 'indian-breads', true, true),
+  ('dish-193', 'Aloo Parota', 'indian-breads', true, true),
+  ('dish-194', 'Parota', 'indian-breads', true, true),
+  ('dish-195', 'Plain Papad', 'indian-breads', true, true),
+  ('dish-196', 'Masala Papad', 'indian-breads', true, true),
+  ('dish-197', 'Kadai Veg.', 'veg-curries', true, true),
+  ('dish-198', 'Mixed Veg. Curry', 'veg-curries', true, true),
+  ('dish-199', 'Veg. Mughlai Curry', 'veg-curries', true, true),
+  ('dish-200', 'Veg. Kofta Curry', 'veg-curries', true, true),
+  ('dish-201', 'Malai Kofta Curry', 'veg-curries', true, true),
+  ('dish-202', 'Shahi Paneer', 'veg-curries', true, true),
+  ('dish-203', 'Paneer Butter Masala', 'veg-curries', true, true),
+  ('dish-204', 'Kadai Paneer', 'veg-curries', true, true),
+  ('dish-205', 'Methi Chaman', 'veg-curries', true, true),
+  ('dish-206', 'Kaju Paneer Masala', 'veg-curries', true, true),
+  ('dish-207', 'Kaju Masala Curry', 'veg-curries', true, true),
+  ('dish-208', 'Mutter Paneer', 'veg-curries', true, true),
+  ('dish-209', 'Aloo Gobi', 'veg-curries', true, true),
+  ('dish-210', 'Aloo Mutter', 'veg-curries', true, true),
+  ('dish-211', 'Aloo Palak', 'veg-curries', true, true),
+  ('dish-212', 'Paneer Kheema Masala', 'veg-curries', true, true),
+  ('dish-213', 'Palak Paneer', 'veg-curries', true, true),
+  ('dish-214', 'Plain Palak', 'veg-curries', true, true),
+  ('dish-215', 'Methi Paneer', 'veg-curries', true, true),
+  ('dish-216', 'Paneer Tikka Masala', 'veg-curries', true, true),
+  ('dish-217', 'Dal Fry', 'veg-curries', true, true),
+  ('dish-218', 'Dal Tadka', 'veg-curries', true, true),
+  ('dish-219', 'Kadai Mushroom', 'veg-curries', true, true),
+  ('dish-220', 'Mushroom Masala', 'veg-curries', true, true),
+  ('dish-221', 'Baby Corn Masala', 'veg-curries', true, true),
+  ('dish-222', 'Paneer Makhani', 'veg-curries', true, true),
+  ('dish-223', 'Chicken Curry (Bone)', 'chicken-curries', false, true),
+  ('dish-224', 'Chicken Curry (Boneless)', 'chicken-curries', false, true),
+  ('dish-225', 'Andhra Chicken Curry (Spicy)', 'chicken-curries', false, true),
+  ('dish-226', 'Chicken Rayalaseema', 'chicken-curries', false, true),
+  ('dish-227', 'Special Chicken Curry', 'chicken-curries', false, true),
+  ('dish-228', 'Kadai Chicken', 'chicken-curries', false, true),
+  ('dish-229', 'Butter Chicken', 'chicken-curries', false, true),
+  ('dish-230', 'Chicken Murgh Masala', 'chicken-curries', false, true),
+  ('dish-231', 'Chicken Kheema Curry', 'chicken-curries', false, true),
+  ('dish-232', 'Chicken Tikka Masala', 'chicken-curries', false, true),
+  ('dish-233', 'Wings Masala', 'chicken-curries', false, true),
+  ('dish-234', 'Chicken Mughalai Curry', 'chicken-curries', false, true),
+  ('dish-235', 'Kaju Chicken Curry', 'chicken-curries', false, true),
+  ('dish-236', 'Methi Chicken (Bone)', 'chicken-curries', false, true),
+  ('dish-237', 'Methi Chicken (Boneless)', 'chicken-curries', false, true),
+  ('dish-238', 'Punjabi Chicken Curry', 'chicken-curries', false, true),
+  ('dish-239', 'Afgani Chicken (Rambha)', 'chicken-curries', false, true),
+  ('dish-240', 'Palak Mutton', 'mutton-curry', false, true),
+  ('dish-241', 'Gongura Mutton', 'mutton-curry', false, true),
+  ('dish-242', 'Mutton Curry', 'mutton-curry', false, true),
+  ('dish-243', 'Kaju Mutton Curry', 'mutton-curry', false, true),
+  ('dish-244', 'Methi Mutton', 'mutton-curry', false, true),
+  ('dish-245', 'Vanilla Milkshake', 'milkshakes', true, true),
+  ('dish-246', 'Butterscotch Milkshake', 'milkshakes', true, true),
+  ('dish-247', 'Chocolate Milkshake', 'milkshakes', true, true),
+  ('dish-248', 'Oreo Milkshake', 'milkshakes', true, true),
+  ('dish-249', 'KitKat Milkshake', 'milkshakes', true, true),
+  ('dish-250', 'Butter Milk', 'beverages', true, true),
+  ('dish-251', 'Sweet Lassi', 'beverages', true, true),
+  ('dish-252', 'Lassi', 'beverages', true, true),
+  ('dish-253', 'Lemon Soda Sweet & Salt', 'beverages', true, true),
+  ('dish-254', 'Lemon Juice', 'beverages', true, true),
+  ('dish-255', 'Water 1 litre', 'beverages', true, true),
+  ('dish-256', 'Thumbs Up 250 ml', 'beverages', true, true),
+  ('dish-257', 'Sprite 250 ml', 'beverages', true, true),
+  ('dish-258', 'Coco Cola 250 ml', 'beverages', true, true),
+  ('dish-259', 'Goli Soda', 'beverages', true, true),
+  ('dish-260', 'Blue Lagoon Mocktail', 'mocktails', true, true),
+  ('dish-261', 'Green Mint Mocktail', 'mocktails', true, true),
+  ('dish-262', 'Naughty Water Melon Mocktail', 'mocktails', true, true),
+  ('dish-263', 'Orange Mocktail', 'mocktails', true, true),
+  ('dish-264', 'Gulab Jamun', 'desserts', true, true),
+  ('dish-265', 'Gulab Jamun with Ice Cream', 'desserts', true, true),
+  ('dish-266', 'Double Ka Meeta', 'desserts', true, true),
+  ('dish-267', 'Badham Kheer', 'desserts', true, true),
+  ('dish-268', 'Vanilla', 'ice-creams', true, true),
+  ('dish-269', 'Butterscotch', 'ice-creams', true, true),
+  ('dish-270', 'Strawberry', 'ice-creams', true, true),
+  ('dish-271', 'Black Current', 'ice-creams', true, true),
+  ('dish-272', 'Chocolate', 'ice-creams', true, true),
+  ('dish-273', 'Chicken Mandi Bucket Half', 'bucket-biryani', false, true),
+  ('dish-274', 'Chicken Mandi Bucket Full', 'bucket-biryani', false, true),
+  ('dish-275', 'Alfaham Mandi Bucket Half', 'bucket-biryani', false, true),
+  ('dish-276', 'Alfaham Mandi Bucket Full', 'bucket-biryani', false, true),
+  ('dish-277', 'Tandoori Chicken Mandi Bucket Half', 'bucket-biryani', false, true),
+  ('dish-278', 'Tandoori Chicken Mandi Bucket Full', 'bucket-biryani', false, true),
+  ('dish-279', 'Alfaham Juicy Mandi Bucket Half', 'bucket-biryani', false, true),
+  ('dish-280', 'Alfaham Juicy Mandi Bucket Full', 'bucket-biryani', false, true),
+  ('dish-281', 'Family Chicken Dum Biryani Half', 'bucket-biryani', false, true),
+  ('dish-282', 'Family Chicken Dum Biryani Full', 'bucket-biryani', false, true),
+  ('dish-283', 'Mutton Dum Biryani Half', 'bucket-biryani', false, true),
+  ('dish-284', 'Mutton Dum Biryani Full', 'bucket-biryani', false, true),
+  ('s-baby-corn-manchurian', 'Baby Corn Manchurian', 'starters', true, true),
+  ('chicken-curry-bone', 'Chicken Curry With Bone', 'curries', false, true),
+  ('b-hyd-dum', 'Hyderabadi Chicken Dum Biryani', 'biryani', false, true),
+  ('b-bucket-fry', 'Chicken Fry Biryani Bucket', 'biryani', false, true),
+  ('chicken-mughlai-curry', 'Mughlai Chicken Curry', 'curries', false, true),
+  ('s-chicken-rayalaseema', 'Rayalaseema Chicken Fry', 'starters', false, true),
+  ('c-fish-masala', 'Fish Masala', 'curries', false, true),
+  ('bev-green-mint', 'Green Mint Mojito', 'beverages', true, true),
+  ('r-jeera-rice', 'Jeera Rice', 'rice-noodles', true, true),
+  ('c-kadai-fish-curry', 'Kadai Fish Curry', 'curries', false, true),
+  ('br-paneer-kulcha', 'Panneer Kulcha', 'breads', true, true),
+  ('s-loaded-chicken-fries', 'Loaded Chicken Fries', 'starters', false, true),
+  ('s-loaded-fries', 'Loaded French Fries', 'starters', true, true),
+  ('c-paneer-kheema', 'Panneer Kheema Masala', 'curries', true, true),
+  ('s-paneer-tikka', 'Panneer Tikka', 'starters', true, true),
+  ('panner-tikka-fry', 'Paneer Tikka Fry', 'starters', true, true),
+  ('s-peri-fries', 'Peri Peri French Fries', 'starters', true, true),
+  ('s-peri-fried-chicken', 'Peri Peri Fried Chicken', 'starters', false, true),
+  ('c-rayalaseema-chicken-curry', 'Rayalaseema Chicken Curry', 'curries', false, true),
+  ('s-special-omlette', 'Special Omlette', 'starters', false, true),
+  ('bev-strawberry-shake', 'Strawberry Milkshake', 'beverages', true, true),
+  ('r-schez-mix-veg-rice', 'Schezwan Mixed Veg Fried Rice', 'rice-noodles', true, true),
+  ('n-veg-noodles', 'Veg Noodles', 'rice-noodles', true, true)
+ON CONFLICT (item_id) DO NOTHING;
+
+-- 2. Seed Menu Prices (SKUs)
+INSERT INTO menu_prices (sku, item_id, variant, price, mrp)
+VALUES
+  ('dish-1', 'dish-1', NULL, 140, 175),
+  ('dish-2', 'dish-2', NULL, 140, 175),
+  ('dish-3', 'dish-3', NULL, 140, 175),
+  ('dish-4', 'dish-4', NULL, 150, 188),
+  ('dish-5', 'dish-5', NULL, 190, 238),
+  ('dish-6', 'dish-6', NULL, 190, 238),
+  ('dish-7', 'dish-7', NULL, 140, 175),
+  ('dish-8', 'dish-8', NULL, 140, 175),
+  ('dish-9', 'dish-9', NULL, 140, 175),
+  ('dish-10', 'dish-10', NULL, 140, 175),
+  ('dish-11', 'dish-11', NULL, 150, 188),
+  ('dish-12', 'dish-12', NULL, 190, 238),
+  ('dish-13', 'dish-13', NULL, 499, 624),
+  ('dish-14', 'dish-14', NULL, 399, 499),
+  ('dish-15', 'dish-15', NULL, 399, 499),
+  ('dish-16', 'dish-16', NULL, 399, 499),
+  ('dish-17', 'dish-17', NULL, 399, 499),
+  ('dish-18', 'dish-18', NULL, 499, 624),
+  ('dish-19', 'dish-19', NULL, 499, 624),
+  ('dish-20', 'dish-20', NULL, 999, 1249),
+  ('dish-22', 'dish-22', NULL, 420, 525),
+  ('dish-23', 'dish-23', NULL, 270, 338),
+  ('dish-24', 'dish-24', NULL, 350, 438),
+  ('dish-25', 'dish-25', NULL, 400, 500),
+  ('dish-26', 'dish-26', NULL, 280, 350),
+  ('dish-27', 'dish-27', NULL, 420, 525),
+  ('dish-28', 'dish-28', NULL, 120, 150),
+  ('dish-29', 'dish-29', NULL, 100, 125),
+  ('dish-30', 'dish-30', NULL, 50, 63),
+  ('dish-31', 'dish-31', NULL, 280, 350),
+  ('dish-32', 'dish-32', NULL, 320, 400),
+  ('dish-33', 'dish-33', NULL, 320, 400),
+  ('dish-34', 'dish-34', NULL, 320, 400),
+  ('dish-35', 'dish-35', NULL, 280, 350),
+  ('dish-36', 'dish-36', NULL, 300, 375),
+  ('dish-37', 'dish-37', NULL, 310, 388),
+  ('dish-38', 'dish-38', NULL, 300, 375),
+  ('dish-39', 'dish-39', NULL, 360, 450),
+  ('dish-40', 'dish-40', NULL, 280, 350),
+  ('dish-41', 'dish-41', NULL, 280, 350),
+  ('dish-42', 'dish-42', NULL, 340, 425),
+  ('dish-43', 'dish-43', NULL, 320, 400),
+  ('dish-44', 'dish-44', NULL, 360, 450),
+  ('dish-45', 'dish-45', NULL, 340, 425),
+  ('dish-46', 'dish-46', NULL, 320, 400),
+  ('dish-47', 'dish-47', NULL, 450, 563),
+  ('dish-48', 'dish-48', NULL, 420, 525),
+  ('dish-49', 'dish-49', NULL, 460, 575),
+  ('dish-50', 'dish-50', NULL, 380, 475),
+  ('dish-51', 'dish-51', NULL, 320, 400),
+  ('dish-52', 'dish-52', NULL, 320, 400),
+  ('dish-53', 'dish-53', NULL, 320, 400),
+  ('dish-54', 'dish-54', NULL, 330, 413),
+  ('dish-55', 'dish-55', NULL, 330, 413),
+  ('dish-56', 'dish-56', NULL, 350, 438),
+  ('dish-57', 'dish-57', NULL, 350, 438),
+  ('dish-58', 'dish-58', NULL, 350, 438),
+  ('dish-59', 'dish-59', NULL, 350, 438),
+  ('dish-60', 'dish-60', NULL, 180, 225),
+  ('dish-61', 'dish-61', NULL, 180, 225),
+  ('dish-62', 'dish-62', NULL, 80, 100),
+  ('dish-63', 'dish-63', NULL, 100, 125),
+  ('dish-64', 'dish-64', NULL, 200, 250),
+  ('dish-65', 'dish-65', NULL, 20, 25),
+  ('dish-66', 'dish-66', NULL, 200, 250),
+  ('dish-67', 'dish-67', NULL, 260, 325),
+  ('dish-68', 'dish-68', NULL, 270, 338),
+  ('dish-69', 'dish-69', NULL, 270, 338),
+  ('dish-70', 'dish-70', NULL, 280, 350),
+  ('dish-71', 'dish-71', NULL, 280, 350),
+  ('dish-72', 'dish-72', NULL, 290, 363),
+  ('dish-73', 'dish-73', NULL, 260, 325),
+  ('dish-74', 'dish-74', NULL, 290, 363),
+  ('dish-75', 'dish-75', NULL, 280, 350),
+  ('dish-76', 'dish-76', NULL, 280, 350),
+  ('dish-77', 'dish-77', NULL, 290, 363),
+  ('dish-78', 'dish-78', NULL, 280, 350),
+  ('dish-79', 'dish-79', NULL, 220, 275),
+  ('dish-80', 'dish-80', NULL, 200, 250),
+  ('dish-81', 'dish-81', NULL, 180, 225),
+  ('dish-82', 'dish-82', NULL, 280, 350),
+  ('dish-83', 'dish-83', NULL, 280, 350),
+  ('dish-84', 'dish-84', NULL, 280, 350),
+  ('dish-85', 'dish-85', NULL, 300, 375),
+  ('dish-86', 'dish-86', NULL, 570, 713),
+  ('dish-87', 'dish-87', NULL, 200, 250),
+  ('dish-88', 'dish-88', 'Half', 280, 350),
+  ('dish-88:half', 'dish-88', 'Half', 280, 350),
+  ('dish-89', 'dish-89', 'Full', 500, 625),
+  ('dish-89:full', 'dish-89', 'Full', 500, 625),
+  ('dish-90', 'dish-90', '2 Pcs', 190, 238),
+  ('dish-90:2pcs', 'dish-90', '2 Pcs', 190, 238),
+  ('dish-91', 'dish-91', '4 Pcs', 380, 475),
+  ('dish-91:4pcs', 'dish-91', '4 Pcs', 380, 475),
+  ('dish-92', 'dish-92', 'Half', 260, 325),
+  ('dish-92:half', 'dish-92', 'Half', 260, 325),
+  ('dish-93', 'dish-93', 'Full', 500, 625),
+  ('dish-93:full', 'dish-93', 'Full', 500, 625),
+  ('dish-94', 'dish-94', 'Half', 280, 350),
+  ('dish-94:half', 'dish-94', 'Half', 280, 350),
+  ('dish-95', 'dish-95', 'Full', 520, 650),
+  ('dish-95:full', 'dish-95', 'Full', 520, 650),
+  ('dish-96', 'dish-96', NULL, 360, 450),
+  ('dish-97', 'dish-97', NULL, 380, 475),
+  ('dish-98', 'dish-98', NULL, 380, 475),
+  ('dish-99', 'dish-99', NULL, 390, 488),
+  ('dish-100', 'dish-100', NULL, 390, 488),
+  ('dish-101', 'dish-101', NULL, 499, 624),
+  ('dish-102', 'dish-102', NULL, 340, 425),
+  ('dish-103', 'dish-103', NULL, 320, 400),
+  ('dish-104', 'dish-104', NULL, 100, 125),
+  ('dish-105', 'dish-105', NULL, 140, 175),
+  ('dish-106', 'dish-106', NULL, 130, 163),
+  ('dish-107', 'dish-107', NULL, 160, 200),
+  ('dish-108', 'dish-108', NULL, 200, 250),
+  ('dish-109', 'dish-109', NULL, 170, 213),
+  ('dish-110', 'dish-110', NULL, 230, 288),
+  ('dish-111', 'dish-111', NULL, 400, 500),
+  ('dish-112', 'dish-112', NULL, 280, 350),
+  ('dish-113', 'dish-113', NULL, 420, 525),
+  ('dish-114', 'dish-114', NULL, 320, 400),
+  ('dish-115', 'dish-115', NULL, 320, 400),
+  ('dish-116', 'dish-116', NULL, 330, 413),
+  ('dish-117', 'dish-117', NULL, 320, 400),
+  ('dish-118', 'dish-118', NULL, 310, 388),
+  ('dish-119', 'dish-119', NULL, 320, 400),
+  ('dish-120', 'dish-120', NULL, 330, 413),
+  ('dish-121', 'dish-121', NULL, 330, 413),
+  ('dish-122', 'dish-122', NULL, 300, 375),
+  ('dish-123', 'dish-123', NULL, 300, 375),
+  ('dish-124', 'dish-124', NULL, 340, 425),
+  ('dish-125', 'dish-125', NULL, 380, 475),
+  ('dish-126', 'dish-126', NULL, 180, 225),
+  ('dish-127', 'dish-127', NULL, 420, 525),
+  ('dish-128', 'dish-128', NULL, 420, 525),
+  ('dish-129', 'dish-129', NULL, 140, 175),
+  ('dish-130', 'dish-130', NULL, 220, 275),
+  ('dish-131', 'dish-131', NULL, 260, 325),
+  ('dish-132', 'dish-132', NULL, 300, 375),
+  ('dish-133', 'dish-133', NULL, 280, 350),
+  ('dish-134', 'dish-134', NULL, 280, 350),
+  ('dish-135', 'dish-135', NULL, 330, 413),
+  ('dish-136', 'dish-136', 'Single', 300, 375),
+  ('dish-136:single', 'dish-136', 'Single', 300, 375),
+  ('dish-137', 'dish-137', 'Single', 320, 400),
+  ('dish-137:single', 'dish-137', 'Single', 320, 400),
+  ('dish-138', 'dish-138', 'Half', 500, 625),
+  ('dish-138:half', 'dish-138', 'Half', 500, 625),
+  ('dish-139', 'dish-139', 'Full', 980, 1225),
+  ('dish-139:full', 'dish-139', 'Full', 980, 1225),
+  ('dish-140', 'dish-140', 'Half', 550, 688),
+  ('dish-140:half', 'dish-140', 'Half', 550, 688),
+  ('dish-141', 'dish-141', 'Full', 1000, 1250),
+  ('dish-141:full', 'dish-141', 'Full', 1000, 1250),
+  ('dish-142', 'dish-142', 'Half', 580, 725),
+  ('dish-142:half', 'dish-142', 'Half', 580, 725),
+  ('dish-143', 'dish-143', 'Full', 1050, 1313),
+  ('dish-143:full', 'dish-143', 'Full', 1050, 1313),
+  ('dish-144', 'dish-144', 'Half', 1050, 1313),
+  ('dish-144:half', 'dish-144', 'Half', 1050, 1313),
+  ('dish-145', 'dish-145', 'Full', 1990, 2488),
+  ('dish-145:full', 'dish-145', 'Full', 1990, 2488),
+  ('dish-146', 'dish-146', 'Half', 680, 850),
+  ('dish-146:half', 'dish-146', 'Half', 680, 850),
+  ('dish-147', 'dish-147', 'Full', 1290, 1613),
+  ('dish-147:full', 'dish-147', 'Full', 1290, 1613),
+  ('dish-148', 'dish-148', 'Half', 990, 1238),
+  ('dish-148:half', 'dish-148', 'Half', 990, 1238),
+  ('dish-149', 'dish-149', 'Full', 1950, 2438),
+  ('dish-149:full', 'dish-149', 'Full', 1950, 2438),
+  ('dish-150', 'dish-150', NULL, 240, 300),
+  ('dish-151', 'dish-151', NULL, 260, 325),
+  ('dish-152', 'dish-152', NULL, 320, 400),
+  ('dish-153', 'dish-153', NULL, 190, 238),
+  ('dish-154', 'dish-154', NULL, 210, 263),
+  ('dish-155', 'dish-155', NULL, 280, 350),
+  ('dish-156', 'dish-156', NULL, 170, 213),
+  ('dish-157', 'dish-157', NULL, 180, 225),
+  ('dish-158', 'dish-158', NULL, 180, 225),
+  ('dish-159', 'dish-159', NULL, 210, 263),
+  ('dish-160', 'dish-160', NULL, 240, 300),
+  ('dish-161', 'dish-161', NULL, 240, 300),
+  ('dish-162', 'dish-162', NULL, 280, 350),
+  ('dish-163', 'dish-163', NULL, 230, 288),
+  ('dish-164', 'dish-164', NULL, 240, 300),
+  ('dish-165', 'dish-165', NULL, 260, 325),
+  ('dish-166', 'dish-166', NULL, 220, 275),
+  ('dish-167', 'dish-167', NULL, 220, 275),
+  ('dish-168', 'dish-168', NULL, 240, 300),
+  ('dish-169', 'dish-169', NULL, 260, 325),
+  ('dish-170', 'dish-170', NULL, 280, 350),
+  ('dish-171', 'dish-171', NULL, 350, 438),
+  ('dish-172', 'dish-172', NULL, 200, 250),
+  ('dish-173', 'dish-173', NULL, 200, 250),
+  ('dish-174', 'dish-174', NULL, 250, 313),
+  ('dish-175', 'dish-175', NULL, 250, 313),
+  ('dish-176', 'dish-176', NULL, 260, 325),
+  ('dish-177', 'dish-177', NULL, 250, 313),
+  ('dish-178', 'dish-178', NULL, 200, 250),
+  ('dish-179', 'dish-179', NULL, 280, 350),
+  ('dish-180', 'dish-180', NULL, 280, 350),
+  ('dish-181', 'dish-181', NULL, 280, 350),
+  ('dish-182', 'dish-182', NULL, 30, 38),
+  ('dish-183', 'dish-183', NULL, 35, 44),
+  ('dish-184', 'dish-184', NULL, 55, 69),
+  ('dish-185', 'dish-185', NULL, 65, 81),
+  ('dish-186', 'dish-186', NULL, 70, 88),
+  ('dish-187', 'dish-187', NULL, 55, 69),
+  ('dish-188', 'dish-188', NULL, 50, 63),
+  ('dish-189', 'dish-189', NULL, 55, 69),
+  ('dish-190', 'dish-190', NULL, 70, 88),
+  ('dish-191', 'dish-191', NULL, 90, 113),
+  ('dish-192', 'dish-192', NULL, 90, 113),
+  ('dish-193', 'dish-193', NULL, 90, 113),
+  ('dish-194', 'dish-194', NULL, 50, 63),
+  ('dish-195', 'dish-195', NULL, 40, 50),
+  ('dish-196', 'dish-196', NULL, 80, 100),
+  ('dish-197', 'dish-197', NULL, 250, 313),
+  ('dish-198', 'dish-198', NULL, 240, 300),
+  ('dish-199', 'dish-199', NULL, 280, 350),
+  ('dish-200', 'dish-200', NULL, 270, 338),
+  ('dish-201', 'dish-201', NULL, 250, 313),
+  ('dish-202', 'dish-202', NULL, 270, 338),
+  ('dish-203', 'dish-203', NULL, 250, 313),
+  ('dish-204', 'dish-204', NULL, 280, 350),
+  ('dish-205', 'dish-205', NULL, 270, 338),
+  ('dish-206', 'dish-206', NULL, 280, 350),
+  ('dish-207', 'dish-207', NULL, 280, 350),
+  ('dish-208', 'dish-208', NULL, 280, 350),
+  ('dish-209', 'dish-209', NULL, 180, 225),
+  ('dish-210', 'dish-210', NULL, 200, 250),
+  ('dish-211', 'dish-211', NULL, 260, 325),
+  ('dish-212', 'dish-212', NULL, 280, 350),
+  ('dish-213', 'dish-213', NULL, 270, 338),
+  ('dish-214', 'dish-214', NULL, 220, 275),
+  ('dish-215', 'dish-215', NULL, 280, 350),
+  ('dish-216', 'dish-216', NULL, 290, 363),
+  ('dish-217', 'dish-217', NULL, 200, 250),
+  ('dish-218', 'dish-218', NULL, 220, 275),
+  ('dish-219', 'dish-219', NULL, 280, 350),
+  ('dish-220', 'dish-220', NULL, 250, 313),
+  ('dish-221', 'dish-221', NULL, 260, 325),
+  ('dish-222', 'dish-222', NULL, 280, 350),
+  ('dish-223', 'dish-223', NULL, 240, 300),
+  ('dish-224', 'dish-224', NULL, 290, 363),
+  ('dish-225', 'dish-225', NULL, 260, 325),
+  ('dish-226', 'dish-226', NULL, 280, 350),
+  ('dish-227', 'dish-227', NULL, 280, 350),
+  ('dish-228', 'dish-228', NULL, 280, 350),
+  ('dish-229', 'dish-229', NULL, 280, 350),
+  ('dish-230', 'dish-230', NULL, 300, 375),
+  ('dish-231', 'dish-231', NULL, 320, 400),
+  ('dish-232', 'dish-232', NULL, 320, 400),
+  ('dish-233', 'dish-233', NULL, 320, 400),
+  ('dish-234', 'dish-234', NULL, 320, 400),
+  ('dish-235', 'dish-235', NULL, 350, 438),
+  ('dish-236', 'dish-236', NULL, 290, 363),
+  ('dish-237', 'dish-237', NULL, 340, 425),
+  ('dish-238', 'dish-238', NULL, 320, 400),
+  ('dish-239', 'dish-239', NULL, 320, 400),
+  ('dish-240', 'dish-240', NULL, 350, 438),
+  ('dish-241', 'dish-241', NULL, 370, 463),
+  ('dish-242', 'dish-242', NULL, 360, 450),
+  ('dish-243', 'dish-243', NULL, 450, 563),
+  ('dish-244', 'dish-244', NULL, 350, 438),
+  ('dish-245', 'dish-245', NULL, 130, 163),
+  ('dish-246', 'dish-246', NULL, 140, 175),
+  ('dish-247', 'dish-247', NULL, 140, 175),
+  ('dish-248', 'dish-248', NULL, 170, 213),
+  ('dish-249', 'dish-249', NULL, 170, 213),
+  ('dish-250', 'dish-250', NULL, 50, 63),
+  ('dish-251', 'dish-251', NULL, 80, 100),
+  ('dish-252', 'dish-252', NULL, 80, 100),
+  ('dish-253', 'dish-253', NULL, 80, 100),
+  ('dish-254', 'dish-254', NULL, 70, 88),
+  ('dish-255', 'dish-255', NULL, 20, 25),
+  ('dish-256', 'dish-256', NULL, 20, 25),
+  ('dish-257', 'dish-257', NULL, 20, 25),
+  ('dish-258', 'dish-258', NULL, 20, 25),
+  ('dish-259', 'dish-259', NULL, 30, 38),
+  ('dish-260', 'dish-260', NULL, 130, 163),
+  ('dish-261', 'dish-261', NULL, 130, 163),
+  ('dish-262', 'dish-262', NULL, 150, 188),
+  ('dish-263', 'dish-263', NULL, 130, 163),
+  ('dish-264', 'dish-264', NULL, 60, 75),
+  ('dish-265', 'dish-265', NULL, 150, 188),
+  ('dish-266', 'dish-266', NULL, 100, 125),
+  ('dish-267', 'dish-267', NULL, 100, 125),
+  ('dish-268', 'dish-268', NULL, 90, 113),
+  ('dish-269', 'dish-269', NULL, 90, 113),
+  ('dish-270', 'dish-270', NULL, 90, 113),
+  ('dish-271', 'dish-271', NULL, 120, 150),
+  ('dish-272', 'dish-272', NULL, 110, 138),
+  ('dish-273', 'dish-273', 'Half', 550, 688),
+  ('dish-273:half', 'dish-273', 'Half', 550, 688),
+  ('dish-274', 'dish-274', 'Full', 1000, 1250),
+  ('dish-274:full', 'dish-274', 'Full', 1000, 1250),
+  ('dish-275', 'dish-275', 'Half', 600, 750),
+  ('dish-275:half', 'dish-275', 'Half', 600, 750),
+  ('dish-276', 'dish-276', 'Full', 1100, 1375),
+  ('dish-276:full', 'dish-276', 'Full', 1100, 1375),
+  ('dish-277', 'dish-277', 'Half', 550, 688),
+  ('dish-277:half', 'dish-277', 'Half', 550, 688),
+  ('dish-278', 'dish-278', 'Full', 1000, 1250),
+  ('dish-278:full', 'dish-278', 'Full', 1000, 1250),
+  ('dish-279', 'dish-279', 'Half', 630, 788),
+  ('dish-279:half', 'dish-279', 'Half', 630, 788),
+  ('dish-280', 'dish-280', 'Full', 1290, 1613),
+  ('dish-280:full', 'dish-280', 'Full', 1290, 1613),
+  ('dish-281', 'dish-281', 'Half', 600, 750),
+  ('dish-281:half', 'dish-281', 'Half', 600, 750),
+  ('dish-282', 'dish-282', 'Full', 1100, 1375),
+  ('dish-282:full', 'dish-282', 'Full', 1100, 1375),
+  ('dish-283', 'dish-283', 'Half', 990, 1238),
+  ('dish-283:half', 'dish-283', 'Half', 990, 1238),
+  ('dish-284', 'dish-284', 'Full', 1990, 2488),
+  ('dish-284:full', 'dish-284', 'Full', 1990, 2488),
+  ('s-apollo-fish', 'dish-54', NULL, 400, 500),
+  ('s-baby-corn-555', 'dish-72', NULL, 340, 425),
+  ('s-baby-corn-manchurian', 's-baby-corn-manchurian', NULL, 290, 363),
+  ('s-boiled-egg', 'dish-65', 'Single', 30, 38),
+  ('s-boiled-egg:single', 'dish-65', 'Single', 30, 38),
+  ('c-butter-chicken', 'dish-229', NULL, 300, 375),
+  ('br-kulcha', 'dish-188', NULL, 65, 81),
+  ('br-butter-naan', 'dish-185', NULL, 75, 94),
+  ('br-butter-roti', 'dish-183', NULL, 45, 56),
+  ('s-chicken-65', 'dish-35', NULL, 340, 425),
+  ('chicken-curry-bone', 'chicken-curry-bone', NULL, 250, 313),
+  ('c-chicken-curry-boneless', 'dish-224', NULL, 350, 438),
+  ('s-chicken-drumstick', 'dish-37', NULL, 350, 438),
+  ('b-hyd-dum', 'b-hyd-dum', NULL, 345, 431),
+  ('r-chicken-fried-rice', 'dish-150', NULL, 340, 425),
+  ('b-bucket-fry', 'b-bucket-fry', NULL, 1400, 1750),
+  ('s-chicken-lollipop', 'dish-36', NULL, 350, 438),
+  ('chicken-mughlai-curry', 'chicken-mughlai-curry', NULL, 250, 313),
+  ('n-chicken-noodles', 'dish-169', NULL, 250, 313),
+  ('s-chicken-rayalaseema', 's-chicken-rayalaseema', NULL, 370, 463),
+  ('s-chilli-paneer', 'dish-76', NULL, 300, 375),
+  ('bev-chocolate-shake', 'dish-247', NULL, 150, 188),
+  ('r-schez-egg-rice', 'dish-154', NULL, 240, 300),
+  ('n-schez-egg-noodles', 'dish-168', NULL, 250, 313),
+  ('s-fish-65', 'dish-55', NULL, 360, 450),
+  ('b-fish', 'dish-124', NULL, 370, 463),
+  ('c-fish-masala', 'c-fish-masala', NULL, 340, 425),
+  ('bev-green-mint', 'bev-green-mint', NULL, 150, 188),
+  ('r-jeera-rice', 'r-jeera-rice', NULL, 210, 263),
+  ('c-kadai-fish-curry', 'c-kadai-fish-curry', NULL, 370, 463),
+  ('c-kadai-veg', 'dish-197', NULL, 270, 338),
+  ('br-paneer-kulcha', 'br-paneer-kulcha', NULL, 100, 125),
+  ('s-loaded-chicken-fries', 's-loaded-chicken-fries', NULL, 300, 375),
+  ('s-loaded-fries', 's-loaded-fries', NULL, 280, 350),
+  ('m1', 'dish-144', NULL, 1370, 1713),
+  ('br-masala-kulcha', 'dish-191', NULL, 85, 106),
+  ('s-mushroom-65', 'dish-83', NULL, 300, 375),
+  ('r-mushroom-rice', 'dish-160', NULL, 259, 324),
+  ('n-mushroom-noodles', 'dish-175', NULL, 300, 375),
+  ('bev-oreo-shake', 'dish-248', NULL, 150, 188),
+  ('s-paneer-65', 'dish-75', NULL, 300, 375),
+  ('b-kaju-paneer', 'dish-132', NULL, 330, 413),
+  ('s-paneer-manchurian', 'dish-74', NULL, 330, 413),
+  ('c-paneer-kheema', 'c-paneer-kheema', NULL, 270, 338),
+  ('c-paneer-tikka-masala', 'dish-216', NULL, 300, 375),
+  ('s-paneer-tikka', 's-paneer-tikka', NULL, 400, 500),
+  ('panner-tikka-fry', 'panner-tikka-fry', NULL, 250, 313),
+  ('s-pepper-chicken', 'dish-33', NULL, 370, 463),
+  ('s-pepper-fish', 'dish-52', NULL, 360, 450),
+  ('s-peri-fries', 's-peri-fries', NULL, 250, 313),
+  ('s-peri-fried-chicken', 's-peri-fried-chicken', NULL, 300, 375),
+  ('s-prawns-65', 'dish-59', NULL, 390, 488),
+  ('b-prawns', 'dish-125', NULL, 450, 563),
+  ('n-prawns-noodles', 'dish-171', NULL, 360, 450),
+  ('c-rayalaseema-chicken-curry', 'c-rayalaseema-chicken-curry', NULL, 350, 438),
+  ('sahi-paneer', 'dish-202', NULL, 250, 313),
+  ('r-sp-chicken-fried-rice', 'dish-155', NULL, 400, 500),
+  ('r-curd-rice', 'dish-28', NULL, 150, 188),
+  ('s-special-omlette', 's-special-omlette', NULL, 150, 188),
+  ('bev-strawberry-shake', 'bev-strawberry-shake', NULL, 150, 188),
+  ('m3', 'dish-140', NULL, 690, 863),
+  ('r-schez-mix-veg-rice', 'r-schez-mix-veg-rice', NULL, 390, 488),
+  ('n-veg-noodles', 'n-veg-noodles', NULL, 250, 313)
+ON CONFLICT (sku) DO NOTHING;
+
+-- 3. Ensure Sale Settings Exist
+INSERT INTO sale_settings (id, sale_active, sale_percent, sale_ends_at, min_order_amount, coupon_code, coupon_flat_discount, free_item_name, free_item_min_amount)
+VALUES (1, true, 10, now() + interval '12 hours', 299, 'DIRECT50', 50, 'Free 250ml Cool Drink', 499)
+ON CONFLICT (id) DO NOTHING;
+
+
+-- 5. Deploy / Upgrade RPC Functions (Drop old signatures first, keeping single authoritative overload)
+
+-- 5a. Admin Set Available RPC
+DROP FUNCTION IF EXISTS admin_set_available(text, text, boolean);
+CREATE OR REPLACE FUNCTION admin_set_available(
+  input_pin text,
+  p_item_id text,
+  p_available boolean
+)
+RETURNS jsonb
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+DECLARE
+  v_auth jsonb;
+BEGIN
+  v_auth := check_and_verify_pin(input_pin);
+  IF (v_auth->>'ok')::boolean IS NOT TRUE THEN
+    RETURN jsonb_build_object('success', false, 'error', COALESCE(v_auth->>'error', 'Unauthorized'));
+  END IF;
+
+  UPDATE menu_items
+  SET
+    available = p_available,
+    is_completed = NOT p_available,
+    updated_at = now()
+  WHERE item_id = p_item_id OR id::text = p_item_id;
+
+  IF NOT FOUND THEN
+    RETURN jsonb_build_object('success', false, 'error', 'Item not found in menu_items.');
+  END IF;
+
+  RETURN jsonb_build_object(
+    'success', true,
+    'item_id', p_item_id,
+    'available', p_available
+  );
+END;
+$$;
+
+-- 5b. Admin Set Price RPC
+DROP FUNCTION IF EXISTS admin_set_price(text, text, integer);
+DROP FUNCTION IF EXISTS admin_set_price(text, text, int);
+CREATE OR REPLACE FUNCTION admin_set_price(
+  input_pin text,
+  p_sku text,
+  p_price integer
+)
+RETURNS jsonb
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+DECLARE
+  v_auth jsonb;
+  v_old_price integer;
+  v_target_item_id text;
+BEGIN
+  v_auth := check_and_verify_pin(input_pin);
+  IF (v_auth->>'ok')::boolean IS NOT TRUE THEN
+    RETURN jsonb_build_object('success', false, 'error', COALESCE(v_auth->>'error', 'Unauthorized'));
+  END IF;
+
+  IF p_price IS NULL OR p_price < 1 OR p_price > 99999 THEN
+    RETURN jsonb_build_object('success', false, 'error', 'Price must be between ₹1 and ₹99,999.');
+  END IF;
+
+  SELECT price, item_id INTO v_old_price, v_target_item_id
+  FROM menu_prices
+  WHERE sku = p_sku;
+
+  IF NOT FOUND THEN
+    RETURN jsonb_build_object('success', false, 'error', 'SKU not found in menu_prices.');
+  END IF;
+
+  INSERT INTO menu_price_log (sku, old_price, new_price, changed_at)
+  VALUES (p_sku, v_old_price, p_price, now());
+
+  UPDATE menu_prices
+  SET price = p_price, updated_at = now()
+  WHERE sku = p_sku;
+
+  IF v_target_item_id IS NOT NULL AND (p_sku = v_target_item_id OR p_sku NOT LIKE '%:%') THEN
+    UPDATE menu_items
+    SET price = p_price, updated_at = now()
+    WHERE item_id = v_target_item_id;
+  END IF;
+
+  RETURN jsonb_build_object(
+    'success', true,
+    'sku', p_sku,
+    'old_price', v_old_price,
+    'new_price', p_price
+  );
+END;
+$$;
+
+-- 5c. Public get_live_menu() RPC
+DROP FUNCTION IF EXISTS get_live_menu();
+CREATE OR REPLACE FUNCTION get_live_menu()
+RETURNS jsonb
+LANGUAGE plpgsql
+STABLE
+SECURITY DEFINER
+SET search_path = public
+AS $$
+DECLARE
+  v_sale RECORD;
+  v_items jsonb;
+  v_server_time timestamptz := now();
+  v_sale_active boolean := false;
+BEGIN
+  SELECT sale_active, sale_percent, sale_ends_at, min_order_amount, coupon_code, coupon_flat_discount
+  INTO v_sale
+  FROM sale_settings
+  WHERE id = 1;
+
+  IF FOUND THEN
+    v_sale_active := COALESCE(v_sale.sale_active, false)
+      AND (v_sale.sale_ends_at IS NULL OR v_server_time <= v_sale.sale_ends_at);
+  END IF;
+
+  SELECT jsonb_agg(
+    jsonb_build_object(
+      'item_id', p.item_id,
+      'sku', p.sku,
+      'variant', p.variant,
+      'price', p.price,
+      'mrp', p.mrp,
+      'available', (COALESCE(m.available, true) AND (m.is_completed IS NOT TRUE))
+    )
+  )
+  INTO v_items
+  FROM menu_prices p
+  LEFT JOIN menu_items m ON m.item_id = p.item_id;
+
+  RETURN jsonb_build_object(
+    'server_time', v_server_time,
+    'sale', jsonb_build_object(
+      'active', v_sale_active,
+      'percent', COALESCE(v_sale.sale_percent, 10),
+      'ends_at', v_sale.sale_ends_at,
+      'min_order', COALESCE(v_sale.min_order_amount, 299),
+      'coupon', v_sale.coupon_code,
+      'flat_discount', v_sale.coupon_flat_discount
+    ),
+    'items', COALESCE(v_items, '[]'::jsonb)
+  );
+END;
+$$;
+
+-- 5d. Authoritative submit_verified_order RPC
+DROP FUNCTION IF EXISTS submit_verified_order(text, text, text, numeric, jsonb, text, text, text, text);
+DROP FUNCTION IF EXISTS submit_verified_order(text, text, text, numeric, jsonb, text, text, text, text, text);
+DROP FUNCTION IF EXISTS submit_verified_order(text, text, text, numeric, jsonb, text, text, text, text, text, numeric);
+
+CREATE OR REPLACE FUNCTION submit_verified_order(
+  p_customer_name text,
+  p_customer_phone text,
+  p_order_type text,
+  p_distance_km numeric,
+  p_items_json jsonb,
+  p_coupon_code text DEFAULT NULL,
+  p_address_notes text DEFAULT '',
+  p_maps_link text DEFAULT '',
+  p_payment_method text DEFAULT 'UPI',
+  p_idempotency_key text DEFAULT NULL,
+  p_expected_total numeric DEFAULT NULL
+)
+RETURNS jsonb
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+DECLARE
+  v_opens_at time := '10:30'::time;
+  v_closes_at time := '23:00'::time;
+  v_buffer_mins int := 30;
+  v_last_order_at time;
+  v_now_time time;
+  v_norm_payment_method text;
+  v_norm_name text;
+  v_norm_phone text;
+  v_norm_type text;
+  v_norm_address text;
+  v_norm_idempotency_key text;
+  v_is_delivery boolean;
+  
+  v_item record;
+  v_item_qty int;
+  v_input_id text;
+  v_input_sku text;
+  
+  v_price_row record;
+  v_menu_item record;
+  v_item_name text;
+  v_unit_price integer;
+  
+  v_unknown_items text[] := ARRAY[]::text[];
+  v_unavailable_items text[] := ARRAY[]::text[];
+  v_price_lines jsonb[] := ARRAY[]::jsonb[];
+  v_snapshot_lines jsonb[] := ARRAY[]::jsonb[];
+  
+  v_calculated_subtotal integer := 0;
+  v_items_formatted_text text := '';
+  v_item_index int := 0;
+  
+  v_sale record;
+  v_sale_discount integer := 0;
+  v_coupon_discount integer := 0;
+  v_total_discount integer := 0;
+  v_final_total integer := 0;
+  v_free_item_name text := NULL;
+  
+  v_order_code text;
+  v_inserted_id int;
+  v_order_snapshot jsonb;
+  
+  v_existing_order record;
+  v_ret_order_code text;
+  v_ret_subtotal numeric;
+  v_ret_discount_amount numeric;
+  v_ret_final_total numeric;
+  v_ret_payment_status text;
+  v_ret_items_json text;
+BEGIN
+  IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_schema = 'public' AND table_name = 'store_settings') THEN
+    SELECT opens_at, closes_at, last_order_buffer_minutes
+    INTO v_opens_at, v_closes_at, v_buffer_mins
+    FROM store_settings WHERE id = 1;
+  END IF;
+
+  v_last_order_at := (v_closes_at - (v_buffer_mins || ' minutes')::interval)::time;
+  v_now_time := (now() AT TIME ZONE 'Asia/Kolkata')::time;
+
+  IF v_now_time < v_opens_at OR v_now_time >= v_closes_at THEN
+    RETURN jsonb_build_object(
+      'success', false,
+      'status', 'closed',
+      'opens_at', to_char(v_opens_at, 'HH24:MI'),
+      'closes_at', to_char(v_closes_at, 'HH24:MI')
+    );
+  END IF;
+
+  IF v_now_time >= v_last_order_at AND v_now_time < v_closes_at THEN
+    RETURN jsonb_build_object(
+      'success', false,
+      'status', 'closed_last_order',
+      'opens_at', to_char(v_opens_at, 'HH24:MI'),
+      'closes_at', to_char(v_closes_at, 'HH24:MI'),
+      'last_order_at', to_char(v_last_order_at, 'HH24:MI')
+    );
+  END IF;
+
+  v_norm_idempotency_key := NULLIF(trim(p_idempotency_key), '');
+  IF v_norm_idempotency_key IS NOT NULL THEN
+    SELECT id, order_code, subtotal, discount_amount, final_total, payment_status, payment_method, items_json
+    INTO v_existing_order
+    FROM orders
+    WHERE idempotency_key = v_norm_idempotency_key
+    LIMIT 1;
+
+    IF FOUND THEN
+      RETURN jsonb_build_object(
+        'success', true,
+        'order_id', v_existing_order.id,
+        'order_code', v_existing_order.order_code,
+        'items', v_existing_order.items_json,
+        'subtotal', v_existing_order.subtotal,
+        'discount_amount', v_existing_order.discount_amount,
+        'final_total', v_existing_order.final_total,
+        'payment_status', v_existing_order.payment_status,
+        'payment_method', v_existing_order.payment_method,
+        'idempotent_replay', true
+      );
+    END IF;
+  END IF;
+
+  v_norm_payment_method := UPPER(TRIM(COALESCE(p_payment_method, 'UPI')));
+  IF v_norm_payment_method NOT IN ('UPI', 'COD') THEN
+    RAISE EXCEPTION 'Invalid payment method. Only UPI and COD are accepted.';
+  END IF;
+
+  v_norm_name := trim(p_customer_name);
+  IF length(v_norm_name) < 2 THEN
+    RAISE EXCEPTION 'Customer name must be at least 2 characters long.';
+  END IF;
+
+  v_norm_phone := regexp_replace(p_customer_phone, '\D', '', 'g');
+  IF length(v_norm_phone) = 12 AND v_norm_phone LIKE '91%' THEN
+    v_norm_phone := substring(v_norm_phone from 3);
+  END IF;
+  IF v_norm_phone !~ '^[6-9][0-9]{9}$' THEN
+    RAISE EXCEPTION 'Please provide a valid 10-digit Indian mobile number.';
+  END IF;
+
+  v_norm_type := UPPER(TRIM(p_order_type));
+  IF v_norm_type IN ('DELIVERY', 'DELIVERY_5KM') THEN
+    v_is_delivery := true;
+    v_norm_type := 'DELIVERY_5KM';
+    IF p_distance_km IS NULL OR p_distance_km <= 0 OR p_distance_km > 5.0 THEN
+      RAISE EXCEPTION 'Direct delivery is strictly limited to addresses within 5.0 km road distance.';
+    END IF;
+    v_norm_address := trim(p_address_notes);
+    IF length(v_norm_address) < 5 THEN
+      RAISE EXCEPTION 'Please enter a complete delivery address or landmark.';
+    END IF;
+  ELSE
+    v_is_delivery := false;
+    v_norm_type := 'TAKEAWAY';
+    v_norm_address := COALESCE(NULLIF(trim(p_address_notes), ''), 'Self-Pickup at Restaurant');
+  END IF;
+
+  IF p_items_json IS NULL OR jsonb_typeof(p_items_json) <> 'array' OR jsonb_array_length(p_items_json) = 0 THEN
+    RAISE EXCEPTION 'Cart is empty. Please add items to proceed.';
+  END IF;
+
+  FOR v_item IN SELECT * FROM jsonb_to_recordset(p_items_json) AS x(
+    id text,
+    sku text,
+    name text,
+    quantity numeric,
+    price numeric,
+    variant text,
+    portion text
+  )
+  LOOP
+    v_item_qty := floor(COALESCE(v_item.quantity, 1));
+    IF v_item_qty <= 0 OR v_item_qty > 50 THEN
+      RAISE EXCEPTION 'Invalid item quantity (% for "%"). Must be between 1 and 50.', v_item_qty, COALESCE(v_item.name, 'Item');
+    END IF;
+
+    v_input_id := trim(COALESCE(v_item.id, ''));
+    v_input_sku := trim(COALESCE(v_item.sku, v_input_id));
+
+    IF v_input_sku LIKE 'group-%' THEN
+      v_input_sku := substring(v_input_sku from 7);
+    END IF;
+    IF v_input_id LIKE 'group-%' THEN
+      v_input_id := substring(v_input_id from 7);
+    END IF;
+
+    v_price_row := NULL;
+
+    SELECT * INTO v_price_row FROM menu_prices WHERE sku = v_input_sku;
+
+    IF v_price_row IS NULL AND v_input_id <> '' AND v_input_id <> v_input_sku THEN
+      SELECT * INTO v_price_row FROM menu_prices WHERE sku = v_input_id;
+    END IF;
+
+    IF v_price_row IS NULL AND v_item.variant IS NOT NULL AND trim(v_item.variant) <> '' THEN
+      SELECT * INTO v_price_row FROM menu_prices
+      WHERE sku = (v_input_sku || ':' || lower(regexp_replace(v_item.variant, '\s+', '', 'g')));
+    END IF;
+
+    IF v_price_row IS NULL AND v_input_id ~ '^[0-9]+$' THEN
+      SELECT * INTO v_price_row FROM menu_prices
+      WHERE item_id = ('dish-' || v_input_id) OR sku = ('dish-' || v_input_id)
+      LIMIT 1;
+      IF v_price_row IS NULL THEN
+        SELECT p.* INTO v_price_row
+        FROM menu_prices p
+        JOIN menu_items m ON m.item_id = p.item_id
+        WHERE m.id = v_input_id::int
+        LIMIT 1;
+      END IF;
+    END IF;
+
+    IF v_price_row IS NULL AND v_item.name IS NOT NULL AND trim(v_item.name) <> '' THEN
+      SELECT p.* INTO v_price_row
+      FROM menu_prices p
+      JOIN menu_items m ON m.item_id = p.item_id
+      WHERE lower(trim(m.name)) = lower(trim(v_item.name))
+      LIMIT 1;
+    END IF;
+
+    IF v_price_row IS NULL THEN
+      IF NOT (v_input_sku = ANY(v_unknown_items)) THEN
+        v_unknown_items := array_append(v_unknown_items, COALESCE(NULLIF(v_input_sku, ''), v_input_id));
+      END IF;
+      CONTINUE;
+    END IF;
+
+    SELECT * INTO v_menu_item FROM menu_items WHERE item_id = v_price_row.item_id LIMIT 1;
+    v_item_name := COALESCE(v_menu_item.name, v_item.name, v_price_row.sku);
+
+    IF (v_menu_item IS NOT NULL AND (v_menu_item.available = false OR v_menu_item.is_completed = true)) THEN
+      IF NOT (v_item_name = ANY(v_unavailable_items)) THEN
+        v_unavailable_items := array_append(v_unavailable_items, v_item_name);
+      END IF;
+    END IF;
+
+    IF v_is_delivery AND v_menu_item IS NOT NULL AND v_menu_item.direct_order_eligible = false THEN
+      RAISE EXCEPTION 'Item "%" is not eligible for delivery. Please choose pickup or select another item.', v_item_name;
+    END IF;
+
+    v_unit_price := v_price_row.price;
+    v_calculated_subtotal := v_calculated_subtotal + (v_unit_price * v_item_qty);
+
+    v_price_lines := array_append(v_price_lines, jsonb_build_object(
+      'sku', v_price_row.sku,
+      'unit_price', v_unit_price
+    ));
+
+    v_snapshot_lines := array_append(v_snapshot_lines, jsonb_build_object(
+      'sku', v_price_row.sku,
+      'item_id', v_price_row.item_id,
+      'name', v_item_name,
+      'quantity', v_item_qty,
+      'unit_price', v_unit_price,
+      'line_total', (v_unit_price * v_item_qty)
+    ));
+
+    IF v_item_index > 0 THEN
+      v_items_formatted_text := v_items_formatted_text || ', ';
+    END IF;
+    v_items_formatted_text := v_items_formatted_text || v_item_qty || 'x ' || v_item_name || ' (₹' || (v_unit_price * v_item_qty) || ')';
+    v_item_index := v_item_index + 1;
+  END LOOP;
+
+  IF cardinality(v_unknown_items) > 0 THEN
+    RETURN jsonb_build_object(
+      'success', false,
+      'status', 'unknown_item',
+      'items', to_jsonb(v_unknown_items)
+    );
+  END IF;
+
+  IF cardinality(v_unavailable_items) > 0 THEN
+    RETURN jsonb_build_object(
+      'success', false,
+      'status', 'item_unavailable',
+      'items', to_jsonb(v_unavailable_items)
+    );
+  END IF;
+
+  SELECT * INTO v_sale FROM sale_settings WHERE id = 1;
+  IF FOUND AND v_sale.sale_active = true AND (v_sale.sale_ends_at IS NULL OR now() <= v_sale.sale_ends_at) THEN
+    IF v_sale.min_order_amount > 0 AND v_calculated_subtotal >= v_sale.min_order_amount AND v_sale.sale_percent > 0 THEN
+      v_sale_discount := round((v_calculated_subtotal * v_sale.sale_percent) / 100.0);
+    END IF;
+
+    IF v_sale.free_item_name IS NOT NULL AND trim(v_sale.free_item_name) <> '' THEN
+      IF v_calculated_subtotal >= COALESCE(v_sale.free_item_min_amount, v_sale.min_order_amount) THEN
+        v_free_item_name := trim(v_sale.free_item_name);
+        v_items_formatted_text := v_items_formatted_text || ', 1x ' || v_free_item_name || ' (₹0 Free Item)';
+      END IF;
+    END IF;
+
+    IF p_coupon_code IS NOT NULL AND trim(p_coupon_code) <> '' THEN
+      IF upper(trim(p_coupon_code)) = upper(trim(v_sale.coupon_code)) THEN
+        IF v_calculated_subtotal >= v_sale.min_order_amount THEN
+          v_coupon_discount := COALESCE(v_sale.coupon_flat_discount, 0);
+        END IF;
+      END IF;
+    END IF;
+  END IF;
+
+  v_total_discount := LEAST(v_calculated_subtotal, v_sale_discount + v_coupon_discount);
+  v_final_total := GREATEST(0, v_calculated_subtotal - v_total_discount);
+
+  IF p_expected_total IS NOT NULL AND round(p_expected_total) <> round(v_final_total) THEN
+    RETURN jsonb_build_object(
+      'success', false,
+      'status', 'price_changed',
+      'server_total', v_final_total,
+      'lines', to_jsonb(v_price_lines)
+    );
+  END IF;
+
+  LOOP
+    v_order_code := '';
+    FOR i IN 1..8 LOOP
+      v_order_code := v_order_code || substr('23456789ABCDEFGHJKLMNPQRSTUVWXYZ', floor(random() * 32 + 1)::int, 1);
+    END LOOP;
+    IF NOT EXISTS (SELECT 1 FROM orders WHERE order_code = v_order_code) THEN
+      EXIT;
+    END IF;
+  END LOOP;
+
+  v_order_snapshot := jsonb_build_object(
+    'lines', to_jsonb(v_snapshot_lines),
+    'subtotal', v_calculated_subtotal,
+    'discount', v_total_discount,
+    'final_total', v_final_total,
+    'free_item', v_free_item_name,
+    'created_at', now()
+  );
+
+  INSERT INTO orders (
+    order_code,
+    customer_name,
+    customer_phone,
+    order_type,
+    distance_km,
+    address_notes,
+    maps_link,
+    items_json,
+    items_snapshot,
+    subtotal,
+    discount_amount,
+    final_total,
+    payment_method,
+    status,
+    idempotency_key,
+    payment_status,
+    created_at
+  ) VALUES (
+    v_order_code,
+    v_norm_name,
+    v_norm_phone,
+    v_norm_type,
+    CASE WHEN v_is_delivery THEN p_distance_km ELSE NULL END,
+    v_norm_address,
+    COALESCE(NULLIF(trim(p_maps_link), ''), CASE WHEN v_is_delivery THEN 'Delivery' ELSE 'Self-Pickup' END),
+    v_items_formatted_text,
+    v_order_snapshot,
+    v_calculated_subtotal,
+    v_total_discount,
+    v_final_total,
+    v_norm_payment_method,
+    'Initiated',
+    v_norm_idempotency_key,
+    'pending',
+    now()
+  )
+  ON CONFLICT (idempotency_key) WHERE idempotency_key IS NOT NULL DO NOTHING
+  RETURNING id, order_code, subtotal, discount_amount, final_total, payment_status, items_json
+  INTO v_inserted_id, v_ret_order_code, v_ret_subtotal, v_ret_discount_amount, v_ret_final_total, v_ret_payment_status, v_ret_items_json;
+
+  IF v_inserted_id IS NULL AND v_norm_idempotency_key IS NOT NULL THEN
+    SELECT id, order_code, subtotal, discount_amount, final_total, payment_status, items_json
+    INTO v_inserted_id, v_ret_order_code, v_ret_subtotal, v_ret_discount_amount, v_ret_final_total, v_ret_payment_status, v_ret_items_json
+    FROM orders
+    WHERE idempotency_key = v_norm_idempotency_key
+    LIMIT 1;
+  ELSE
+    IF v_ret_order_code IS NULL THEN
+      v_ret_order_code := v_order_code;
+      v_ret_subtotal := v_calculated_subtotal;
+      v_ret_discount_amount := v_total_discount;
+      v_ret_final_total := v_final_total;
+      v_ret_payment_status := 'pending';
+      v_ret_items_json := v_items_formatted_text;
+    END IF;
+  END IF;
+
+  RETURN jsonb_build_object(
+    'success', true,
+    'order_id', v_inserted_id,
+    'order_code', v_ret_order_code,
+    'items', v_ret_items_json,
+    'subtotal', v_ret_subtotal,
+    'discount_amount', v_ret_discount_amount,
+    'final_total', v_ret_final_total,
+    'payment_status', v_ret_payment_status,
+    'payment_method', v_norm_payment_method,
+    'free_item_name', v_free_item_name
+  );
+END;
+$$;
+
+-- 6. Permissions for Upgraded Functions
+REVOKE ALL ON FUNCTION get_live_menu() FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION get_live_menu() TO anon, authenticated;
+
+REVOKE ALL ON FUNCTION admin_set_available(text, text, boolean) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION admin_set_available(text, text, boolean) TO anon, authenticated;
+
+REVOKE ALL ON FUNCTION admin_set_price(text, text, integer) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION admin_set_price(text, text, integer) TO anon, authenticated;
+
+REVOKE ALL ON FUNCTION submit_verified_order(text, text, text, numeric, jsonb, text, text, text, text, text, numeric) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION submit_verified_order(text, text, text, numeric, jsonb, text, text, text, text, text, numeric) TO anon, authenticated;
+
+COMMIT;

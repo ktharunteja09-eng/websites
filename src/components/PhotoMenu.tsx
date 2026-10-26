@@ -4,8 +4,10 @@ import { PhotoMenuItem, MenuCategoryType } from '../types';
 import { Search, Filter, ExternalLink, Phone, Sparkles, Utensils, Maximize2, X, ChevronRight } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { OptimizedImage } from './OptimizedImage';
+import { useLiveMenu } from '../hooks/useLiveMenu';
 
 export const PhotoMenu: React.FC = () => {
+  const { getPrice, getMrp, isAvailable, getSavings } = useLiveMenu();
   const [selectedCategory, setSelectedCategory] = useState<MenuCategoryType>('all');
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [dietFilter, setDietFilter] = useState<'all' | 'veg' | 'non-veg'>('all');
@@ -184,60 +186,83 @@ export const PhotoMenu: React.FC = () => {
         </div>
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-          {filteredDishes.map((dish, idx) => (
-            <motion.div
-              key={dish.id}
-              layout
-              initial={{ opacity: 0, scale: 0.96 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ duration: 0.25 }}
-              className="group bg-white rounded-3xl overflow-hidden border border-[#2E4823]/10 shadow-[0_4px_16px_rgba(0,0,0,0.04)] hover:shadow-[0_16px_32px_rgba(46,72,35,0.12)] hover:-translate-y-1 transition-all duration-300 flex flex-col justify-between"
-            >
-              <div>
-                {/* Photo Slot with Lightbox trigger */}
-                <div
-                  className="relative aspect-4/3 overflow-hidden bg-gray-100 cursor-pointer"
-                  onClick={() => setActiveDish(dish)}
-                >
-                  <img
-                    src={dish.image}
-                    alt={dish.name}
-                    width={600}
-                    height={450}
-                    loading={idx < 6 ? 'eager' : 'lazy'}
-                    fetchPriority={idx < 6 ? 'high' : 'auto'}
-                    decoding="async"
-                    className="w-full h-full object-cover group-hover:scale-108 transition-transform duration-500 ease-out"
-                  />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent pointer-events-none" />
-
-                  {/* Veg / Non-Veg Indicator Badge */}
-                  <div className="absolute top-3 left-3 z-10 flex items-center gap-1.5 bg-white/95 backdrop-blur-xs px-2.5 py-1 rounded-full shadow-xs text-[11px] font-bold">
-                    <span
-                      className={`w-2 h-2 rounded-full ${
-                        dish.isVeg ? 'bg-green-600' : 'bg-[#D3452B]'
-                      }`}
+          {filteredDishes.map((dish, idx) => {
+            const livePrice = getPrice(dish.id, dish.price);
+            const liveMrp = getMrp(dish.id, dish.aggregator_price, dish.price);
+            const available = isAvailable(dish.id, true);
+            const savings = getSavings(livePrice, liveMrp);
+            return (
+              <motion.div
+                key={dish.id}
+                layout
+                initial={{ opacity: 0, scale: 0.96 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ duration: 0.25 }}
+                className="group bg-white rounded-3xl overflow-hidden border border-[#2E4823]/10 shadow-[0_4px_16px_rgba(0,0,0,0.04)] hover:shadow-[0_16px_32px_rgba(46,72,35,0.12)] hover:-translate-y-1 transition-all duration-300 flex flex-col justify-between"
+              >
+                <div>
+                  {/* Photo Slot with Lightbox trigger */}
+                  <div
+                    className="relative aspect-4/3 overflow-hidden bg-gray-100 cursor-pointer"
+                    onClick={() => setActiveDish(dish)}
+                  >
+                    <img
+                      src={dish.image}
+                      alt={dish.name}
+                      width={600}
+                      height={450}
+                      loading={idx < 6 ? 'eager' : 'lazy'}
+                      fetchPriority={idx < 6 ? 'high' : 'auto'}
+                      decoding="async"
+                      className="w-full h-full object-cover group-hover:scale-108 transition-transform duration-500 ease-out"
                     />
-                    <span className={dish.isVeg ? 'text-green-800' : 'text-[#D3452B]'}>
-                      {dish.isVeg ? 'Veg' : 'Non-Veg'}
-                    </span>
-                  </div>
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent pointer-events-none" />
 
-                  {/* View Full Photo hint overlay on hover */}
-                  <div className="absolute inset-0 bg-black/35 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center text-white pointer-events-none">
-                    <span className="bg-black/60 backdrop-blur-xs px-3 py-1.5 rounded-xl text-xs font-semibold flex items-center gap-1.5">
-                      <Maximize2 className="w-3.5 h-3.5" />
-                      <span>Tap to zoom</span>
-                    </span>
-                  </div>
+                    {/* Veg / Non-Veg Indicator Badge */}
+                    <div className="absolute top-3 left-3 z-10 flex items-center gap-1.5 bg-white/95 backdrop-blur-xs px-2.5 py-1 rounded-full shadow-xs text-[11px] font-bold">
+                      <span
+                        className={`w-2 h-2 rounded-full ${
+                          dish.isVeg ? 'bg-green-600' : 'bg-[#D3452B]'
+                        }`}
+                      />
+                      <span className={dish.isVeg ? 'text-green-800' : 'text-[#D3452B]'}>
+                        {dish.isVeg ? 'Veg' : 'Non-Veg'}
+                      </span>
+                    </div>
 
-                  {/* Price Tag Overlay */}
-                  <div className="absolute bottom-3 right-3 z-10 bg-white/95 backdrop-blur-xs px-3 py-1 rounded-xl shadow-md border border-[#2E4823]/10">
-                    <span className="text-[#D3452B] font-extrabold text-base">
-                      ₹{dish.price}
-                    </span>
+                    {/* View Full Photo hint overlay on hover */}
+                    <div className="absolute inset-0 bg-black/35 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center text-white pointer-events-none">
+                      <span className="bg-black/60 backdrop-blur-xs px-3 py-1.5 rounded-xl text-xs font-semibold flex items-center gap-1.5">
+                        <Maximize2 className="w-3.5 h-3.5" />
+                        <span>Tap to zoom</span>
+                      </span>
+                    </div>
+
+                    {/* Price Tag Overlay with Strikethrough & Direct Savings */}
+                    <div className="absolute bottom-3 right-3 z-10 bg-white/95 backdrop-blur-xs px-2.5 py-1 rounded-xl shadow-md border border-[#2E4823]/10 text-right">
+                      <div className="flex items-center gap-1.5 justify-end">
+                        {savings > 0 && (
+                          <span className="text-[11px] text-gray-400 line-through">₹{liveMrp}</span>
+                        )}
+                        <span className="text-[#D3452B] font-extrabold text-base">
+                          ₹{livePrice}
+                        </span>
+                      </div>
+                      {savings > 0 && (
+                        <span className="text-[9px] font-bold text-emerald-700 bg-emerald-50 px-1 py-0.2 rounded block text-center mt-0.5">
+                          Save ₹{savings} Direct
+                        </span>
+                      )}
+                    </div>
+
+                    {!available && (
+                      <div className="absolute inset-0 bg-black/60 backdrop-blur-xs z-20 flex items-center justify-center">
+                        <span className="bg-[#D3452B] text-white font-bold text-xs uppercase tracking-wider px-3 py-1 rounded-full shadow-md">
+                          Sold Out
+                        </span>
+                      </div>
+                    )}
                   </div>
-                </div>
 
                 {/* Content */}
                 <div className="p-4 sm:p-5">
@@ -295,57 +320,81 @@ export const PhotoMenu: React.FC = () => {
 
       {/* Lightbox Modal for Selected Dish */}
       <AnimatePresence>
-        {activeDish && (
-          <div
-            className="fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex items-center justify-center p-4 sm:p-6"
-            onClick={() => setActiveDish(null)}
-            role="dialog"
-            aria-modal="true"
-            aria-label={activeDish.name}
-          >
-            <motion.div
-              initial={{ opacity: 0, scale: 0.95 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.95 }}
-              transition={{ duration: 0.2 }}
-              className="relative max-w-xl w-full bg-white rounded-3xl overflow-hidden shadow-2xl border border-white/20"
-              onClick={(e) => e.stopPropagation()}
+        {activeDish && (() => {
+          const modalLivePrice = getPrice(activeDish.id, activeDish.price);
+          const modalLiveMrp = getMrp(activeDish.id, activeDish.aggregator_price, activeDish.price);
+          const modalAvailable = isAvailable(activeDish.id, true);
+          const modalSavings = getSavings(modalLivePrice, modalLiveMrp);
+
+          return (
+            <div
+              className="fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex items-center justify-center p-4 sm:p-6"
+              onClick={() => setActiveDish(null)}
+              role="dialog"
+              aria-modal="true"
+              aria-label={activeDish.name}
             >
-              {/* Close Button */}
-              <button
-                type="button"
-                onClick={() => setActiveDish(null)}
-                className="absolute top-4 right-4 z-20 w-10 h-10 rounded-full bg-black/60 text-white flex items-center justify-center hover:bg-black/80 transition-colors"
-                aria-label="Close Preview"
+              <motion.div
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.95 }}
+                transition={{ duration: 0.2 }}
+                className="relative max-w-xl w-full bg-white rounded-3xl overflow-hidden shadow-2xl border border-white/20"
+                onClick={(e) => e.stopPropagation()}
               >
-                <X className="w-5 h-5" />
-              </button>
+                {/* Close Button */}
+                <button
+                  type="button"
+                  onClick={() => setActiveDish(null)}
+                  className="absolute top-4 right-4 z-20 w-10 h-10 rounded-full bg-black/60 text-white flex items-center justify-center hover:bg-black/80 transition-colors"
+                  aria-label="Close Preview"
+                >
+                  <X className="w-5 h-5" />
+                </button>
 
-              {/* Photo Area */}
-              <div className="relative aspect-4/3 bg-black">
-                <img
-                  src={activeDish.image}
-                  alt={activeDish.name}
-                  width={800}
-                  height={600}
-                  loading="lazy"
-                  className="w-full h-full object-cover"
-                />
-                <div className="absolute top-4 left-4 flex items-center gap-1.5 bg-white/95 px-3 py-1 rounded-full text-xs font-bold shadow-md">
-                  <span
-                    className={`w-2 h-2 rounded-full ${
-                      activeDish.isVeg ? 'bg-green-600' : 'bg-[#D3452B]'
-                    }`}
+                {/* Photo Area */}
+                <div className="relative aspect-4/3 bg-black">
+                  <img
+                    src={activeDish.image}
+                    alt={activeDish.name}
+                    width={800}
+                    height={600}
+                    loading="lazy"
+                    className="w-full h-full object-cover"
                   />
-                  <span>{activeDish.isVeg ? 'Vegetarian' : 'Non-Vegetarian'}</span>
-                </div>
+                  <div className="absolute top-4 left-4 flex items-center gap-1.5 bg-white/95 px-3 py-1 rounded-full text-xs font-bold shadow-md">
+                    <span
+                      className={`w-2 h-2 rounded-full ${
+                        activeDish.isVeg ? 'bg-green-600' : 'bg-[#D3452B]'
+                      }`}
+                    />
+                    <span>{activeDish.isVeg ? 'Vegetarian' : 'Non-Vegetarian'}</span>
+                  </div>
 
-                <div className="absolute bottom-4 right-4 bg-white/95 backdrop-blur-xs px-4 py-1.5 rounded-xl shadow-lg border border-[#2E4823]/10">
-                  <span className="text-[#D3452B] font-extrabold text-xl">
-                    ₹{activeDish.price}
-                  </span>
+                  <div className="absolute bottom-4 right-4 bg-white/95 backdrop-blur-xs px-3.5 py-1.5 rounded-xl shadow-lg border border-[#2E4823]/10 text-right">
+                    <div className="flex items-center gap-1.5 justify-end">
+                      {modalSavings > 0 && (
+                        <span className="text-xs text-gray-400 line-through">₹{modalLiveMrp}</span>
+                      )}
+                      <span className="text-[#D3452B] font-extrabold text-xl">
+                        ₹{modalLivePrice}
+                      </span>
+                    </div>
+                    {modalSavings > 0 && (
+                      <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 px-1.5 py-0.2 rounded block text-center mt-0.5">
+                        Save ₹{modalSavings} Direct
+                      </span>
+                    )}
+                  </div>
+
+                  {!modalAvailable && (
+                    <div className="absolute inset-0 bg-black/60 backdrop-blur-xs z-20 flex items-center justify-center">
+                      <span className="bg-[#D3452B] text-white font-bold text-sm uppercase tracking-wider px-4 py-1.5 rounded-full shadow-md">
+                        Sold Out
+                      </span>
+                    </div>
+                  )}
                 </div>
-              </div>
 
               {/* Modal Body */}
               <div className="p-6">
@@ -397,11 +446,11 @@ export const PhotoMenu: React.FC = () => {
                     <Phone className="w-3.5 h-3.5" />
                     <span>Call Takeaway</span>
                   </a>
-                </div>
               </div>
             </motion.div>
           </div>
-        )}
+        );
+      })()}
       </AnimatePresence>
     </div>
   );

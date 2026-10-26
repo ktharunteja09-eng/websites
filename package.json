@@ -4,6 +4,8 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
+    "prebuild": "node scripts/check-menu-sync.mjs",
+    "generate-menu-seed": "node scripts/generate-menu-seed.mjs",
     "dev": "vite --port=3000 --host=0.0.0.0",
     "build": "vite-react-ssg build",
     "preview": "vite preview",
