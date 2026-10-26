@@ -66,8 +66,8 @@ export const MenuStickyPills: React.FC<MenuStickyPillsProps> = ({
 
   return (
     <div
-      style={{ top: `${headerHeight}px` }}
-      className={`sticky z-40 md:hidden -mx-4 px-4 bg-[#FDFBF7] transition-shadow duration-200 ${
+      style={{ top: `var(--header-height, ${headerHeight}px)` }}
+      className={`sticky z-40 md:hidden -mx-4 px-4 bg-[#FDFBF7] transition-shadow duration-200 mb-4 ${
         isStuck
           ? 'shadow-[0_4px_12px_rgba(46,72,35,0.08)] border-b border-[#2E4823]/15'
           : 'border-b border-[#2E4823]/10'

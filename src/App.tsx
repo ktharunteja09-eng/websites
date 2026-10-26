@@ -136,7 +136,7 @@ export default function App() {
   const location = useLocation();
   const navigate = useNavigate();
 
-  const isMenuPage = location.pathname === '/menu';
+  const isMenuPage = location.pathname === '/menu' || location.pathname.startsWith('/menu/');
 
   // Scroll to top on route transition
   useEffect(() => {
@@ -187,8 +187,10 @@ export default function App() {
 
           {/* Unified Sticky Header Container: Holds Offer Banner + Main Navbar with zero overlap */}
           <header className="sticky top-0 z-50 w-full shadow-xs">
-            {/* Time-Limited Flash Offer Banner with live countdown */}
-            <FlashOfferBanner onExploreOffers={() => handleNavigate('/menu')} />
+            {/* Time-Limited Flash Offer Banner with live countdown (Hidden in menu section) */}
+            {!isMenuPage && (
+              <FlashOfferBanner onExploreOffers={() => handleNavigate('/menu')} />
+            )}
 
             {/* 1. Header Navigation with Red Onion NYC style Pages */}
             <Navbar

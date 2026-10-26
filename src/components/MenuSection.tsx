@@ -486,12 +486,12 @@ export const MenuSection: React.FC = () => {
     }
   };
 
-  // 1. Measure sticky header height dynamically and listen for resize
+  // 1. Measure sticky header height dynamically and listen for resize + DOM mutations
   useEffect(() => {
     if (typeof window === 'undefined' || (typeof process !== 'undefined' && Boolean(process.versions?.node))) return;
 
+    const headerEl = document.querySelector('header');
     const measureHeader = () => {
-      const headerEl = document.querySelector('header');
       if (headerEl) {
         const h = Math.round(headerEl.getBoundingClientRect().height);
         if (h > 0) {
@@ -503,7 +503,19 @@ export const MenuSection: React.FC = () => {
 
     measureHeader();
     window.addEventListener('resize', measureHeader, { passive: true });
-    return () => window.removeEventListener('resize', measureHeader);
+
+    let resizeObserver: ResizeObserver | null = null;
+    if (typeof ResizeObserver !== 'undefined' && headerEl) {
+      resizeObserver = new ResizeObserver(() => {
+        measureHeader();
+      });
+      resizeObserver.observe(headerEl);
+    }
+
+    return () => {
+      window.removeEventListener('resize', measureHeader);
+      if (resizeObserver) resizeObserver.disconnect();
+    };
   }, []);
 
   // 2. Scroll-spy IntersectionObserver on category sections
