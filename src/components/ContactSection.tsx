@@ -144,7 +144,7 @@ export const ContactSection: React.FC = () => {
                   target="_blank"
                   rel="noopener noreferrer"
                   aria-label="Follow Vaibhav Grand on Instagram"
-                  className="w-10 h-10 rounded-full bg-[#F7F3EB] text-[#1C1C1C] hover:bg-[#D3452B] hover:text-white flex items-center justify-center transition-colors shadow-sm"
+                  className="btn-icon rounded-full bg-[#F7F3EB] text-[#1C1C1C] hover:bg-[#D3452B] hover:text-white transition-colors shadow-sm"
                 >
                   <Instagram className="w-5 h-5" />
                 </a>
@@ -153,7 +153,7 @@ export const ContactSection: React.FC = () => {
                   target="_blank"
                   rel="noopener noreferrer"
                   aria-label="Follow Vaibhav Grand on Facebook"
-                  className="w-10 h-10 rounded-full bg-[#F7F3EB] text-[#1C1C1C] hover:bg-[#2E4823] hover:text-white flex items-center justify-center transition-colors shadow-sm"
+                  className="btn-icon rounded-full bg-[#F7F3EB] text-[#1C1C1C] hover:bg-[#2E4823] hover:text-white transition-colors shadow-sm"
                 >
                   <Facebook className="w-5 h-5" />
                 </a>
@@ -199,7 +199,7 @@ export const ContactSection: React.FC = () => {
                     href={RESTAURANT_INFO.googleMapsUrl}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="inline-flex items-center gap-1 bg-[#2E4823] hover:bg-[#223719] text-white text-xs font-semibold px-3.5 py-2 rounded-xl shadow-sm transition-colors"
+                    className="btn-sm inline-flex items-center bg-[#2E4823] hover:bg-[#223719] text-white font-semibold rounded-xl shadow-sm transition-colors"
                   >
                     <span>Directions</span>
                     <Navigation className="w-3.5 h-3.5" />

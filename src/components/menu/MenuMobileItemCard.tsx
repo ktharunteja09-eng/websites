@@ -54,7 +54,7 @@ export const MenuMobileItemCard: React.FC<MenuMobileItemCardProps> = ({
         <button
           type="button"
           disabled
-          className="min-h-[36px] min-w-[64px] px-2.5 py-1 text-[11px] font-bold rounded-lg bg-gray-100 text-gray-400 border border-gray-200 cursor-not-allowed whitespace-nowrap"
+          className="btn-sm rounded-lg bg-gray-100 text-gray-400 border border-gray-200 cursor-not-allowed whitespace-nowrap"
         >
           Sold out
         </button>
@@ -66,7 +66,7 @@ export const MenuMobileItemCard: React.FC<MenuMobileItemCardProps> = ({
         <button
           type="button"
           onClick={() => onOpenSizePicker(dish)}
-          className="relative min-w-[64px] min-h-[36px] px-3 py-1 rounded-lg bg-white hover:bg-red-50/50 text-[#D3452B] border border-[#D3452B] shadow-2xs font-bold text-xs flex items-center justify-center gap-1 active:scale-95 transition-all before:absolute before:-inset-2 before:content-['']"
+          className="relative btn-sm rounded-lg bg-white hover:bg-red-50/50 text-[#D3452B] border border-[#D3452B] shadow-2xs font-bold flex items-center justify-center active:scale-95 transition-all before:absolute before:-inset-2 before:content-['']"
           aria-label={`Select size for ${dish.name}`}
         >
           <span>{variantCartCount > 0 ? `${variantCartCount} Added` : 'Add'}</span>
@@ -83,10 +83,10 @@ export const MenuMobileItemCard: React.FC<MenuMobileItemCardProps> = ({
           <button
             type="button"
             onClick={() => onUpdateCartQuantity(singleCartItem.id, -1)}
-            className="w-8 h-8 flex items-center justify-center hover:bg-white/20 rounded active:scale-90 transition-all"
+            className="w-9 h-9 flex items-center justify-center hover:bg-white/20 rounded active:scale-90 transition-all"
             aria-label="Decrease quantity"
           >
-            <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M20 12H4" />
             </svg>
           </button>
@@ -96,10 +96,10 @@ export const MenuMobileItemCard: React.FC<MenuMobileItemCardProps> = ({
           <button
             type="button"
             onClick={() => onUpdateCartQuantity(singleCartItem.id, 1)}
-            className="w-8 h-8 flex items-center justify-center hover:bg-white/20 rounded active:scale-90 transition-all"
+            className="w-9 h-9 flex items-center justify-center hover:bg-white/20 rounded active:scale-90 transition-all"
             aria-label="Increase quantity"
           >
-            <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M12 4v16m8-8H4" />
             </svg>
           </button>
@@ -111,10 +111,10 @@ export const MenuMobileItemCard: React.FC<MenuMobileItemCardProps> = ({
       <button
         type="button"
         onClick={() => onAddToCart(dish)}
-        className="relative min-w-[64px] min-h-[36px] px-3.5 py-1 rounded-lg bg-white hover:bg-red-50/50 text-[#D3452B] border border-[#D3452B] shadow-2xs font-bold text-xs flex items-center justify-center gap-1 active:scale-95 transition-all before:absolute before:-inset-2 before:content-['']"
+        className="relative btn-sm rounded-lg bg-white hover:bg-red-50/50 text-[#D3452B] border border-[#D3452B] shadow-2xs font-bold flex items-center justify-center active:scale-95 transition-all before:absolute before:-inset-2 before:content-['']"
         aria-label={`Add ${dish.name} to cart`}
       >
-        <svg className="w-3 h-3 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <svg className="w-3.5 h-3.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M12 4v16m8-8H4" />
         </svg>
         <span>Add</span>

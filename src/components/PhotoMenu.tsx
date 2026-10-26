@@ -55,7 +55,7 @@ export const PhotoMenu: React.FC = () => {
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Search photo dishes (e.g. Mandi, Biryani)..."
-              className="w-full pl-10 pr-4 py-2.5 text-sm bg-white rounded-xl border border-gray-200 text-[#1C1C1C] placeholder:text-gray-400 focus:border-[#2E4823] focus:ring-1 focus:ring-[#2E4823] focus:outline-none transition-all"
+              className="input-md w-full pl-10 bg-white rounded-xl border border-gray-200 text-[#1C1C1C] placeholder:text-gray-400 focus:border-[#2E4823] focus:ring-1 focus:ring-[#2E4823] focus:outline-none transition-all"
             />
             {searchQuery && (
               <button
@@ -73,7 +73,7 @@ export const PhotoMenu: React.FC = () => {
             <button
               type="button"
               onClick={() => setDietFilter('all')}
-              className={`px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+              className={`btn-sm rounded-lg font-semibold transition-all ${
                 dietFilter === 'all'
                   ? 'bg-[#2E4823] text-white shadow-xs'
                   : 'text-gray-600 hover:text-[#2E4823]'
@@ -84,7 +84,7 @@ export const PhotoMenu: React.FC = () => {
             <button
               type="button"
               onClick={() => setDietFilter('veg')}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+              className={`btn-sm flex items-center rounded-lg font-semibold transition-all ${
                 dietFilter === 'veg'
                   ? 'bg-green-700 text-white shadow-xs'
                   : 'text-gray-600 hover:text-green-700'
@@ -96,7 +96,7 @@ export const PhotoMenu: React.FC = () => {
             <button
               type="button"
               onClick={() => setDietFilter('non-veg')}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+              className={`btn-sm flex items-center rounded-lg font-semibold transition-all ${
                 dietFilter === 'non-veg'
                   ? 'bg-[#D3452B] text-white shadow-xs'
                   : 'text-gray-600 hover:text-[#D3452B]'
@@ -120,7 +120,7 @@ export const PhotoMenu: React.FC = () => {
                 key={cat.id}
                 type="button"
                 onClick={() => setSelectedCategory(cat.id)}
-                className={`px-4 py-2 rounded-full text-xs font-bold whitespace-nowrap transition-all duration-200 flex items-center gap-1.5 ${
+                className={`btn-sm rounded-full font-bold whitespace-nowrap transition-all duration-200 flex items-center ${
                   isSelected
                     ? 'bg-[#2E4823] text-[#FDFBF7] shadow-md scale-105'
                     : 'bg-white text-[#1C1C1C]/80 hover:bg-[#2E4823]/10 hover:text-[#2E4823] border border-gray-200'
@@ -177,7 +177,7 @@ export const PhotoMenu: React.FC = () => {
               setSearchQuery('');
               setDietFilter('all');
             }}
-            className="mt-4 px-5 py-2.5 bg-[#2E4823] text-white text-xs font-semibold rounded-xl"
+            className="btn-md mt-4 rounded-xl bg-[#2E4823] text-white font-semibold"
           >
             Show All Dishes
           </button>

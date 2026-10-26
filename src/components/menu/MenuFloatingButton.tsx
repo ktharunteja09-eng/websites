@@ -33,7 +33,7 @@ export const MenuFloatingButton: React.FC<MenuFloatingButtonProps> = ({
         type="button"
         onClick={onClick}
         aria-label="Open menu categories"
-        className="pointer-events-auto min-h-[44px] min-w-[108px] px-5 py-2.5 rounded-full bg-[#1C1C1C] hover:bg-black text-[#FDFBF7] font-bold text-xs sm:text-sm shadow-[0_8px_24px_rgba(0,0,0,0.35)] border border-white/15 flex items-center justify-center gap-2 active:scale-95 transition-all select-none"
+        className="pointer-events-auto btn-md min-w-[108px] rounded-full bg-[#1C1C1C] hover:bg-black text-[#FDFBF7] font-bold shadow-[0_8px_24px_rgba(0,0,0,0.35)] border border-white/15 flex items-center justify-center active:scale-95 transition-all select-none"
       >
         {/* Inline SVG List Icon */}
         <svg className="w-4 h-4 text-amber-300 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">

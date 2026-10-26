@@ -80,10 +80,10 @@ export const FloatingCartBar: React.FC<FloatingCartBarProps> = ({
           <button
             type="button"
             onClick={onOpenCheckout}
-            className="py-2.5 px-4 sm:px-5 rounded-xl bg-[#25D366] hover:bg-[#20BE5A] text-white font-bold text-xs sm:text-sm flex items-center gap-1.5 shadow-md transition-all transform active:scale-95 shrink-0"
+            className="btn-md rounded-xl bg-[#25D366] hover:bg-[#20BE5A] text-white font-bold flex items-center shadow-md transition-all transform active:scale-95 shrink-0"
           >
             <span>Checkout</span>
-            <ArrowRight className="w-4 h-4" />
+            <ArrowRight className="w-[18px] h-[18px]" />
           </button>
         </div>
       </div>

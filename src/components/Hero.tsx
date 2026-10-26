@@ -183,9 +183,9 @@ export const Hero: React.FC<HeroProps> = ({
             type="button"
             id="hero-order-btn"
             onClick={onOpenOrderModal}
-            className="btn-shimmer relative w-full sm:w-auto min-w-[200px] min-h-[52px] px-8 py-3.5 rounded-full bg-[#D3452B] hover:bg-[#BD3B22] text-white font-bold text-base shadow-[0_4px_20px_rgba(211,69,43,0.55)] hover:shadow-[0_8px_28px_rgba(211,69,43,0.7)] transition-all duration-200 transform hover:scale-[1.03] active:scale-[0.98] flex items-center justify-center gap-2.5 focus:outline-none"
+            className="btn-shimmer btn-lg relative w-full sm:w-auto rounded-full bg-[#D3452B] hover:bg-[#BD3B22] text-white font-bold shadow-[0_4px_20px_rgba(211,69,43,0.55)] hover:shadow-[0_8px_28px_rgba(211,69,43,0.7)] transition-all duration-200 transform hover:scale-[1.03] active:scale-[0.98] focus:outline-none"
           >
-            <Utensils className="w-4 h-4" />
+            <Utensils className="w-5 h-5" />
             <span>Order Online</span>
             <span className="ml-1 text-[10px] font-extrabold uppercase bg-amber-400 text-[#1C1C1C] px-2 py-0.5 rounded-full shadow-xs tracking-wider">
               Save 25%+
@@ -197,9 +197,9 @@ export const Hero: React.FC<HeroProps> = ({
             type="button"
             onClick={() => onNavigate ? onNavigate('menu') : scrollTo('#menu', { offset: -70, duration: 1.15 })}
             id="hero-menu-btn"
-            className="w-full sm:w-auto min-w-[190px] min-h-[52px] px-8 py-3.5 rounded-full bg-white/15 hover:bg-white/25 text-white font-bold text-base backdrop-blur-md border border-white/30 transition-all duration-200 transform hover:scale-[1.03] active:scale-[0.98] flex items-center justify-center gap-2"
+            className="btn-lg w-full sm:w-auto rounded-full bg-white/15 hover:bg-white/25 text-white font-bold backdrop-blur-md border border-white/30 transition-all duration-200 transform hover:scale-[1.03] active:scale-[0.98]"
           >
-            <BookOpen className="w-4 h-4 text-white" />
+            <BookOpen className="w-5 h-5 text-white" />
             <span>View Full Menu</span>
           </button>
         </motion.div>
@@ -234,10 +234,10 @@ export const Hero: React.FC<HeroProps> = ({
             <button
               type="button"
               onClick={onOpenCompareModal}
-              className="shrink-0 w-full sm:w-auto px-3.5 py-1.5 rounded-xl bg-white/15 hover:bg-white/25 text-amber-300 hover:text-white border border-amber-400/40 text-xs font-bold transition-all flex items-center justify-center gap-1.5 active:scale-95"
+              className="btn-sm shrink-0 w-full sm:w-auto rounded-xl bg-white/15 hover:bg-white/25 text-amber-300 hover:text-white border border-amber-400/40 font-bold transition-all active:scale-95"
             >
               <span>Compare Prices</span>
-              <ArrowRight className="w-3 h-3" />
+              <ArrowRight className="w-3.5 h-3.5" />
             </button>
           )}
         </motion.div>

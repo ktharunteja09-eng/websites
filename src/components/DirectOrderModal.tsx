@@ -1165,10 +1165,10 @@ _Please reply "CONFIRMED" to start preparing my order._`;
               <button
                 type="button"
                 onClick={() => setCheckoutStep('form')}
-                className="w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 text-white flex items-center justify-center transition-colors shrink-0"
+                className="btn-icon rounded-full bg-white/10 hover:bg-white/20 text-white transition-colors shrink-0"
                 aria-label="Back to order form"
               >
-                <ArrowLeft className="w-4 h-4" />
+                <ArrowLeft className="w-5 h-5" />
               </button>
             )}
             <span className="w-9 h-9 rounded-xl bg-white/10 flex items-center justify-center text-amber-300 shrink-0">
@@ -1196,10 +1196,10 @@ _Please reply "CONFIRMED" to start preparing my order._`;
           <button
             type="button"
             onClick={onClose}
-            className="w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 text-white flex items-center justify-center transition-colors"
+            className="btn-icon rounded-full bg-white/10 hover:bg-white/20 text-white transition-colors"
             aria-label="Close modal"
           >
-            <X className="w-4 h-4" />
+            <X className="w-5 h-5" />
           </button>
         </div>
 
@@ -1302,16 +1302,16 @@ _Please reply "CONFIRMED" to start preparing my order._`;
                     href={submittedWhatsappUrl}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="w-full py-3 px-4 rounded-xl bg-[#25D366] hover:bg-[#20BE5A] text-white font-bold text-sm shadow-sm flex items-center justify-center gap-2 transition-transform transform active:scale-95"
+                    className="btn-lg w-full rounded-xl bg-[#25D366] hover:bg-[#20BE5A] text-white font-bold shadow-sm transition-transform transform active:scale-95"
                   >
-                    <Send className="w-4 h-4" />
+                    <Send className="w-[18px] h-[18px]" />
                     <span>Open in WhatsApp</span>
                   </a>
                 )}
                 <button
                   type="button"
                   onClick={onClose}
-                  className="w-full py-2.5 px-4 rounded-xl bg-gray-200 hover:bg-gray-300 text-gray-800 font-semibold text-xs transition-colors"
+                  className="btn-md w-full rounded-xl bg-gray-200 hover:bg-gray-300 text-gray-800 font-semibold transition-colors"
                 >
                   Back to Menu
                 </button>
@@ -1411,7 +1411,7 @@ _Please reply "CONFIRMED" to start preparing my order._`;
                   <a
                     href={currentUpiUri}
                     onClick={() => setHasLaunchedUpiApp(true)}
-                    className="w-full py-3.5 px-4 rounded-2xl bg-[#2E4823] hover:bg-[#223719] text-white font-bold text-sm sm:text-base shadow-md flex items-center justify-center gap-2 transition-transform transform active:scale-95"
+                    className="btn-lg w-full rounded-2xl bg-[#2E4823] hover:bg-[#223719] text-white font-bold shadow-md transition-transform transform active:scale-95"
                   >
                     <CreditCard className="w-5 h-5 text-amber-300" />
                     <span>Open UPI app to pay Rs {activeOrder.final_total}</span>
@@ -1420,7 +1420,7 @@ _Please reply "CONFIRMED" to start preparing my order._`;
                   <button
                     type="button"
                     onClick={() => setShowQrOnMobile(!showQrOnMobile)}
-                    className="w-full py-2 px-3 rounded-xl border border-gray-300 hover:bg-gray-50 text-gray-700 text-xs font-semibold flex items-center justify-center gap-1.5 transition-colors"
+                    className="btn-md w-full rounded-xl border border-gray-300 hover:bg-gray-50 text-gray-700 font-semibold transition-colors"
                   >
                     <QrCode className="w-3.5 h-3.5" />
                     <span>
@@ -1578,17 +1578,17 @@ _Please reply "CONFIRMED" to start preparing my order._`;
                     !/^[0-9]{12}$/.test(utr) ||
                     isSubmittingUtr
                   }
-                  className="w-full py-3.5 px-6 rounded-2xl bg-[#25D366] hover:bg-[#20BE5A] disabled:bg-gray-300 disabled:text-gray-500 disabled:cursor-not-allowed text-white font-bold text-sm sm:text-base shadow-md flex items-center justify-center gap-2 transition-transform transform active:scale-95"
+                  className="btn-lg w-full rounded-2xl bg-[#25D366] hover:bg-[#20BE5A] disabled:bg-gray-300 disabled:text-gray-500 disabled:cursor-not-allowed text-white font-bold shadow-md transition-transform transform active:scale-95"
                 >
                   {isSubmittingUtr ? (
                     <>
-                      <RefreshCw className="w-4 h-4 animate-spin" />
+                      <RefreshCw className="w-[18px] h-[18px] animate-spin" />
                       <span>Submitting order...</span>
                     </>
                   ) : (
                     <>
                       <span>I have paid, send my order</span>
-                      <Send className="w-4 h-4" />
+                      <Send className="w-[18px] h-[18px]" />
                     </>
                   )}
                 </button>

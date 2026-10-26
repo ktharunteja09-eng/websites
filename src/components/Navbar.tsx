@@ -258,9 +258,9 @@ export const Navbar: React.FC<NavbarProps> = ({
             <button
               type="button"
               onClick={onOpenBookModal}
-              className="text-xs sm:text-sm font-bold flex items-center gap-1.5 px-3.5 py-2 rounded-full border border-[#2E4823]/30 text-[#2E4823] hover:bg-[#2E4823] hover:text-white bg-white/40 transition-all"
+              className="btn-md font-bold rounded-full border border-[#2E4823]/30 text-[#2E4823] hover:bg-[#2E4823] hover:text-white bg-white/40 transition-all"
             >
-              <Calendar className="w-3.5 h-3.5 text-[#D3452B]" />
+              <Calendar className="w-[18px] h-[18px] text-[#D3452B]" />
               <span>Call to Book</span>
             </button>
 
@@ -272,7 +272,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                 aria-expanded={orderDropdownOpen}
                 aria-haspopup="true"
                 onClick={() => setOrderDropdownOpen((prev) => !prev)}
-                className="btn-shimmer bg-[#D3452B] hover:bg-[#BD3B22] text-[#FDFBF7] font-semibold text-xs sm:text-sm px-4 sm:px-5 py-2 sm:py-2.5 rounded-full shadow-[0_4px_14px_rgba(211,69,43,0.3)] hover:shadow-[0_6px_20px_rgba(211,69,43,0.4)] transition-all duration-200 transform hover:scale-[1.03] active:scale-[0.98] flex items-center gap-1.5 focus:outline-none"
+                className="btn-shimmer btn-md bg-[#D3452B] hover:bg-[#BD3B22] text-[#FDFBF7] font-semibold rounded-full shadow-[0_4px_14px_rgba(211,69,43,0.3)] hover:shadow-[0_6px_20px_rgba(211,69,43,0.4)] transition-all duration-200 transform hover:scale-[1.03] active:scale-[0.98] focus:outline-none"
               >
                 <span>Order Online</span>
                 <ChevronDown
@@ -349,7 +349,7 @@ export const Navbar: React.FC<NavbarProps> = ({
               type="button"
               id="mobile-order-button-nav"
               onClick={onOpenOrderModal}
-              className="bg-gradient-to-r from-[#D3452B] to-[#E04C32] hover:brightness-110 text-white text-[10px] sm:text-xs font-bold tracking-wider uppercase px-3 sm:px-4 py-1.5 sm:py-2 rounded-full shadow-[0_2px_10px_rgba(211,69,43,0.35)] active:scale-95 transition-all flex items-center gap-1"
+              className="btn-sm bg-gradient-to-r from-[#D3452B] to-[#E04C32] hover:brightness-110 text-white font-bold tracking-wider uppercase rounded-full shadow-[0_2px_10px_rgba(211,69,43,0.35)] active:scale-95 transition-all"
             >
               <span>Order</span>
             </button>
@@ -359,9 +359,9 @@ export const Navbar: React.FC<NavbarProps> = ({
               href={`tel:${RESTAURANT_INFO.phone}`}
               id="mobile-call-button-nav"
               aria-label={`Call Vaibhav Grand at ${RESTAURANT_INFO.phone}`}
-              className="w-8 h-8 sm:w-9 sm:h-9 rounded-full border border-[#2E4823]/20 text-[#2E4823] hover:border-[#D3452B] hover:text-[#D3452B] bg-white/80 flex items-center justify-center transition-all duration-200 active:scale-90"
+              className="btn-icon rounded-full border border-[#2E4823]/20 text-[#2E4823] hover:border-[#D3452B] hover:text-[#D3452B] bg-white/80 transition-all duration-200 active:scale-90"
             >
-              <Phone className="w-3.5 h-3.5" />
+              <Phone className="w-5 h-5" />
             </a>
 
             {/* Tactile Hamburger Menu Button */}
@@ -371,7 +371,7 @@ export const Navbar: React.FC<NavbarProps> = ({
               onClick={() => setMobileMenuOpen((prev) => !prev)}
               aria-label={mobileMenuOpen ? 'Close Navigation Menu' : 'Open Navigation Menu'}
               aria-expanded={mobileMenuOpen}
-              className="w-9 h-9 sm:w-10 sm:h-10 rounded-full border border-[#2E4823]/20 text-[#1C1C1C] hover:text-[#D3452B] hover:border-[#D3452B] bg-white/80 flex items-center justify-center transition-all duration-200 active:scale-90 focus:outline-none"
+              className="btn-icon rounded-full border border-[#2E4823]/20 text-[#1C1C1C] hover:text-[#D3452B] hover:border-[#D3452B] bg-white/80 transition-all duration-200 active:scale-90 focus:outline-none"
             >
               {mobileMenuOpen ? (
                 <X className="w-5 h-5 text-[#D3452B]" />
@@ -435,9 +435,9 @@ export const Navbar: React.FC<NavbarProps> = ({
                   type="button"
                   onClick={() => setMobileMenuOpen(false)}
                   aria-label="Close navigation menu"
-                  className="w-9 h-9 rounded-full border border-white/20 hover:border-amber-400 text-gray-300 hover:text-amber-400 flex items-center justify-center transition-all duration-200 active:scale-90 focus:outline-none"
+                  className="btn-icon rounded-full border border-white/20 hover:border-amber-400 text-gray-300 hover:text-amber-400 transition-all duration-200 active:scale-90 focus:outline-none"
                 >
-                  <X className="w-4 h-4" />
+                  <X className="w-5 h-5" />
                 </button>
               </div>
 
@@ -486,7 +486,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                     setMobileMenuOpen(false);
                     onOpenBookModal();
                   }}
-                  className="w-full flex items-center justify-center gap-2 py-3.5 px-4 rounded-xl text-white text-xs font-bold tracking-[0.16em] uppercase bg-gradient-to-r from-[#2E4823] to-[#3B5B2E] border border-emerald-500/30 shadow-[0_4px_16px_rgba(46,72,35,0.4)] active:scale-[0.98] transition-all"
+                  className="btn-md w-full rounded-xl text-white font-bold tracking-[0.16em] uppercase bg-gradient-to-r from-[#2E4823] to-[#3B5B2E] border border-emerald-500/30 shadow-[0_4px_16px_rgba(46,72,35,0.4)] active:scale-[0.98] transition-all"
                 >
                   <Calendar className="w-4 h-4 text-amber-400 shrink-0" />
                   <span>Reserve Table / Call</span>
@@ -500,7 +500,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                     setMobileMenuOpen(false);
                     onOpenOrderModal();
                   }}
-                  className="w-full flex items-center justify-center gap-2 py-3.5 px-4 rounded-xl text-white text-xs font-bold tracking-[0.16em] uppercase bg-gradient-to-r from-[#D3452B] to-[#E04C32] shadow-[0_4px_16px_rgba(211,69,43,0.35)] active:scale-[0.98] transition-all"
+                  className="btn-md w-full rounded-xl text-white font-bold tracking-[0.16em] uppercase bg-gradient-to-r from-[#D3452B] to-[#E04C32] shadow-[0_4px_16px_rgba(211,69,43,0.35)] active:scale-[0.98] transition-all"
                 >
                   <Utensils className="w-4 h-4 shrink-0" />
                   <span>Order Online (Swiggy / Zomato)</span>
@@ -512,7 +512,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                   target="_blank"
                   rel="noopener noreferrer"
                   id="drawer-whatsapp-btn"
-                  className="w-full flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl text-[#25D366] bg-[#25D366]/10 border border-[#25D366]/30 hover:bg-[#25D366]/20 text-[11px] font-bold tracking-[0.12em] uppercase transition-colors"
+                  className="btn-md w-full rounded-xl text-[#25D366] bg-[#25D366]/10 border border-[#25D366]/30 hover:bg-[#25D366]/20 font-bold tracking-[0.12em] uppercase transition-colors"
                 >
                   <MessageCircle className="w-3.5 h-3.5 shrink-0" />
                   <span>WhatsApp Quick Enquiry</span>

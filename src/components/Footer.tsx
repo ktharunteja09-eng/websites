@@ -205,9 +205,9 @@ export const Footer: React.FC<FooterProps> = ({
                   target="_blank"
                   rel="noopener noreferrer"
                   aria-label="Chat with Vaibhav Grand on WhatsApp"
-                  className="w-9 h-9 rounded-full bg-white/10 hover:bg-[#25D366] text-white flex items-center justify-center transition-colors"
+                  className="btn-icon rounded-full bg-white/10 hover:bg-[#25D366] text-white transition-colors"
                 >
-                  <MessageCircle className="w-4 h-4" />
+                  <MessageCircle className="w-5 h-5" />
                 </a>
 
                 {/* Instagram */}
@@ -216,9 +216,9 @@ export const Footer: React.FC<FooterProps> = ({
                   target="_blank"
                   rel="noopener noreferrer"
                   aria-label="Follow Vaibhav Grand on Instagram"
-                  className="w-9 h-9 rounded-full bg-white/10 hover:bg-[#E1306C] text-white flex items-center justify-center transition-colors"
+                  className="btn-icon rounded-full bg-white/10 hover:bg-[#E1306C] text-white transition-colors"
                 >
-                  <Instagram className="w-4 h-4" />
+                  <Instagram className="w-5 h-5" />
                 </a>
 
                 {/* Facebook */}
@@ -227,9 +227,9 @@ export const Footer: React.FC<FooterProps> = ({
                   target="_blank"
                   rel="noopener noreferrer"
                   aria-label="Follow Vaibhav Grand on Facebook"
-                  className="w-9 h-9 rounded-full bg-white/10 hover:bg-[#1877F2] text-white flex items-center justify-center transition-colors"
+                  className="btn-icon rounded-full bg-white/10 hover:bg-[#1877F2] text-white transition-colors"
                 >
-                  <Facebook className="w-4 h-4" />
+                  <Facebook className="w-5 h-5" />
                 </a>
               </div>
             </div>
