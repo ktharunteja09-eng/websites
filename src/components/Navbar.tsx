@@ -486,7 +486,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                     setMobileMenuOpen(false);
                     onOpenBookModal();
                   }}
-                  className="btn-md w-full rounded-xl text-white font-bold tracking-[0.16em] uppercase bg-gradient-to-r from-[#2E4823] to-[#3B5B2E] border border-emerald-500/30 shadow-[0_4px_16px_rgba(46,72,35,0.4)] active:scale-[0.98] transition-all"
+                  className="btn-md w-full !px-3 rounded-xl text-white font-bold !text-xs tracking-wider uppercase bg-gradient-to-r from-[#2E4823] to-[#3B5B2E] border border-emerald-500/30 shadow-[0_4px_16px_rgba(46,72,35,0.4)] active:scale-[0.98] transition-all"
                 >
                   <Calendar className="w-4 h-4 text-amber-400 shrink-0" />
                   <span>Reserve Table / Call</span>
@@ -500,7 +500,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                     setMobileMenuOpen(false);
                     onOpenOrderModal();
                   }}
-                  className="btn-md w-full rounded-xl text-white font-bold tracking-[0.16em] uppercase bg-gradient-to-r from-[#D3452B] to-[#E04C32] shadow-[0_4px_16px_rgba(211,69,43,0.35)] active:scale-[0.98] transition-all"
+                  className="btn-md w-full !px-2 rounded-xl text-white font-bold !text-[11px] sm:!text-xs !gap-1.5 tracking-wide uppercase bg-gradient-to-r from-[#D3452B] to-[#E04C32] shadow-[0_4px_16px_rgba(211,69,43,0.35)] active:scale-[0.98] transition-all"
                 >
                   <Utensils className="w-4 h-4 shrink-0" />
                   <span>Order Online (Swiggy / Zomato)</span>
@@ -512,7 +512,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                   target="_blank"
                   rel="noopener noreferrer"
                   id="drawer-whatsapp-btn"
-                  className="btn-md w-full rounded-xl text-[#25D366] bg-[#25D366]/10 border border-[#25D366]/30 hover:bg-[#25D366]/20 font-bold tracking-[0.12em] uppercase transition-colors"
+                  className="btn-md w-full !px-3 rounded-xl text-[#25D366] bg-[#25D366]/10 border border-[#25D366]/30 hover:bg-[#25D366]/20 font-bold !text-[11px] sm:!text-xs tracking-wider uppercase transition-colors"
                 >
                   <MessageCircle className="w-3.5 h-3.5 shrink-0" />
                   <span>WhatsApp Quick Enquiry</span>
