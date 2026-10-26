@@ -46,7 +46,7 @@ import { MenuFloatingButton } from './menu/MenuFloatingButton';
 import { groupDishesForMobile, GroupedMobileDish, ItemVariantOption } from '../utils/menuVariants';
 
 export const MenuSection: React.FC = () => {
-  const { getPrice, isAvailable, sale, refetch: refetchLiveMenu } = useLiveMenu();
+  const { getPrice, getMrp, getSavings, isAvailable, sale, refetch: refetchLiveMenu } = useLiveMenu();
   const [selectedCategory, setSelectedCategory] = useState<MenuCategoryType>('all');
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [dietFilter, setDietFilter] = useState<'all' | 'veg' | 'non-veg'>('all');
@@ -1187,7 +1187,11 @@ export const MenuSection: React.FC = () => {
                       {section.items.map((item) => {
                         const cartItem = cartItems.find((c) => c.id === item.id);
                         const isEligible = item.direct_order_eligible;
-                        const isCompleted = item.is_completed;
+                        const isCompleted = !isAvailable(item.id, !item.is_completed);
+                        const activePrice = getPrice(item.id, item.price);
+                        const activeAggPrice = getMrp(item.id, item.aggregator_price, item.price);
+                        const activeSavings = getSavings(activePrice, activeAggPrice);
+                        const showDual = isEligible && activeSavings > 0;
 
                         return (
                           <article
@@ -1260,31 +1264,23 @@ export const MenuSection: React.FC = () => {
                             {/* Bottom Row: Dual Pricing & Add Button Wrapper */}
                             <div className="mt-3 pt-3 border-t border-[#2E4823]/10 flex items-center justify-between gap-2.5">
                               {/* Dual-Pricing: Stack vertically on mobile but side-by-side on desktop */}
-                              {(() => {
-                                const aggPrice = item.aggregator_price || Math.round((item.price * 1.25) / 10) * 10;
-                                const showDual = isEligible && aggPrice > item.price;
-                                const itemSavings = Math.max(0, aggPrice - item.price);
-
-                                return (
-                                  <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2 min-w-0 flex-1">
-                                    <div className="flex items-center gap-1.5 flex-wrap">
-                                      {showDual && (
-                                        <span className="text-[10px] sm:text-[11px] text-gray-400 line-through font-mono whitespace-nowrap">
-                                          App Price: ₹{aggPrice}
-                                        </span>
-                                      )}
-                                      <span className="font-bold text-sm sm:text-base text-[#2E4823] whitespace-nowrap">
-                                        Direct Price: ₹{item.price}
-                                      </span>
-                                    </div>
-                                    {showDual && itemSavings > 0 && (
-                                      <span className="inline-block text-[9px] sm:text-[10px] font-extrabold bg-[#25D366] text-white px-2 py-0.5 rounded-full shadow-xs whitespace-nowrap self-start sm:self-auto">
-                                        Save ₹{itemSavings}!
-                                      </span>
-                                    )}
-                                  </div>
-                                );
-                              })()}
+                              <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2 min-w-0 flex-1">
+                                <div className="flex items-center gap-1.5 flex-wrap">
+                                  {showDual && (
+                                    <span className="text-[10px] sm:text-[11px] text-gray-400 line-through font-mono whitespace-nowrap">
+                                      App Price: ₹{activeAggPrice}
+                                    </span>
+                                  )}
+                                  <span className="font-bold text-sm sm:text-base text-[#2E4823] whitespace-nowrap">
+                                    Direct Price: ₹{activePrice}
+                                  </span>
+                                </div>
+                                {showDual && activeSavings > 0 && (
+                                  <span className="inline-block text-[9px] sm:text-[10px] font-extrabold bg-[#25D366] text-white px-2 py-0.5 rounded-full shadow-xs whitespace-nowrap self-start sm:self-auto">
+                                    Save ₹{activeSavings}!
+                                  </span>
+                                )}
+                              </div>
 
                               {/* + ADD BUTTON LOGIC (Desktop: Only shown when ordering is unlocked & dish is eligible) */}
                               {isUnlocked && isEligible && (
@@ -1336,8 +1332,8 @@ export const MenuSection: React.FC = () => {
                                     /* Initial "+ Add" Button */
                                     <button
                                       type="button"
-                                      disabled={item.is_completed || isCheckoutOpen}
-                                      onClick={() => handleAddToCart(item)}
+                                      disabled={isCompleted || isCheckoutOpen}
+                                      onClick={() => handleAddToCart({ ...item, price: activePrice })}
                                       className="px-3 py-1.5 text-xs font-bold rounded-lg bg-[#2E4823] hover:bg-[#223719] disabled:opacity-50 disabled:bg-gray-200 disabled:text-gray-500 disabled:active:scale-100 disabled:cursor-not-allowed text-white shadow-2xs flex items-center gap-1 transition-transform transform active:scale-95 flex-shrink-0 whitespace-nowrap"
                                     >
                                       <Plus className="w-3.5 h-3.5" />
@@ -1429,7 +1425,10 @@ export const MenuSection: React.FC = () => {
         <FloatingCartBar
           items={cartItems}
           offer={offer}
-          onOpenCheckout={() => setIsCheckoutOpen(true)}
+          onOpenCheckout={() => {
+            refetchLiveMenu(true);
+            setIsCheckoutOpen(true);
+          }}
         />
       )}
 

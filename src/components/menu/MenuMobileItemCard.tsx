@@ -2,6 +2,7 @@ import React from 'react';
 import { GroupedMobileDish } from '../../utils/menuVariants';
 import { CartItem } from '../../types';
 import { OptimizedImage } from '../OptimizedImage';
+import { useLiveMenu } from '../../hooks/useLiveMenu';
 
 interface MenuMobileItemCardProps {
   dish: GroupedMobileDish;
@@ -22,8 +23,9 @@ export const MenuMobileItemCard: React.FC<MenuMobileItemCardProps> = ({
   onUpdateCartQuantity,
   onOpenSizePicker,
 }) => {
+  const { getPrice, getMrp, getSavings, isAvailable } = useLiveMenu();
   const hasVariants = dish.variants.length > 0;
-  const isCompleted = dish.primaryDish.is_completed;
+  const isCompleted = !isAvailable(dish.primaryDish.id, !dish.primaryDish.is_completed);
   const isEligible = Boolean(dish.primaryDish.direct_order_eligible);
   const hasImage = Boolean(dish.image);
 
@@ -42,10 +44,11 @@ export const MenuMobileItemCard: React.FC<MenuMobileItemCardProps> = ({
       }, 0)
     : 0;
 
-  // Dual price contrast vs aggregators (if available)
-  const aggPrice = dish.primaryDish.aggregator_price || Math.round((dish.primaryDish.price * 1.25) / 10) * 10;
-  const showDual = dish.primaryDish.direct_order_eligible && aggPrice > dish.primaryDish.price;
-  const itemSavings = Math.max(0, aggPrice - dish.primaryDish.price);
+  // Live dual price contrast vs aggregators (if available)
+  const activeMinPrice = getPrice(dish.primaryDish.id, dish.minPrice);
+  const activeAggPrice = getMrp(dish.primaryDish.id, dish.primaryDish.aggregator_price, dish.primaryDish.price);
+  const itemSavings = getSavings(activeMinPrice, activeAggPrice);
+  const showDual = isEligible && itemSavings > 0;
 
   // Render ADD button / quantity stepper
   const renderActionControl = () => {
@@ -168,14 +171,14 @@ export const MenuMobileItemCard: React.FC<MenuMobileItemCardProps> = ({
       {/* Price Row */}
       <div className="mt-1 flex items-baseline gap-2 flex-wrap">
         <span className="font-bold text-sm text-[#2E4823]">
-          ₹{dish.minPrice}
+          ₹{activeMinPrice}
         </span>
         {showDual && !hasVariants && (
           <span className="text-[10px] text-gray-400 line-through">
-            ₹{aggPrice}
+            ₹{activeAggPrice}
           </span>
         )}
-        {showDual && itemSavings > 0 && !hasVariants && (
+        {showDual && !hasVariants && (
           <span className="text-[9px] font-extrabold bg-[#2E4823] text-white px-1.5 py-0.2 rounded-full">
             Save ₹{itemSavings}!
           </span>
@@ -185,14 +188,17 @@ export const MenuMobileItemCard: React.FC<MenuMobileItemCardProps> = ({
       {/* Size Variants Chips */}
       {hasVariants && (
         <div className="mt-1.5 flex flex-wrap gap-1.5">
-          {dish.variants.map((v) => (
-            <span
-              key={v.size}
-              className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-[#2E4823]/8 text-[#2E4823] border border-[#2E4823]/15 whitespace-nowrap"
-            >
-              {v.size} ₹{v.price}
-            </span>
-          ))}
+          {dish.variants.map((v) => {
+            const vPrice = getPrice(`${v.dishId}:${v.size.toLowerCase()}`, v.price);
+            return (
+              <span
+                key={v.size}
+                className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-[#2E4823]/8 text-[#2E4823] border border-[#2E4823]/15 whitespace-nowrap"
+              >
+                {v.size} ₹{vPrice}
+              </span>
+            );
+          })}
         </div>
       )}
 

@@ -2,6 +2,7 @@ import React from 'react';
 import { GroupedMobileDish } from '../../utils/menuVariants';
 import { OptimizedImage } from '../OptimizedImage';
 import { CartItem } from '../../types';
+import { useLiveMenu } from '../../hooks/useLiveMenu';
 
 interface MenuBestsellersCarouselProps {
   bestsellers: GroupedMobileDish[];
@@ -18,6 +19,7 @@ export const MenuBestsellersCarousel: React.FC<MenuBestsellersCarouselProps> = (
   onUpdateCartQuantity,
   onOpenSizePicker,
 }) => {
+  const { getPrice, isAvailable } = useLiveMenu();
   if (bestsellers.length === 0) return null;
 
   return (
@@ -40,7 +42,7 @@ export const MenuBestsellersCarousel: React.FC<MenuBestsellersCarouselProps> = (
       <div className="flex gap-3 overflow-x-auto no-scrollbar snap-x snap-mandatory scroll-pl-4 pb-2 pt-0.5">
         {bestsellers.map((dish, idx) => {
           const hasVariants = dish.variants.length > 0;
-          const isCompleted = dish.primaryDish.is_completed;
+          const isCompleted = !isAvailable(dish.primaryDish.id, !dish.primaryDish.is_completed);
 
           // Check if dish is in cart (either base ID or any variant ID)
           const singleCartItem = !hasVariants
@@ -109,18 +111,21 @@ export const MenuBestsellersCarousel: React.FC<MenuBestsellersCarouselProps> = (
                 <div className="mt-1.5 min-h-[22px]">
                   {hasVariants ? (
                     <div className="flex flex-wrap gap-1">
-                      {dish.variants.map((v) => (
-                        <span
-                          key={v.size}
-                          className="text-[9.5px] font-bold px-1.5 py-0.5 rounded bg-[#2E4823]/8 text-[#2E4823] border border-[#2E4823]/15 whitespace-nowrap"
-                        >
-                          {v.size} ₹{v.price}
-                        </span>
-                      ))}
+                      {dish.variants.map((v) => {
+                        const variantPrice = getPrice(`${v.dishId}:${v.size.toLowerCase()}`, v.price);
+                        return (
+                          <span
+                            key={v.size}
+                            className="text-[9.5px] font-bold px-1.5 py-0.5 rounded bg-[#2E4823]/8 text-[#2E4823] border border-[#2E4823]/15 whitespace-nowrap"
+                          >
+                            {v.size} ₹{variantPrice}
+                          </span>
+                        );
+                      })}
                     </div>
                   ) : (
                     <span className="font-bold text-xs sm:text-sm text-[#2E4823]">
-                      ₹{dish.primaryDish.price}
+                      ₹{getPrice(dish.primaryDish.id, dish.primaryDish.price)}
                     </span>
                   )}
                 </div>

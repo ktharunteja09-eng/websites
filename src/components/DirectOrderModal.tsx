@@ -9,6 +9,11 @@ import {
   fetchMenuItems,
   mapOrderErrorToMessage,
 } from '../utils/supabaseClient';
+import {
+  refreshLiveMenu,
+  getLiveMenuSnapshot,
+  findSkuOverride,
+} from '../hooks/useLiveMenu';
 import QRCode from 'qrcode';
 import { calculateTotals, isRestaurantOpen } from '../utils/cartMath';
 import { useScrollLock } from '../utils/scrollLock';
@@ -327,6 +332,7 @@ export const DirectOrderModal: React.FC<DirectOrderModalProps> = ({
 
   // Error & coupon state
   const [formError, setFormError] = useState('');
+  const [priceConfirmed, setPriceConfirmed] = useState<boolean>(false);
 
   // Pre-Checkout Inventory Check state
   const [soldOutItemIds, setSoldOutItemIds] = useState<(number | string)[]>([]);
@@ -390,9 +396,11 @@ export const DirectOrderModal: React.FC<DirectOrderModalProps> = ({
     }
   };
 
-  // Pre-flight check when checkout modal opens
+  // Pre-flight check when checkout modal opens: force refresh live menu
   useEffect(() => {
     if (!isOpen || typeof window === 'undefined') return;
+    refreshLiveMenu(true);
+    setPriceConfirmed(false);
     checkAndPruneSoldOutItems(items);
   }, [isOpen]);
 
@@ -770,6 +778,56 @@ _Please reply "CONFIRMED" to start preparing my order._`;
     setIsSubmittingOrder(true);
 
     try {
+      // Re-sync with latest live data immediately before submit
+      try {
+        await refreshLiveMenu(true);
+      } catch {}
+
+      const liveSnapshot = getLiveMenuSnapshot();
+      if (liveSnapshot && liveSnapshot.overrides) {
+        // 1. Check availability
+        const soldOutIds: (number | string)[] = [];
+        const soldOutNames: string[] = [];
+
+        for (const item of items) {
+          const override = findSkuOverride(item.id, liveSnapshot.overrides);
+          if (override && override.available === false) {
+            soldOutIds.push(item.id);
+            soldOutNames.push(item.name);
+          }
+        }
+
+        if (soldOutIds.length > 0) {
+          setIsSubmittingOrder(false);
+          setSoldOutItemIds(soldOutIds);
+          const bannerText = `${soldOutNames.join(', ')} is currently sold out. Please remove it from your cart.`;
+          setSoldOutBanner(bannerText);
+          setFormError(bannerText);
+          return;
+        }
+
+        // 2. Check if price changed vs what customer currently has in cart
+        let hasPriceDiff = false;
+        for (const item of items) {
+          const override = findSkuOverride(item.id, liveSnapshot.overrides);
+          if (
+            override &&
+            typeof override.price === 'number' &&
+            override.price > 0 &&
+            override.price !== item.price
+          ) {
+            hasPriceDiff = true;
+          }
+        }
+
+        if (hasPriceDiff && !priceConfirmed) {
+          setIsSubmittingOrder(false);
+          setPriceConfirmed(true);
+          setFormError('Note: Menu prices were just updated. Please review your updated total.');
+          return;
+        }
+      }
+
       // 1. Navigation link & GPS
       let lat = userLocation?.lat;
       let lng = userLocation?.lng;
@@ -929,6 +987,7 @@ _Please reply "CONFIRMED" to start preparing my order._`;
               sessionStorage.removeItem('vaibhav_pending_order_v1');
             } catch {}
           }
+          setPriceConfirmed(false);
           setFormError('Note: Menu prices were just updated. Please review your updated total.');
           return;
         }
