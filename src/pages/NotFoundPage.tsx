@@ -4,11 +4,23 @@ import { Home, UtensilsCrossed, Phone, ArrowLeft, Sparkles } from 'lucide-react'
 import { RESTAURANT_INFO, SIGNATURE_DISHES } from '../data/restaurantData';
 import { OptimizedImage } from '../components/OptimizedImage';
 
+import { useNavigate } from 'react-router-dom';
+
 interface NotFoundPageProps {
   onBackHome: () => void;
+  onNavigateAdmin?: () => void;
 }
 
-export const NotFoundPage: React.FC<NotFoundPageProps> = ({ onBackHome }) => {
+export const NotFoundPage: React.FC<NotFoundPageProps> = ({ onBackHome, onNavigateAdmin }) => {
+  const navigate = useNavigate();
+
+  const handleOpenAdmin = () => {
+    if (onNavigateAdmin) {
+      onNavigateAdmin();
+    } else {
+      navigate('/admin');
+    }
+  };
   return (
     <div
       id="not-found-container"
@@ -122,8 +134,17 @@ export const NotFoundPage: React.FC<NotFoundPageProps> = ({ onBackHome }) => {
       </div>
 
       {/* Brand Footer */}
-      <div className="max-w-4xl mx-auto w-full pt-8 border-t border-[#2E4823]/10 text-center text-xs text-gray-400">
+      <div className="max-w-4xl mx-auto w-full pt-8 border-t border-[#2E4823]/10 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-gray-400">
         <p>© {new Date().getFullYear()} Vaibhav Grand Family Restaurant. Renigunta, Tirupati.</p>
+        <button
+          type="button"
+          onClick={handleOpenAdmin}
+          id="admin-portal-link"
+          aria-label="Admin Portal"
+          className="hover:text-[#2E4823] text-gray-400 transition-colors underline-offset-4 hover:underline text-[11px] font-semibold"
+        >
+          Admin Portal
+        </button>
       </div>
     </div>
   );

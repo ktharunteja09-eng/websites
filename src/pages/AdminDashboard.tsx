@@ -119,8 +119,20 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBackToSite }) 
   const [menuItems, setMenuItems] = useState<DbMenuItem[]>([]);
   const [menuSearch, setMenuSearch] = useState('');
   const [menuFilter, setMenuFilter] = useState<'all' | 'delivery' | 'completed'>('all');
+  const [selectedCategory, setSelectedCategory] = useState<string>('All');
   const [isResettingMorning, setIsResettingMorning] = useState(false);
   const [menuUpdateToast, setMenuUpdateToast] = useState('');
+
+  // Dynamically derive unique categories from loaded menu items
+  const uniqueCategories = useMemo(() => {
+    const cats = new Set<string>();
+    menuItems.forEach((item) => {
+      if (item.category && item.category.trim()) {
+        cats.add(item.category.trim());
+      }
+    });
+    return ['All', ...Array.from(cats)];
+  }, [menuItems]);
 
   // Tab 2: Store Offers
   const [offer, setOffer] = useState<StoreOffer | null>(null);
@@ -633,6 +645,11 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBackToSite }) 
   // Filtered Menu Items for Tab 1
   const filteredMenuItems = useMemo(() => {
     return menuItems.filter((dish) => {
+      // Category filter
+      if (selectedCategory !== 'All' && dish.category !== selectedCategory) {
+        return false;
+      }
+
       // Filter tab
       if (menuFilter === 'delivery' && !dish.direct_order_eligible) return false;
       if (menuFilter === 'completed' && !dish.is_completed) return false;
@@ -645,7 +662,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBackToSite }) 
         dish.category.toLowerCase().includes(q)
       );
     });
-  }, [menuItems, menuFilter, menuSearch]);
+  }, [menuItems, selectedCategory, menuFilter, menuSearch]);
 
   // Filtered Orders for Tab 3
   const filteredOrders = useMemo(() => {
@@ -785,7 +802,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBackToSite }) 
   // Screen: Authenticated 3-Tab Owner Dashboard
   // -------------------------------------------------------------
   return (
-    <div className="min-h-screen bg-[#FDFBF7] text-[#1C1C1C]">
+    <div className="min-h-screen bg-[#FDFBF7] text-[#1C1C1C] w-full max-w-full overflow-x-hidden">
       <Helmet>
         <title>
           {newOrderAlertCount > 0
@@ -795,8 +812,8 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBackToSite }) 
         <meta name="robots" content="noindex, nofollow" />
       </Helmet>
       {/* Top Admin Navbar */}
-      <header className="sticky top-0 z-40 bg-[#2E4823] text-white shadow-md border-b border-white/10">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3.5 flex flex-col sm:flex-row items-center justify-between gap-3">
+      <header className="sticky top-0 z-40 bg-[#2E4823] text-white shadow-md border-b border-white/10 w-full max-w-full overflow-x-hidden">
+        <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 py-3.5 flex flex-col sm:flex-row items-center justify-between gap-3 w-full max-w-full">
           <div className="flex items-center gap-3 w-full sm:w-auto justify-between sm:justify-start">
             <div className="flex items-center gap-2.5">
               <img
@@ -927,14 +944,14 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBackToSite }) 
       )}
 
       {/* Main Content Area */}
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <main className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 py-8 w-full max-w-full overflow-x-hidden">
         {/* ============================================================= */}
         {/* TAB 1: MENU STOCK & DELIVERY ELIGIBILITY                     */}
         {/* ============================================================= */}
         {activeTab === 'menu' && (
           <div className="space-y-6">
             {/* Header + Stats Banner */}
-            <div className="bg-[#F7F3EB] rounded-3xl p-6 border border-[#2E4823]/15 shadow-xs flex flex-col md:flex-row items-center justify-between gap-4">
+            <div className="bg-[#F7F3EB] rounded-3xl p-4 sm:p-6 border border-[#2E4823]/15 shadow-xs flex flex-col md:flex-row items-start md:items-center justify-between gap-4 w-full max-w-full">
               <div>
                 <h2 className="font-['Playfair_Display'] text-2xl font-bold text-[#2E4823]">
                   Menu Stock &amp; 5 km Delivery Eligibility
@@ -985,9 +1002,9 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBackToSite }) 
             </div>
 
             {/* Search and Filters Bar */}
-            <div className="bg-white p-4 rounded-2xl border border-gray-200 shadow-2xs flex flex-col sm:flex-row items-center justify-between gap-3">
+            <div className="bg-white p-3 sm:p-4 rounded-2xl border border-gray-200 shadow-2xs flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 w-full max-w-full">
               {/* Search input */}
-              <div className="relative w-full sm:w-80">
+              <div className="relative w-full sm:w-80 min-w-0">
                 <Search className="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
                 <input
                   type="text"
@@ -999,7 +1016,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBackToSite }) 
               </div>
 
               {/* Segmented Filter */}
-              <div className="flex items-center gap-1.5 bg-[#F7F3EB] p-1 rounded-xl w-full sm:w-auto">
+              <div className="flex items-center gap-1.5 bg-[#F7F3EB] p-1 rounded-xl w-full sm:w-auto overflow-x-auto no-scrollbar">
                 <button
                   type="button"
                   onClick={() => setMenuFilter('all')}
@@ -1036,10 +1053,31 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBackToSite }) 
               </div>
             </div>
 
+            {/* Scrollable Category Bar */}
+            <div className="flex items-center gap-2 overflow-x-auto whitespace-nowrap pb-2 max-w-full no-scrollbar">
+              {uniqueCategories.map((category) => {
+                const isSelected = selectedCategory === category;
+                return (
+                  <button
+                    key={category}
+                    type="button"
+                    onClick={() => setSelectedCategory(category)}
+                    className={`px-3.5 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap transition-all shrink-0 cursor-pointer ${
+                      isSelected
+                        ? 'bg-[#2E4823] text-white shadow-xs'
+                        : 'bg-white text-gray-700 hover:bg-[#F7F3EB] border border-gray-200'
+                    }`}
+                  >
+                    {category}
+                  </button>
+                );
+              })}
+            </div>
+
             {/* Dishes Table */}
-            <div className="bg-white rounded-3xl border border-gray-200 shadow-2xs overflow-hidden">
-              <div className="overflow-x-auto">
-                <table className="w-full text-left border-collapse text-xs sm:text-sm">
+            <div className="bg-white rounded-3xl border border-gray-200 shadow-2xs overflow-hidden w-full max-w-full">
+              <div className="overflow-x-auto w-full max-w-full">
+                <table className="w-full text-left border-collapse text-xs sm:text-sm min-w-full">
                   <thead>
                     <tr className="bg-[#F7F3EB] border-b border-[#2E4823]/10 text-gray-700 font-bold uppercase text-[11px] tracking-wider">
                       <th className="py-3.5 px-4 sm:px-6">Dish Details</th>
@@ -1634,7 +1672,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBackToSite }) 
                 </p>
               </div>
             ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 w-full max-w-full">
                 {filteredOrders.map((order, orderIndex) => {
                   const isCompleted = order.status === 'Completed';
                   const isConfirmed = order.status === 'Confirmed';
@@ -1643,7 +1681,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBackToSite }) 
                   return (
                     <div
                       key={order.order_code + (order.id || '')}
-                      className={`bg-white rounded-3xl p-5 border shadow-2xs space-y-4 flex flex-col justify-between transition-all duration-300 ${
+                      className={`bg-white rounded-3xl p-4 sm:p-5 border shadow-2xs space-y-4 flex flex-col justify-between transition-all duration-300 break-words min-w-0 w-full max-w-full ${
                         newOrderHighlight && orderIndex === 0
                           ? 'ring-2 ring-emerald-500 shadow-md'
                           : ''
@@ -1717,14 +1755,14 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBackToSite }) 
 
                         {/* Soundbox Banner for UPI or Cash Collection Banner for COD */}
                         {isCod ? (
-                          <div className="bg-[#F7F3EB] border border-[#2E4823]/20 rounded-xl p-3 text-xs font-mono font-semibold text-[#1C1C1C]">
+                          <div className="bg-[#F7F3EB] border border-[#2E4823]/20 rounded-xl p-3 text-xs font-mono font-semibold text-[#1C1C1C] break-words min-w-0">
                             COLLECT CASH: Rs {order.final_total} upon delivery or pickup
                           </div>
                         ) : (
-                          <div className="bg-[#F7F3EB] border border-[#2E4823]/20 rounded-xl p-3 text-xs font-mono font-semibold text-[#1C1C1C]">
+                          <div className="bg-[#F7F3EB] border border-[#2E4823]/20 rounded-xl p-3 text-xs font-mono font-semibold text-[#1C1C1C] break-words min-w-0">
                             {order.utr ? (
-                              <div className="space-y-0.5">
-                                <div>CHECK SOUNDBOX: Rs {order.final_total} | UPI Ref (entered by customer, not verified): {order.utr}</div>
+                              <div className="space-y-0.5 break-words min-w-0">
+                                <div className="break-words">CHECK SOUNDBOX: Rs {order.final_total} | UPI Ref (entered by customer, not verified): {order.utr}</div>
                                 {order.utr_submitted_at && (
                                   <div className="text-[11px] text-[#2E4823] font-normal">
                                     {formatUtrTimeAgo(order.utr_submitted_at)}
@@ -1732,7 +1770,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBackToSite }) 
                                 )}
                               </div>
                             ) : (
-                              <div className="text-gray-500">
+                              <div className="text-gray-500 break-words">
                                 CHECK SOUNDBOX: Rs {order.final_total} | UPI Ref: Not submitted yet
                               </div>
                             )}
@@ -1740,17 +1778,17 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBackToSite }) 
                         )}
 
                         {/* Customer Information */}
-                        <div className="bg-[#F7F3EB] rounded-2xl p-3 text-xs space-y-1">
-                          <div className="flex justify-between font-bold text-[#1C1C1C]">
-                            <span>{order.customer_name}</span>
+                        <div className="bg-[#F7F3EB] rounded-2xl p-3 text-xs space-y-1 break-words min-w-0">
+                          <div className="flex justify-between font-bold text-[#1C1C1C] gap-2">
+                            <span className="break-words min-w-0">{order.customer_name}</span>
                             <a
                               href={`tel:${order.customer_phone}`}
-                              className="text-[#D3452B] hover:underline font-mono"
+                              className="text-[#D3452B] hover:underline font-mono shrink-0"
                             >
                               +91 {order.customer_phone}
                             </a>
                           </div>
-                          <div className="text-gray-500 flex items-center justify-between text-[11px]">
+                          <div className="text-gray-500 flex items-center justify-between text-[11px] flex-wrap gap-1">
                             <span>
                               Type: <strong>{order.order_type === 'DELIVERY_5KM' ? '5km Delivery' : 'Self-Pickup'}</strong>
                               {order.distance_km ? ` (${order.distance_km} km)` : ''}
@@ -1758,7 +1796,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBackToSite }) 
                             <span>Payment: <strong>{order.payment_method}</strong></span>
                           </div>
                           {order.address_notes && (
-                            <p className="text-gray-600 text-[11px] pt-1 border-t border-gray-200/80">
+                            <p className="text-gray-600 text-[11px] pt-1 border-t border-gray-200/80 break-words">
                               Address: {order.address_notes}
                             </p>
                           )}
@@ -1767,16 +1805,16 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBackToSite }) 
                               href={order.maps_link}
                               target="_blank"
                               rel="noopener noreferrer"
-                              className="text-[11px] text-[#2E4823] hover:underline flex items-center gap-1 font-semibold pt-0.5"
+                              className="text-[11px] text-[#2E4823] hover:underline flex items-center gap-1 font-semibold pt-0.5 break-all"
                             >
                               <span>View GPS Location on Google Maps</span>
-                              <ExternalLink className="w-3 h-3" />
+                              <ExternalLink className="w-3 h-3 shrink-0" />
                             </a>
                           )}
                         </div>
 
                         {/* Items Breakdown */}
-                        <div className="space-y-1 text-xs">
+                        <div className="space-y-1 text-xs break-words min-w-0">
                           <span className="text-[11px] font-bold uppercase text-gray-500 tracking-wider">
                             Items Ordered:
                           </span>
@@ -1867,7 +1905,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBackToSite }) 
                       </div>
 
                       {/* Footer & Order Acceptance Actions */}
-                      <div className="pt-3 border-t border-gray-100 flex flex-wrap items-center justify-between gap-2">
+                      <div className="pt-3 border-t border-gray-100 flex flex-wrap items-center justify-between gap-2 break-words min-w-0">
                         <div>
                           <span className="text-[10px] text-gray-400 uppercase tracking-wider block font-semibold">
                             Final Total
@@ -1937,3 +1975,5 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBackToSite }) 
     </div>
   );
 };
+
+export default AdminDashboard;

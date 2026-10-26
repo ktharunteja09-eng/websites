@@ -253,10 +253,11 @@ export const Footer: React.FC<FooterProps> = ({
           <div className="flex items-center gap-6">
             <button
               type="button"
-              onClick={onOpen404}
+              onClick={() => onNavigate('/admin')}
               className="hover:text-white transition-colors underline-offset-4 hover:underline text-[11px]"
+              aria-label="Admin Portal"
             >
-              404 Page
+              Admin Portal
             </button>
             <button
               type="button"
@@ -274,10 +275,11 @@ export const Footer: React.FC<FooterProps> = ({
             </button>
             <button
               type="button"
-              onClick={() => onNavigate('/admin')}
+              onClick={onOpen404}
+              id="footer-404-link"
               className="hover:text-amber-300 text-gray-400 transition-colors underline-offset-4 hover:underline text-[11px] font-semibold"
             >
-              🔒 Owner Portal
+              404 Page
             </button>
           </div>
         </div>

@@ -5,9 +5,10 @@ import { OptimizedImage } from './OptimizedImage';
 
 interface NotFoundViewProps {
   onBackHome: () => void;
+  onNavigateAdmin?: () => void;
 }
 
-export const NotFoundView: React.FC<NotFoundViewProps> = ({ onBackHome }) => {
+export const NotFoundView: React.FC<NotFoundViewProps> = ({ onBackHome, onNavigateAdmin }) => {
   return (
     <main
       id="not-found-main"
@@ -119,10 +120,19 @@ export const NotFoundView: React.FC<NotFoundViewProps> = ({ onBackHome }) => {
       </div>
 
       {/* Footer Minimal */}
-      <div className="max-w-4xl mx-auto w-full pt-8 border-t border-[#2E4823]/10 text-center text-xs text-gray-400">
+      <div className="max-w-4xl mx-auto w-full pt-8 border-t border-[#2E4823]/10 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-gray-400">
         <p>
           © {new Date().getFullYear()} {RESTAURANT_INFO.name}. Plot 157, Ramana Vilas Circle, Renigunta, Tirupati.
         </p>
+        <button
+          type="button"
+          onClick={onNavigateAdmin}
+          id="notfound-admin-link"
+          aria-label="Admin Portal"
+          className="hover:text-[#2E4823] text-gray-400 transition-colors underline-offset-4 hover:underline text-[11px] font-semibold"
+        >
+          Admin Portal
+        </button>
       </div>
     </main>
   );

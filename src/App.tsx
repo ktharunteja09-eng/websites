@@ -115,8 +115,8 @@ export const ContactPageWrapper: React.FC = () => {
 };
 
 export const NotFoundPageWrapper: React.FC = () => {
-  const { onNavigateHome } = useAppOutletContext();
-  return <NotFoundPage onBackHome={onNavigateHome} />;
+  const { onNavigateHome, onNavigate } = useAppOutletContext();
+  return <NotFoundPage onBackHome={onNavigateHome} onNavigateAdmin={() => onNavigate('/admin')} />;
 };
 
 export const AdminPageWrapper: React.FC = () => {
@@ -182,8 +182,8 @@ export default function App() {
     <HelmetProvider>
       <SmoothScrollProvider>
         <div className="min-h-screen bg-[#FDFBF7] text-[#1C1C1C] flex flex-col selection:bg-[#2E4823] selection:text-[#FDFBF7]">
-          {/* Top Utility Bar (scrolls away naturally) */}
-          <TopUtilityBar />
+          {/* Top Utility Bar — hidden */}
+          {/* <TopUtilityBar /> */}
 
           {/* Unified Sticky Header Container: Holds Offer Banner + Main Navbar with zero overlap */}
           <header className="sticky top-0 z-50 w-full shadow-xs">
