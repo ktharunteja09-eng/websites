@@ -2,9 +2,9 @@ import React, { useState, useMemo, useEffect } from 'react';
 import { motion } from 'motion/react';
 import { BookOpen, ExternalLink, Phone, ArrowRight, Utensils, TrendingDown, Sparkles, Star, ShieldCheck } from 'lucide-react';
 import { RESTAURANT_INFO, MENU_ITEMS } from '../data/restaurantData';
-import { PHOTO_MENU_ITEMS } from '../data/photoMenuData';
-import { MenuItem, PhotoMenuItem } from '../types';
+import { MenuItem } from '../types';
 import { useLiveMenu } from '../hooks/useLiveMenu';
+import { getDishImage } from '../data/menuImageMap';
 
 interface HomeMenuPreviewProps {
   onNavigateMenu: () => void;
@@ -24,20 +24,20 @@ const PREVIEW_DISH_IDS = [
   'butter-naan',
 ];
 
-// Exact 10 Items Requested for Mobile View in Order:
-// 1. Mandi, 2. Baby Corn Manchurian, 3. Chicken 65, 4. Biryani, 5. Butter Chicken,
-// 6. Butter Naan, 7. Special Curd Rice, 8. Paneer Tikka Fry, 9. Oreo Milkshake, 10. Chicken Lollipop
+// Exact 10 Classic Menu Items for Mobile View in Order:
+// 1. Mandi, 2. Baby Corn 555, 3. Chicken 65, 4. Biryani, 5. Butter Chicken,
+// 6. Butter Naan, 7. Special Curd Rice, 8. Paneer Tikka, 9. Oreo Milkshake, 10. Chicken Lollipop
 const MOBILE_TOP_10_IDS = [
-  'm1',                       // 1. Mandi
-  's-baby-corn-manchurian',    // 2. Baby Corn Manchurian
-  's-chicken-65',             // 3. Chicken 65
-  'b-hyd-dum',                // 4. Biryani
-  'c-butter-chicken',         // 5. Butter Chicken
-  'br-butter-naan',           // 6. Butter Naan
-  'r-curd-rice',              // 7. Special Curd Rice
-  'panner-tikka-fry',         // 8. Paneer Tikka Fry
-  'bev-oreo-shake',           // 9. Oreo Milkshake
-  's-chicken-lollipop',       // 10. Chicken Lollipop
+  'dish-144', // 1. Mandi
+  'dish-72',  // 2. Baby Corn 555
+  'dish-35',  // 3. Chicken 65
+  'dish-110', // 4. Biryani
+  'dish-229', // 5. Butter Chicken
+  'dish-185', // 6. Butter Naan
+  'dish-28',  // 7. Special Curd Rice
+  'dish-102', // 8. Paneer Tikka
+  'dish-248', // 9. Oreo Milkshake
+  'dish-36',  // 10. Chicken Lollipop
 ];
 
 export const HomeMenuPreview: React.FC<HomeMenuPreviewProps> = ({
@@ -56,11 +56,11 @@ export const HomeMenuPreview: React.FC<HomeMenuPreviewProps> = ({
     return list.length >= 6 ? list : MENU_ITEMS.slice(0, 8);
   }, []);
 
-  // Curated 10 items in exact requested order for mobile view
+  // Curated 10 items in exact requested order for mobile view from classic MENU_ITEMS
   const mobileDisplayDishes = useMemo(() => {
     return MOBILE_TOP_10_IDS.map((id) =>
-      PHOTO_MENU_ITEMS.find((item) => item.id === id)
-    ).filter((item): item is PhotoMenuItem => item !== undefined);
+      MENU_ITEMS.find((item) => item.id === id)
+    ).filter((item): item is MenuItem => item !== undefined);
   }, []);
 
   return (
@@ -185,7 +185,7 @@ export const HomeMenuPreview: React.FC<HomeMenuPreviewProps> = ({
                         {/* Image */}
                         <div className="relative h-40 w-full overflow-hidden bg-gray-100">
                           <img
-                            src={item.image}
+                            src={item.image || getDishImage(item.name) || '/assets/vaibhav-grand-webp-images/food14.webp'}
                             alt={item.name}
                             width={360}
                             height={240}

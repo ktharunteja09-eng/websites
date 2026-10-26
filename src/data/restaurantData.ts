@@ -1,5 +1,4 @@
-import { MenuItem, SignatureDish, Testimonial, GalleryPhoto, RestaurantInfo, DigitalMenuPage, MenuCategoryType, PhotoMenuItem } from '../types';
-export { PHOTO_MENU_ITEMS } from './photoMenuData';
+import { MenuItem, SignatureDish, Testimonial, GalleryPhoto, RestaurantInfo, DigitalMenuPage, MenuCategoryType } from '../types';
 
 export const RESTAURANT_INFO: RestaurantInfo = {
   name: "Vaibhav Grand Family Restaurant",
@@ -177,17 +176,6 @@ export const MENU_CATEGORIES: { id: MenuCategoryType; label: string }[] = [
   { id: 'desserts', label: '28. Desserts' },
   { id: 'ice-creams', label: '29. Ice Creams' },
   { id: 'bucket-biryani', label: '30. Bucket Biryani' }
-];
-
-export const PHOTO_MENU_CATEGORIES: { id: string; label: string }[] = [
-  { id: 'all', label: 'All Dishes' },
-  { id: 'mandi', label: 'Arabic Mandi' },
-  { id: 'biryani', label: 'Biryani Specialties' },
-  { id: 'starters', label: 'Starters & Tandoor' },
-  { id: 'curries', label: 'Curries & Gravies' },
-  { id: 'rice-noodles', label: 'Fried Rice & Noodles' },
-  { id: 'breads', label: 'Tandoori Breads' },
-  { id: 'beverages', label: 'Mojitos & Shakes' }
 ];
 
 export const MENU_ITEMS: MenuItem[] = [

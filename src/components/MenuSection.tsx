@@ -1,12 +1,10 @@
 import React, { useState, useMemo, useEffect } from 'react';
-import { MENU_CATEGORIES, RESTAURANT_INFO } from '../data/restaurantData';
+import { MENU_CATEGORIES, RESTAURANT_INFO, MENU_ITEMS } from '../data/restaurantData';
 import {
   Search,
   ExternalLink,
   Phone,
   Sparkles,
-  Camera,
-  ListOrdered,
   Utensils,
   MapPin,
   ShoppingBag,
@@ -23,8 +21,8 @@ import {
   Percent,
 } from 'lucide-react';
 import { motion } from 'motion/react';
-import { PhotoMenu } from './PhotoMenu';
 import { MenuCategoryType, DbMenuItem, CartItem, StoreOffer, OrderType } from '../types';
+import { useLiveMenu } from '../hooks/useLiveMenu';
 import {
   fetchMenuItems,
   fetchStoreOffer,
@@ -48,8 +46,7 @@ import { MenuFloatingButton } from './menu/MenuFloatingButton';
 import { groupDishesForMobile, GroupedMobileDish, ItemVariantOption } from '../utils/menuVariants';
 
 export const MenuSection: React.FC = () => {
-  // Menu View Mode: Classic A La Carte vs Photo Menu Cards
-  const [menuViewMode, setMenuViewMode] = useState<'list' | 'cards'>('list');
+  const { getPrice, isAvailable, sale, refetch: refetchLiveMenu } = useLiveMenu();
   const [selectedCategory, setSelectedCategory] = useState<MenuCategoryType>('all');
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [dietFilter, setDietFilter] = useState<'all' | 'veg' | 'non-veg'>('all');
@@ -79,29 +76,107 @@ export const MenuSection: React.FC = () => {
   const [geoStatus, setGeoStatus] = useState<'idle' | 'checking' | 'eligible' | 'outside' | 'error'>('idle');
   const [showEligibleOnly, setShowEligibleOnly] = useState<boolean>(false);
 
-  // Cart & Checkout State (Synced to localStorage)
-  const [cartItems, setCartItems] = useState<CartItem[]>(() => {
-    if (typeof window === 'undefined') return [];
+  // Cart & Checkout State (Synced to localStorage - ONLY sku, quantity, size)
+  const [cartItems, setCartItems] = useState<CartItem[]>([]);
+  const [cartNotice, setCartNotice] = useState<string | null>(null);
+  const [cartHydrated, setCartHydrated] = useState<boolean>(false);
+  const [isCheckoutOpen, setIsCheckoutOpen] = useState<boolean>(false);
+
+  // Cart Hydration on mount: drop legacy/missing IDs and derive current prices
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
     try {
       const saved = localStorage.getItem('cart');
       if (saved) {
         const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed)) return parsed;
-      }
-    } catch {}
-    return [];
-  });
-  const [isCheckoutOpen, setIsCheckoutOpen] = useState<boolean>(false);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          const validItems: CartItem[] = [];
+          let hadDropped = false;
 
-  // LocalStorage Persistence: Sync cart array to localStorage on every change
-  useEffect(() => {
-    try {
-      localStorage.setItem('cart', JSON.stringify(cartItems));
-      if (typeof window !== 'undefined') {
-        window.dispatchEvent(new CustomEvent('cart-updated', { detail: { count: cartItems.length } }));
+          for (const raw of parsed) {
+            const rawId = String(raw.sku || raw.id || '').trim();
+            const qty = Math.max(1, Number(raw.quantity) || 1);
+            if (!rawId) continue;
+
+            // Immediately drop old photo menu IDs (e.g. s-..., c-..., b-..., br-..., bev-..., r-..., n-..., m1, m3)
+            if (/^(s-|c-|b-|br-|bev-|r-|n-|m1$|m3$)/i.test(rawId)) {
+              hadDropped = true;
+              continue;
+            }
+
+            // Look up in classic catalog (base ID or variant ID)
+            const [baseKey, variantSize] = rawId.split(':');
+            const catalogMatch =
+              dishes.find((d) => String(d.id) === baseKey || String(d.id) === rawId) ||
+              MENU_ITEMS.find((m) => m.id === baseKey || m.id === rawId);
+
+            if (!catalogMatch) {
+              hadDropped = true;
+              continue;
+            }
+
+            const currentPrice = getPrice(rawId, Number(catalogMatch.price) || 0);
+            const sizeLabel =
+              raw.size ||
+              (variantSize ? variantSize.charAt(0).toUpperCase() + variantSize.slice(1) : undefined);
+            const itemName =
+              sizeLabel && !catalogMatch.name.includes(`(${sizeLabel})`)
+                ? `${catalogMatch.name} (${sizeLabel})`
+                : catalogMatch.name;
+
+            validItems.push({
+              id: rawId,
+              name: itemName,
+              category: catalogMatch.category,
+              price: currentPrice,
+              quantity: qty,
+              isVeg: 'is_veg' in catalogMatch ? catalogMatch.is_veg : catalogMatch.isVeg,
+              size: sizeLabel,
+            });
+          }
+
+          if (hadDropped) {
+            setCartNotice('Some items are no longer available and were removed from your cart.');
+          }
+          setCartItems(validItems);
+        }
       }
     } catch {}
-  }, [cartItems]);
+    setCartHydrated(true);
+  }, []);
+
+  // LocalStorage Persistence: store ONLY sku, quantity, and size (never prices or totals)
+  useEffect(() => {
+    if (!cartHydrated || typeof window === 'undefined') return;
+    try {
+      const serialized = cartItems.map((item) => ({
+        sku: String(item.id),
+        quantity: item.quantity,
+        size: item.size,
+      }));
+      localStorage.setItem('cart', JSON.stringify(serialized));
+      window.dispatchEvent(
+        new CustomEvent('cart-updated', { detail: { count: cartItems.length } })
+      );
+    } catch {}
+  }, [cartItems, cartHydrated]);
+
+  // Keep in-memory cart prices synchronized with live prices
+  useEffect(() => {
+    if (!cartHydrated || cartItems.length === 0) return;
+    setCartItems((prev) => {
+      let changed = false;
+      const updated = prev.map((item) => {
+        const livePrice = getPrice(item.id, item.price);
+        if (livePrice !== item.price && livePrice > 0) {
+          changed = true;
+          return { ...item, price: livePrice };
+        }
+        return item;
+      });
+      return changed ? updated : prev;
+    });
+  }, [getPrice, cartHydrated]);
 
   // Fetch Menu & Store Offer from Supabase (with daily auto-reset)
   useEffect(() => {
@@ -118,34 +193,6 @@ export const MenuSection: React.FC = () => {
       setDishes(fetchedItems);
       setOffer(fetchedOffer);
       setLoading(false);
-
-      // Dynamic price sync: Update any active cart items to reflect live Supabase prices!
-      if (fetchedItems && fetchedItems.length > 0) {
-        const livePriceMap = new Map<string, number>();
-        fetchedItems.forEach((d) => {
-          livePriceMap.set(String(d.id), d.price);
-        });
-
-        setCartItems((prevCart) => {
-          if (!prevCart || prevCart.length === 0) return prevCart;
-          let changed = false;
-          const updated = prevCart.map((item) => {
-            const baseId = String(item.id).split(':')[0];
-            const livePrice = livePriceMap.get(baseId);
-            if (
-              livePrice !== undefined &&
-              livePrice > 0 &&
-              !String(item.id).includes(':') &&
-              item.price !== livePrice
-            ) {
-              changed = true;
-              return { ...item, price: livePrice };
-            }
-            return item;
-          });
-          return changed ? updated : prevCart;
-        });
-      }
     }
 
     loadData();
@@ -652,36 +699,6 @@ export const MenuSection: React.FC = () => {
           </p>
         </motion.div>
 
-        {/* View Mode Toggle: Classic A La Carte Menu vs Visual Photo Menu */}
-        <div className="flex justify-center mb-8">
-          <div className="inline-flex p-1.5 rounded-2xl bg-[#F7F3EB] border border-[#2E4823]/15 shadow-inner">
-            <button
-              type="button"
-              onClick={() => setMenuViewMode('list')}
-              className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-xs sm:text-sm font-bold transition-all duration-200 ${
-                menuViewMode === 'list'
-                  ? 'bg-[#2E4823] text-white shadow-md'
-                  : 'text-gray-700 hover:text-[#2E4823]'
-              }`}
-            >
-              <ListOrdered className="w-4 h-4" />
-              <span>Classic Menu</span>
-            </button>
-            <button
-              type="button"
-              onClick={() => setMenuViewMode('cards')}
-              className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-xs sm:text-sm font-bold transition-all duration-200 ${
-                menuViewMode === 'cards'
-                  ? 'bg-[#2E4823] text-white shadow-md'
-                  : 'text-gray-700 hover:text-[#2E4823]'
-              }`}
-            >
-              <Camera className="w-4 h-4 text-amber-300" />
-              <span>Photo Menu</span>
-            </button>
-          </div>
-        </div>
-
         {/* ------------------------------------------------------------- */}
         {/* TOP BAR ABOVE MENU: UNLOCK 5 KM DELIVERY & SELF-PICKUP        */}
         {/* ------------------------------------------------------------- */}
@@ -944,12 +961,24 @@ export const MenuSection: React.FC = () => {
           </div>
         </div>
 
-        {/* CONDITIONALLY RENDER PHOTO MENU OR INTERACTIVE CLASSIC LIST */}
-        {menuViewMode === 'cards' ? (
-          <PhotoMenu />
-        ) : (
-          <>
-            {/* STICKY CATEGORY PILLS WITH SCROLL-SPY (Mobile only, sticky directly under navbar) */}
+        {/* NOTICE BANNER: Shown if unavailable/legacy items were dropped on load */}
+        {cartNotice && (
+          <div className="mb-4 p-3.5 rounded-xl bg-amber-50 border border-amber-200 text-amber-900 text-xs flex items-center justify-between gap-3 shadow-xs">
+            <div className="flex items-center gap-2">
+              <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0" />
+              <span>{cartNotice}</span>
+            </div>
+            <button
+              type="button"
+              onClick={() => setCartNotice(null)}
+              className="text-amber-800 hover:text-amber-950 font-bold text-xs underline shrink-0"
+            >
+              Dismiss
+            </button>
+          </div>
+        )}
+
+        {/* STICKY CATEGORY PILLS WITH SCROLL-SPY (Mobile only, sticky directly under navbar) */}
             <MenuStickyPills
               categories={mobileCategories}
               activeCategory={activeCategory}
@@ -1371,8 +1400,6 @@ export const MenuSection: React.FC = () => {
               onSelectVariant={handleSelectVariant}
               onUpdateCartQuantity={handleUpdateCartQuantity}
             />
-          </>
-        )}
 
         {/* ORDER BUTTONS AT BOTTOM OF MENU */}
         <div className="mt-12">

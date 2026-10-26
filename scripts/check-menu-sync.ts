@@ -77,7 +77,8 @@ export function checkMenuSync(): void {
   }
 
   const menuItems = loadTsArray(path.join(rootDir, 'src/data/restaurantData.ts'), 'MENU_ITEMS');
-  const photoItems = loadTsArray(path.join(rootDir, 'src/data/photoMenuData.ts'), 'PHOTO_MENU_ITEMS');
+  const photoPath = path.join(rootDir, 'src/data/photoMenuData.ts');
+  const photoItems = fs.existsSync(photoPath) ? loadTsArray(photoPath, 'PHOTO_MENU_ITEMS') : [];
 
   const missingSkus: string[] = [];
 

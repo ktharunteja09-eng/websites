@@ -1,5 +1,5 @@
 import { RESTAURANT_INFO, MENU_CATEGORIES, MENU_ITEMS, TESTIMONIALS } from '../data/restaurantData';
-import { PHOTO_MENU_ITEMS } from '../data/photoMenuData';
+import { getDishImage } from '../data/menuImageMap';
 
 /**
  * Generates Schema.org LocalBusiness / Restaurant JSON-LD structured data.
@@ -116,7 +116,7 @@ export function getMenuSchema() {
         '@type': 'MenuSection',
         name: cat.label,
         hasMenuItem: items.map((dish) => {
-          const photoMatch = PHOTO_MENU_ITEMS.find((p) => p.name.toLowerCase() === dish.name.toLowerCase());
+          const dishImage = getDishImage(dish.name);
           return {
             '@type': 'MenuItem',
             name: dish.name,
@@ -128,8 +128,8 @@ export function getMenuSchema() {
               availability: 'https://schema.org/InStock'
             },
             ...(dish.isVeg ? { suitableForDiet: 'https://schema.org/VegetarianDiet' } : {}),
-            ...(photoMatch?.image
-              ? { image: `https://vaibhavgrand.com${photoMatch.image}` }
+            ...(dishImage
+              ? { image: `https://vaibhavgrand.com${dishImage}` }
               : {})
           };
         })

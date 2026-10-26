@@ -1,9 +1,9 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { SIGNATURE_DISHES, RESTAURANT_INFO } from '../data/restaurantData';
-import { ExternalLink, Sparkles, Flame, Users, Phone, Utensils } from 'lucide-react';
+import { ExternalLink, Flame, Users, Utensils, Phone } from 'lucide-react';
 import { motion } from 'motion/react';
 import { OptimizedImage } from './OptimizedImage';
-import { fetchMenuItems } from '../utils/supabaseClient';
+import { useLiveMenu } from '../hooks/useLiveMenu';
 
 interface SignatureDishesProps {
   onOpenOrderModal?: () => void;
@@ -15,30 +15,7 @@ export const SignatureDishes: React.FC<SignatureDishesProps> = ({
   onNavigateMenu,
 }) => {
   const [activeSlide, setActiveSlide] = useState(0);
-  const [livePrices, setLivePrices] = useState<Map<string, { price: number; aggregator_price?: number | null }>>(() => new Map());
-
-  useEffect(() => {
-    let isMounted = true;
-    async function loadLivePrices() {
-      if (typeof window === 'undefined' || (typeof process !== 'undefined' && Boolean(process.versions?.node))) return;
-      try {
-        const items = await fetchMenuItems();
-        if (!isMounted || !items || items.length === 0) return;
-        const map = new Map<string, { price: number; aggregator_price?: number | null }>();
-        items.forEach((it) => {
-          map.set(it.name.toLowerCase().trim(), {
-            price: it.price,
-            aggregator_price: it.aggregator_price,
-          });
-        });
-        setLivePrices(map);
-      } catch {}
-    }
-    loadLivePrices();
-    return () => {
-      isMounted = false;
-    };
-  }, []);
+  const { getPrice, getMrp, getSavings } = useLiveMenu();
 
   return (
     <section
@@ -112,19 +89,22 @@ export const SignatureDishes: React.FC<SignatureDishesProps> = ({
 
                     {/* Price Tag Overlay with Strikethrough & Direct Savings */}
                     {(() => {
-                      const live = livePrices.get(dish.name.toLowerCase().trim());
-                      const activePrice = live ? live.price : dish.price;
-                      const activeAggPrice = live?.aggregator_price || Math.round((activePrice * 1.25) / 10) * 10;
-                      const activeSavings = activeAggPrice - activePrice;
+                      const activePrice = getPrice(dish.id, dish.price);
+                      const activeMrp = getMrp(dish.id, null, dish.price);
+                      const activeSavings = getSavings(activePrice, activeMrp);
                       return (
                         <div className="absolute bottom-2.5 right-2.5 z-10 bg-white/95 backdrop-blur-xs px-2.5 py-1 rounded-xl shadow-xs border border-[#2E4823]/10 text-right">
                           <div className="flex items-center gap-1.5 justify-end">
-                            <span className="text-[11px] text-gray-400 line-through">₹{activeAggPrice}</span>
+                            {activeSavings > 0 && (
+                              <span className="text-[11px] text-gray-400 line-through">₹{activeMrp}</span>
+                            )}
                             <span className="text-[#D3452B] font-bold text-sm sm:text-base">₹{activePrice}</span>
                           </div>
-                          <span className="text-[9px] font-bold text-emerald-700 bg-emerald-50 px-1 py-0.2 rounded block text-center">
-                            Save ₹{activeSavings} Direct
-                          </span>
+                          {activeSavings > 0 && (
+                            <span className="text-[9px] font-bold text-emerald-700 bg-emerald-50 px-1 py-0.2 rounded block text-center">
+                              Save ₹{activeSavings} Direct
+                            </span>
+                          )}
                         </div>
                       );
                     })()}
@@ -163,14 +143,21 @@ export const SignatureDishes: React.FC<SignatureDishesProps> = ({
 
                   {/* Action Links */}
                   <div className="flex flex-col gap-1.5 pt-1">
-                    <button
-                      type="button"
-                      onClick={onOpenOrderModal}
-                      className="btn-shimmer w-full py-2.5 px-3 rounded-xl bg-[#D3452B] hover:bg-[#bd3b22] text-white font-bold text-xs flex items-center justify-center gap-1.5 shadow-sm active:scale-95 transition-all"
-                    >
-                      <Utensils className="w-3.5 h-3.5" />
-                      <span>Order Direct • Save ₹{Math.round((dish.price * 1.25) / 10) * 10 - dish.price}</span>
-                    </button>
+                    {(() => {
+                      const activePrice = getPrice(dish.id, dish.price);
+                      const activeMrp = getMrp(dish.id, null, dish.price);
+                      const activeSavings = getSavings(activePrice, activeMrp);
+                      return (
+                        <button
+                          type="button"
+                          onClick={onOpenOrderModal}
+                          className="btn-shimmer w-full py-2.5 px-3 rounded-xl bg-[#D3452B] hover:bg-[#bd3b22] text-white font-bold text-xs flex items-center justify-center gap-1.5 shadow-sm active:scale-95 transition-all"
+                        >
+                          <Utensils className="w-3.5 h-3.5" />
+                          <span>{activeSavings > 0 ? `Order Direct • Save ₹${activeSavings}` : 'Order Direct'}</span>
+                        </button>
+                      );
+                    })()}
                     <div className="flex items-center justify-center gap-2.5 text-[10px] text-gray-500 pt-0.5">
                       <span>Or via apps:</span>
                       <a
@@ -260,19 +247,22 @@ export const SignatureDishes: React.FC<SignatureDishesProps> = ({
 
                   {/* Price Tag Overlay with Strikethrough & Direct Savings */}
                   {(() => {
-                    const live = livePrices.get(dish.name.toLowerCase().trim());
-                    const activePrice = live ? live.price : dish.price;
-                    const activeAggPrice = live?.aggregator_price || Math.round((activePrice * 1.25) / 10) * 10;
-                    const activeSavings = activeAggPrice - activePrice;
+                    const activePrice = getPrice(dish.id, dish.price);
+                    const activeMrp = getMrp(dish.id, null, dish.price);
+                    const activeSavings = getSavings(activePrice, activeMrp);
                     return (
                       <div className="absolute bottom-2.5 right-2.5 z-10 bg-white/95 backdrop-blur-xs px-3 py-1 rounded-xl shadow-xs border border-[#2E4823]/10 text-right">
                         <div className="flex items-center gap-1.5 justify-end">
-                          <span className="text-xs text-gray-400 line-through">₹{activeAggPrice}</span>
+                          {activeSavings > 0 && (
+                            <span className="text-xs text-gray-400 line-through">₹{activeMrp}</span>
+                          )}
                           <span className="text-[#D3452B] font-bold text-base">₹{activePrice}</span>
                         </div>
-                        <span className="text-[9px] font-bold text-emerald-700 bg-emerald-50 px-1.5 py-0.2 rounded block text-center">
-                          Save ₹{activeSavings} Direct
-                        </span>
+                        {activeSavings > 0 && (
+                          <span className="text-[9px] font-bold text-emerald-700 bg-emerald-50 px-1.5 py-0.2 rounded block text-center">
+                            Save ₹{activeSavings} Direct
+                          </span>
+                        )}
                       </div>
                     );
                   })()}
@@ -311,14 +301,21 @@ export const SignatureDishes: React.FC<SignatureDishesProps> = ({
 
                 {/* Action Links */}
                 <div className="flex flex-col gap-2 pt-1">
-                  <button
-                    type="button"
-                    onClick={onOpenOrderModal}
-                    className="btn-shimmer w-full py-2.5 px-3 rounded-xl bg-[#D3452B] hover:bg-[#bd3b22] text-white font-bold text-xs sm:text-sm flex items-center justify-center gap-2 shadow-sm hover:shadow-md transition-all duration-200 transform hover:scale-[1.02] active:scale-[0.98]"
-                  >
-                    <Utensils className="w-4 h-4" />
-                    <span>Order Direct • Save ₹{Math.round((dish.price * 1.25) / 10) * 10 - dish.price}</span>
-                  </button>
+                  {(() => {
+                    const activePrice = getPrice(dish.id, dish.price);
+                    const activeMrp = getMrp(dish.id, null, dish.price);
+                    const activeSavings = getSavings(activePrice, activeMrp);
+                    return (
+                      <button
+                        type="button"
+                        onClick={onOpenOrderModal}
+                        className="btn-shimmer w-full py-2.5 px-3 rounded-xl bg-[#D3452B] hover:bg-[#bd3b22] text-white font-bold text-xs sm:text-sm flex items-center justify-center gap-2 shadow-sm hover:shadow-md transition-all duration-200 transform hover:scale-[1.02] active:scale-[0.98]"
+                      >
+                        <Utensils className="w-4 h-4" />
+                        <span>{activeSavings > 0 ? `Order Direct • Save ₹${activeSavings}` : 'Order Direct'}</span>
+                      </button>
+                    );
+                  })()}
 
                   <div className="flex items-center justify-center gap-3 text-[11px] text-gray-500 pt-0.5">
                     <span>Or order via:</span>

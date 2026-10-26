@@ -97,6 +97,7 @@ export function buildCartFingerprint(
       return {
         id: String(i.id),
         quantity: Number(i.quantity) || 1,
+        price: Number(i.price) || 0,
         variant: itemRecord.variant
           ? String(itemRecord.variant)
           : itemRecord.size
@@ -919,6 +920,16 @@ _Please reply "CONFIRMED" to start preparing my order._`;
             }
             return;
           }
+          return;
+        }
+
+        if (saveResult.status === 'price_changed') {
+          if (typeof sessionStorage !== 'undefined') {
+            try {
+              sessionStorage.removeItem('vaibhav_pending_order_v1');
+            } catch {}
+          }
+          setFormError('Note: Menu prices were just updated. Please review your updated total.');
           return;
         }
 

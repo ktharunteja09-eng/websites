@@ -52,10 +52,6 @@ export interface MenuItem {
   isBestseller?: boolean;
 }
 
-export interface PhotoMenuItem extends MenuItem {
-  image: string;
-}
-
 export interface SignatureDish {
   id: string;
   name: string;

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { StoreOffer } from '../types';
 import { fetchStoreOffer } from '../utils/supabaseClient';
+import { useLiveMenu } from '../hooks/useLiveMenu';
 import { Flame, Clock, Sparkles, X, ArrowRight } from 'lucide-react';
 
 interface FlashOfferBannerProps {
@@ -16,6 +17,7 @@ export const FlashOfferBanner: React.FC<FlashOfferBannerProps> = ({
   const [timeLeft, setTimeLeft] = useState<string>('');
   const [isDismissed, setIsDismissed] = useState<boolean>(false);
   const [isExpired, setIsExpired] = useState<boolean>(false);
+  const { sale, loaded: liveMenuLoaded } = useLiveMenu();
 
   useEffect(() => {
     let isMounted = true;
@@ -39,12 +41,13 @@ export const FlashOfferBanner: React.FC<FlashOfferBannerProps> = ({
     };
   }, []);
 
-  // Live Countdown Timer
+  // Live Countdown Timer governed by server expiration
   useEffect(() => {
-    if (!offer || !offer.is_active || typeof window === 'undefined' || (typeof process !== 'undefined' && Boolean(process.versions?.node))) return;
+    const targetExpiry = sale.ends_at || offer?.expires_at;
+    if (!targetExpiry || typeof window === 'undefined' || (typeof process !== 'undefined' && Boolean(process.versions?.node))) return;
 
     const updateTimer = () => {
-      const expiresAt = new Date(offer.expires_at).getTime();
+      const expiresAt = new Date(targetExpiry).getTime();
       const now = Date.now();
       const diff = expiresAt - now;
 
@@ -65,7 +68,12 @@ export const FlashOfferBanner: React.FC<FlashOfferBannerProps> = ({
     updateTimer();
     const interval = setInterval(updateTimer, 1000);
     return () => clearInterval(interval);
-  }, [offer]);
+  }, [offer, sale.ends_at]);
+
+  // Server settings govern flash sale; disappears when inactive or expired
+  if (liveMenuLoaded && !sale.active) {
+    return null;
+  }
 
   if (!offer || !offer.is_active || isExpired || isDismissed) {
     return null;
@@ -98,8 +106,10 @@ export const FlashOfferBanner: React.FC<FlashOfferBannerProps> = ({
             className="flex items-center gap-1.5 min-w-0 flex-1 text-left active:opacity-80"
           >
             <div className="min-w-0 flex-1">
-              <p className="text-[11px] sm:text-xs font-bold text-white truncate leading-tight">
-                🔥 Flash Sale: <span className="font-medium text-amber-100">{offer.banner_text}</span>
+              <p className="text-[11px] sm:text-xs font-bold text-white truncate leading-tight flex items-center gap-1">
+                <Flame className="w-3.5 h-3.5 text-amber-300 shrink-0" />
+                <span>Flash Sale:</span>
+                <span className="font-medium text-amber-100 truncate">{offer.banner_text}</span>
               </p>
               <div className="flex items-center gap-1 text-[10px] text-amber-200 font-mono font-semibold mt-0.5">
                 <Clock className="w-2.5 h-2.5" />
@@ -142,8 +152,10 @@ export const FlashOfferBanner: React.FC<FlashOfferBannerProps> = ({
             onClick={handleBannerClick}
             className="flex items-center gap-2.5 flex-1 min-w-0 text-left cursor-pointer group"
           >
-            <p className="font-bold text-xs md:text-sm text-white tracking-wide truncate group-hover:underline">
-              🔥 Flash Sale: <span className="font-semibold text-amber-100">{offer.banner_text}</span>{' '}
+            <p className="font-bold text-xs md:text-sm text-white tracking-wide truncate group-hover:underline flex items-center gap-1.5">
+              <Flame className="w-4 h-4 text-amber-300 shrink-0" />
+              <span>Flash Sale:</span>
+              <span className="font-semibold text-amber-100">{offer.banner_text}</span>{' '}
               <span className="text-amber-200 font-mono font-bold ml-1.5">
                 Ends in {timeLeft || 'Ending soon'}
               </span>
