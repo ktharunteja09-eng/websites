@@ -10,6 +10,7 @@ import { ScrollProgressBar } from './components/ScrollProgressBar';
 import { CallToBookModal } from './components/CallToBookModal';
 import { OrderOnlineModal } from './components/OrderOnlineModal';
 import { useScrollLock } from './utils/scrollLock';
+import { clearReloadGuard } from './utils/errorHandler';
 
 // Dedicated Pages matching Red Onion NYC structure
 import { HomePage } from './pages/HomePage';
@@ -149,10 +150,11 @@ export default function App() {
 
   const isMenuPage = location.pathname === '/menu' || location.pathname.startsWith('/menu/');
 
-  // Scroll to top on route transition
+  // Scroll to top on route transition & clear reload guard on successful render
   useEffect(() => {
     if (typeof window !== 'undefined') {
       window.scrollTo({ top: 0, behavior: 'instant' });
+      clearReloadGuard();
     }
   }, [location.pathname, location.hash]);
 

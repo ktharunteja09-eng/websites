@@ -4,6 +4,12 @@
   X-Frame-Options: SAMEORIGIN
   Permissions-Policy: geolocation=(self)
 
+/
+  Cache-Control: public, max-age=0, must-revalidate
+
+/*.html
+  Cache-Control: public, max-age=0, must-revalidate
+
 /assets/*
   Cache-Control: public, max-age=31536000, immutable
 

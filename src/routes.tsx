@@ -1,6 +1,7 @@
 import React from 'react';
 import { RouteRecord } from 'vite-react-ssg';
 import { Navigate } from 'react-router-dom';
+import { RootErrorBoundary } from './components/RootErrorBoundary';
 import App, {
   HomePageWrapper,
   MenuPageWrapper,
@@ -19,6 +20,7 @@ export const routes: RouteRecord[] = [
   {
     path: '/',
     element: <App />,
+    errorElement: <RootErrorBoundary />,
     children: [
       {
         index: true,

@@ -1,6 +1,6 @@
 import React from 'react';
 import { SEO } from '../components/SEO';
-import { Home, UtensilsCrossed, Phone, ArrowLeft, Sparkles } from 'lucide-react';
+import { Home, UtensilsCrossed, Phone, ArrowLeft, Sparkles, RotateCcw } from 'lucide-react';
 import { RESTAURANT_INFO, SIGNATURE_DISHES } from '../data/restaurantData';
 import { OptimizedImage } from '../components/OptimizedImage';
 
@@ -9,9 +9,16 @@ import { useNavigate } from 'react-router-dom';
 interface NotFoundPageProps {
   onBackHome: () => void;
   onNavigateAdmin?: () => void;
+  isError?: boolean;
+  onReload?: () => void;
 }
 
-export const NotFoundPage: React.FC<NotFoundPageProps> = ({ onBackHome, onNavigateAdmin }) => {
+export const NotFoundPage: React.FC<NotFoundPageProps> = ({
+  onBackHome,
+  onNavigateAdmin,
+  isError = false,
+  onReload,
+}) => {
   const navigate = useNavigate();
 
   const handleOpenAdmin = () => {
@@ -21,17 +28,30 @@ export const NotFoundPage: React.FC<NotFoundPageProps> = ({ onBackHome, onNaviga
       navigate('/admin');
     }
   };
+
+  const handleReload = () => {
+    if (onReload) {
+      onReload();
+    } else if (typeof window !== 'undefined') {
+      window.location.reload();
+    }
+  };
+
   return (
     <div
       id="not-found-container"
       className="min-h-screen bg-[#FDFBF7] text-[#1C1C1C] flex flex-col justify-between py-12 px-4 sm:px-6 lg:px-8"
       role="region"
-      aria-label="404 Page Not Found"
+      aria-label={isError ? 'Loading Error' : '404 Page Not Found'}
     >
       <SEO
-        path="/404"
-        title="Page Not Found | Vaibhav Grand Family Restaurant"
-        description="The page you requested could not be found. Explore our authentic biryanis, mandi, and kebabs at Vaibhav Grand in Renigunta, Tirupati."
+        path={isError ? '/error' : '/404'}
+        title={isError ? 'Loading Error | Vaibhav Grand Family Restaurant' : 'Page Not Found | Vaibhav Grand Family Restaurant'}
+        description={
+          isError
+            ? 'A temporary loading error occurred. Please reload to refresh the latest menu and specials from Vaibhav Grand.'
+            : 'The page you requested could not be found. Explore our authentic biryanis, mandi, and kebabs at Vaibhav Grand in Renigunta, Tirupati.'
+        }
       />
 
       {/* Brand Header */}
@@ -57,43 +77,83 @@ export const NotFoundPage: React.FC<NotFoundPageProps> = ({ onBackHome, onNaviga
         </button>
       </div>
 
-      {/* Main 404 Body */}
+      {/* Main Body */}
       <div className="max-w-3xl mx-auto w-full py-12 text-center">
         <div className="w-20 h-20 rounded-3xl bg-[#D3452B]/10 text-[#D3452B] flex items-center justify-center mx-auto mb-6 shadow-inner">
           <UtensilsCrossed className="w-10 h-10" />
         </div>
 
         <span className="text-xs uppercase tracking-[0.25em] font-bold text-[#D3452B] block mb-2">
-          Error 404 — Missing Dish or Table
+          {isError ? 'Temporary Loading Hiccup' : 'Error 404 — Missing Dish or Table'}
         </span>
 
         <h1 className="font-['Playfair_Display'] text-4xl sm:text-5xl lg:text-6xl font-bold text-[#2E4823] tracking-tight mb-4">
-          This Recipe Isn't On Our Stove
+          {isError ? 'Unable to Load This Page' : "This Recipe Isn't On Our Stove"}
         </h1>
 
         <p className="text-base sm:text-lg text-gray-600 max-w-xl mx-auto leading-relaxed mb-8">
-          The page or link you requested couldn’t be found. Don’t let your appetite wait — explore our bestselling dishes or return to the main feast!
+          {isError
+            ? 'A connection hiccup or updated menu version interrupted loading. Please reload the page to fetch the latest version fresh from our kitchen.'
+            : 'The page or link you requested couldn’t be found. Don’t let your appetite wait — explore our bestselling dishes or return to the main feast!'}
         </p>
 
         {/* Primary Action Buttons */}
         <div className="flex flex-col sm:flex-row items-center justify-center gap-4 max-w-md mx-auto mb-14">
-          <button
-            type="button"
-            onClick={onBackHome}
-            id="notfound-return-home-btn"
-            className="w-full sm:w-auto min-w-[200px] min-h-[48px] px-8 py-3 rounded-full bg-[#2E4823] hover:bg-[#223719] text-white font-semibold text-sm shadow-md hover:shadow-lg transition-all flex items-center justify-center gap-2"
-          >
-            <Home className="w-4 h-4" />
-            <span>Return to Home &amp; Menu</span>
-          </button>
+          {isError ? (
+            <>
+              <button
+                type="button"
+                onClick={handleReload}
+                id="error-reload-btn"
+                className="w-full sm:w-auto min-w-[200px] min-h-[48px] px-8 py-3 rounded-full bg-[#2E4823] hover:bg-[#223719] text-white font-semibold text-sm shadow-md hover:shadow-lg transition-all flex items-center justify-center gap-2 cursor-pointer"
+              >
+                <RotateCcw className="w-4 h-4" />
+                <span>Reload Page</span>
+              </button>
 
-          <a
-            href={`tel:${RESTAURANT_INFO.phone}`}
-            className="w-full sm:w-auto min-w-[200px] min-h-[48px] px-8 py-3 rounded-full bg-[#F7F3EB] hover:bg-[#ede7db] text-[#1C1C1C] font-semibold text-sm border border-[#2E4823]/15 flex items-center justify-center gap-2 transition-all"
-          >
-            <Phone className="w-4 h-4 text-[#D3452B]" />
-            <span>Call: {RESTAURANT_INFO.phone}</span>
-          </a>
+              <button
+                type="button"
+                onClick={onBackHome}
+                id="error-return-home-btn"
+                className="w-full sm:w-auto min-w-[200px] min-h-[48px] px-8 py-3 rounded-full bg-[#F7F3EB] hover:bg-[#ede7db] text-[#1C1C1C] font-semibold text-sm border border-[#2E4823]/15 flex items-center justify-center gap-2 transition-all cursor-pointer"
+              >
+                <Home className="w-4 h-4 text-[#2E4823]" />
+                <span>Return to Home &amp; Menu</span>
+              </button>
+            </>
+          ) : (
+            <>
+              <button
+                type="button"
+                onClick={onBackHome}
+                id="notfound-return-home-btn"
+                className="w-full sm:w-auto min-w-[200px] min-h-[48px] px-8 py-3 rounded-full bg-[#2E4823] hover:bg-[#223719] text-white font-semibold text-sm shadow-md hover:shadow-lg transition-all flex items-center justify-center gap-2 cursor-pointer"
+              >
+                <Home className="w-4 h-4" />
+                <span>Return to Home &amp; Menu</span>
+              </button>
+
+              {onReload && (
+                <button
+                  type="button"
+                  onClick={handleReload}
+                  id="notfound-reload-btn"
+                  className="w-full sm:w-auto min-w-[180px] min-h-[48px] px-6 py-3 rounded-full bg-[#F7F3EB] hover:bg-[#ede7db] text-[#1C1C1C] font-semibold text-sm border border-[#2E4823]/15 flex items-center justify-center gap-2 transition-all cursor-pointer"
+                >
+                  <RotateCcw className="w-4 h-4 text-[#2E4823]" />
+                  <span>Reload</span>
+                </button>
+              )}
+
+              <a
+                href={`tel:${RESTAURANT_INFO.phone}`}
+                className="w-full sm:w-auto min-w-[200px] min-h-[48px] px-8 py-3 rounded-full bg-[#F7F3EB] hover:bg-[#ede7db] text-[#1C1C1C] font-semibold text-sm border border-[#2E4823]/15 flex items-center justify-center gap-2 transition-all"
+              >
+                <Phone className="w-4 h-4 text-[#D3452B]" />
+                <span>Call: {RESTAURANT_INFO.phone}</span>
+              </a>
+            </>
+          )}
         </div>
 
         {/* Recommended Dishes Snapshot */}
