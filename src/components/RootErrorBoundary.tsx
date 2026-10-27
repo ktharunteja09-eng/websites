@@ -21,21 +21,21 @@ export const RootErrorBoundary: React.FC = () => {
   }, [error]);
 
   const handleReload = () => {
-    clearReloadGuard();
+    clearReloadGuard(true);
     if (typeof window !== 'undefined') {
       window.location.reload();
     }
   };
 
   const handleBackHome = () => {
-    clearReloadGuard();
+    clearReloadGuard(true);
     if (typeof window !== 'undefined') {
       window.location.href = '/';
     }
   };
 
   const handleNavigateAdmin = () => {
-    clearReloadGuard();
+    clearReloadGuard(true);
     if (typeof window !== 'undefined') {
       window.location.href = '/admin';
     }

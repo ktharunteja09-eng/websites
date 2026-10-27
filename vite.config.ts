@@ -168,7 +168,7 @@ export default defineConfig(({ mode }) => {
       },
     },
     ssgOptions: {
-      script: 'async',
+      script: 'defer',
       formatting: 'none',
       dirStyle: 'nested',
       mock: true,
