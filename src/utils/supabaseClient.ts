@@ -242,7 +242,7 @@ export const DEFAULT_STORE_OFFER: StoreOffer = {
   coupon_flat_discount: 50,
   starts_at: new Date().toISOString(),
   expires_at: new Date(Date.now() + 12 * 60 * 60 * 1000).toISOString(),
-  admin_pin: '1234',
+  admin_pin: '',
 };
 
 // Memory fallback cache in case Supabase is not connected
@@ -505,21 +505,19 @@ export async function verifyAdminPin(inputPin: string): Promise<VerifyPinResult>
   }
 
   if (!supabase) {
-    const isMatch = pin === (localStoreOfferCache.admin_pin || '1234');
     return {
-      success: isMatch,
-      error: isMatch ? null : 'Incorrect PIN. (Offline mode: 1234)',
+      success: false,
+      error: 'Backend connection not available. Unable to verify PIN.',
     };
   }
 
   try {
     const { data, error } = await supabase.rpc('verify_admin_pin', { input_pin: pin });
     if (error) {
-      console.warn('verify_admin_pin RPC error, falling back to local check:', error);
-      const isMatch = pin === (localStoreOfferCache.admin_pin || '1234');
+      console.warn('verify_admin_pin RPC error:', error);
       return {
-        success: isMatch,
-        error: isMatch ? null : 'Incorrect PIN.',
+        success: false,
+        error: error.message || 'Error verifying PIN with server.',
       };
     }
 
@@ -543,10 +541,9 @@ export async function verifyAdminPin(inputPin: string): Promise<VerifyPinResult>
     };
   } catch (err) {
     console.error('Error verifying admin pin:', err);
-    const isMatch = pin === '1234';
     return {
-      success: isMatch,
-      error: isMatch ? null : 'Error verifying PIN with server.',
+      success: false,
+      error: 'Error verifying PIN with server. Please try again.',
     };
   }
 }

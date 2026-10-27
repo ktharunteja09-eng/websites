@@ -368,7 +368,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBackToSite }) 
               ? res.failed_attempts
               : (Number(localStorage.getItem('vaibhav_admin_failed_attempts')) || 0) + 1;
           localStorage.setItem('vaibhav_admin_failed_attempts', String(attempts));
-          setAuthError(res.error || `Incorrect PIN. (Attempt ${attempts} of 5. Default is 1234)`);
+          setAuthError(res.error || `Incorrect PIN. (Attempt ${attempts} of 5)`);
         }
       }
     } catch {
@@ -757,7 +757,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBackToSite }) 
                 disabled={lockoutRemaining > 0}
                 value={pinInput}
                 onChange={(e) => setPinInput(e.target.value)}
-                placeholder={lockoutRemaining > 0 ? "Login locked" : "Enter 4-digit PIN (default 1234)"}
+                placeholder={lockoutRemaining > 0 ? "Login locked" : "Enter Admin PIN"}
                 className="w-full pl-11 pr-4 py-3 text-center text-lg font-mono tracking-widest bg-[#F7F3EB] rounded-2xl border border-gray-300 focus:border-[#2E4823] focus:ring-1 focus:ring-[#2E4823] focus:outline-none disabled:bg-gray-100 disabled:cursor-not-allowed"
                 autoFocus
               />
@@ -783,8 +783,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBackToSite }) 
             </button>
           </form>
 
-          <div className="pt-2 border-t border-gray-100 flex items-center justify-between text-xs text-gray-500">
-            <span>Default PIN: <strong>1234</strong></span>
+          <div className="pt-2 border-t border-gray-100 flex items-center justify-center text-xs text-gray-500">
             <button
               type="button"
               onClick={onBackToSite}
