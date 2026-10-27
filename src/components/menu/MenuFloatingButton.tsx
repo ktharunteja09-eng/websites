@@ -15,13 +15,13 @@ export const MenuFloatingButton: React.FC<MenuFloatingButtonProps> = ({
   hasCartItems,
   buttonRef,
 }) => {
-  // If sheet is open or footer is in view, hide or fade out
-  const isHidden = isSheetOpen || isFooterVisible;
+  // If sheet/modal is open, hide or fade out
+  const isHidden = isSheetOpen;
 
   return (
     <div
-      className={`fixed left-1/2 -translate-x-1/2 z-40 md:hidden transition-all duration-300 ease-in-out pointer-events-none ${
-        hasCartItems ? 'bottom-[140px]' : 'bottom-6'
+      className={`fixed left-1/2 -translate-x-1/2 z-[55] md:hidden transition-all duration-300 ease-in-out pointer-events-none ${
+        hasCartItems ? 'bottom-[88px]' : 'bottom-6'
       } ${
         isHidden
           ? 'opacity-0 scale-90 translate-y-4 pointer-events-none'

@@ -46,7 +46,7 @@ export const MenuSizePickerModal: React.FC<MenuSizePickerModalProps> = ({
   if (!isOpen || !dish) return null;
 
   return (
-    <div className="fixed inset-0 z-50 md:hidden flex flex-col justify-end">
+    <div className="fixed inset-0 z-[70] md:hidden flex flex-col justify-end">
       {/* Backdrop */}
       <div
         onClick={onClose}
@@ -61,6 +61,7 @@ export const MenuSizePickerModal: React.FC<MenuSizePickerModalProps> = ({
         aria-modal="true"
         aria-label={`Select size for ${dish.name}`}
         className="relative z-10 w-full bg-[#FDFBF7] rounded-t-3xl max-h-[70vh] flex flex-col shadow-2xl border-t border-[#2E4823]/15 animate-slide-up"
+        onClick={(e) => e.stopPropagation()}
       >
         {/* Drag handle visual */}
         <div className="pt-3 pb-1 flex justify-center">

@@ -11,7 +11,7 @@ export const RESTAURANT_INFO: RestaurantInfo = {
   instagramHandle: "@vaibh_avgrand",
   instagramUrl: "https://www.instagram.com/vaibh_avgrand/",
   facebookUrl: "https://www.facebook.com/vaibhavgrandfamilyrestaurant/",
-  hours: "Open daily, 12:00 PM - 11:00 PM (every day)",
+  hours: "Open daily, 10:30 AM - 11:00 PM (every day)",
   swiggyUrl: "https://www.swiggy.com/city/tirupati/vaibhav-grand-family-restaurant-opp-hp-petrol-pump-renigunta-and-mangalam-road-rest1031959",
   zomatoUrl: "http://zoma.to/r/20751251",
   googleMapsUrl: "https://www.google.com/maps/search/?api=1&query=Vaibhav+Grand+Family+Restaurant+Renigunta",
@@ -284,7 +284,7 @@ export const MENU_ITEMS: MenuItem[] = [
     isVeg: false,
   },
   {
-    id: "dish-13",
+    id: "dish-21",
     name: "Andhra Karivepaku Mutton",
     category: "vaibhav-special-starters",
     price: 499,

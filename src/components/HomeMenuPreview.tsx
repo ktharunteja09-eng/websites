@@ -5,6 +5,43 @@ import { RESTAURANT_INFO, MENU_ITEMS } from '../data/restaurantData';
 import { MenuItem } from '../types';
 import { useLiveMenu } from '../hooks/useLiveMenu';
 import { getDishImage } from '../data/menuImageMap';
+import mandiImg from '../assets/events/vaibhav spacialk.webp';
+import biryaniImg from '../assets/events/hydrabad chicken dum biriyanik.webp';
+import butterChickenImg from '../assets/events/butter chickenk.webp';
+import butterNaanImg from '../assets/events/butter naank (1).webp';
+import paneerTikkaImg from '../assets/events/panner tikkak.webp';
+import tandooriImg from '../assets/events/kidik.webp';
+
+const HOME_MENU_IMAGE_OVERRIDES: Record<string, { src: string; alt: string }> = {
+  'dish-144': {
+    src: mandiImg,
+    alt: 'Vaibhav Special Mandi served on a platter',
+  },
+  'dish-110': {
+    src: biryaniImg,
+    alt: 'Hyderabadi Chicken Dum Biryani served with spiced aromatic rice',
+  },
+  'dish-229': {
+    src: butterChickenImg,
+    alt: 'Butter Chicken simmered in rich creamy makhani gravy',
+  },
+  'dish-185': {
+    src: butterNaanImg,
+    alt: 'Freshly baked Butter Naan brushed with melted butter',
+  },
+  'dish-102': {
+    src: paneerTikkaImg,
+    alt: 'Paneer Tikka roasted in clay oven with bell peppers and onions',
+  },
+  'dish-88': {
+    src: tandooriImg,
+    alt: 'Tandoori Chicken char-roasted to smoky perfection in clay oven',
+  },
+  'dish-89': {
+    src: tandooriImg,
+    alt: 'Tandoori Chicken char-roasted to smoky perfection in clay oven',
+  },
+};
 
 interface HomeMenuPreviewProps {
   onNavigateMenu: () => void;
@@ -176,6 +213,9 @@ export const HomeMenuPreview: React.FC<HomeMenuPreviewProps> = ({
                   const estimatedAggPrice = getMrp(item.id, item.aggregator_price, item.price);
                   const savings = getSavings(activePrice, estimatedAggPrice);
                   const available = isAvailable(item.id, true);
+                  const customImage = HOME_MENU_IMAGE_OVERRIDES[item.id];
+                  const imgSrc = customImage ? customImage.src : (item.image || getDishImage(item.name) || '/assets/vaibhav-grand-webp-images/food14.webp');
+                  const imgAlt = customImage ? customImage.alt : item.name;
                   return (
                     <article
                       key={item.id}
@@ -185,12 +225,12 @@ export const HomeMenuPreview: React.FC<HomeMenuPreviewProps> = ({
                         {/* Image */}
                         <div className="relative h-40 w-full overflow-hidden bg-gray-100">
                           <img
-                            src={item.image || getDishImage(item.name) || '/assets/vaibhav-grand-webp-images/food14.webp'}
-                            alt={item.name}
+                            src={imgSrc}
+                            alt={imgAlt}
                             width={360}
                             height={240}
-                            loading={idx < 3 ? 'eager' : 'lazy'}
-                            fetchPriority={idx < 3 ? 'high' : 'auto'}
+                            loading="lazy"
+                            fetchPriority="auto"
                             decoding="async"
                             className="w-full h-full object-cover object-center"
                           />
@@ -252,7 +292,7 @@ export const HomeMenuPreview: React.FC<HomeMenuPreviewProps> = ({
                           className="w-full py-2 px-3 rounded-xl bg-[#D3452B] hover:bg-[#bd3b22] text-white font-bold text-xs flex items-center justify-center gap-1.5 shadow-xs active:scale-95 transition-all"
                         >
                           <Utensils className="w-3 h-3" />
-                          <span>Order Direct • Save ₹{savings}</span>
+                          <span>{savings > 0 ? `Order Direct • Save ₹${savings}` : 'Order Direct'}</span>
                         </button>
                       </div>
                     </article>

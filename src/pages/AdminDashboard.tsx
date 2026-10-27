@@ -14,7 +14,7 @@ import {
   changeAdminPin,
   WHATSAPP_NUMBER
 } from '../utils/supabaseClient';
-import { Helmet } from 'react-helmet-async';
+import { Head } from 'vite-react-ssg';
 import {
   Lock,
   Unlock,
@@ -396,7 +396,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBackToSite }) 
     setEditingDishId(dish.id);
     setEditPrice(String(dish.price));
     setEditAggregatorPrice(
-      String(dish.aggregator_price || Math.round((dish.price * 1.25) / 10) * 10)
+      dish.aggregator_price ? String(dish.aggregator_price) : ''
     );
   };
 
@@ -712,10 +712,10 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBackToSite }) 
   if (!isAuthenticated) {
     return (
       <div className="min-h-screen bg-[#FDFBF7] flex items-center justify-center p-4">
-        <Helmet>
+        <Head>
           <title>Admin Dashboard | Vaibhav Grand</title>
           <meta name="robots" content="noindex, nofollow" />
-        </Helmet>
+        </Head>
         <div className="max-w-md w-full bg-white rounded-3xl shadow-xl border border-[#2E4823]/15 p-6 sm:p-8 text-center space-y-6">
           <div className="w-16 h-16 rounded-2xl bg-[#2E4823] text-amber-300 flex items-center justify-center mx-auto shadow-md">
             <Shield className="w-8 h-8" />
@@ -803,14 +803,14 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBackToSite }) 
   // -------------------------------------------------------------
   return (
     <div className="min-h-screen bg-[#FDFBF7] text-[#1C1C1C] w-full max-w-full overflow-x-hidden">
-      <Helmet>
+      <Head>
         <title>
           {newOrderAlertCount > 0
             ? `(${newOrderAlertCount}) New order - Vaibhav Grand`
             : 'Admin Dashboard | Vaibhav Grand'}
         </title>
         <meta name="robots" content="noindex, nofollow" />
-      </Helmet>
+      </Head>
       {/* Top Admin Navbar */}
       <header className="sticky top-0 z-40 bg-[#2E4823] text-white shadow-md border-b border-white/10 w-full max-w-full overflow-x-hidden">
         <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 py-3.5 flex flex-col sm:flex-row items-center justify-between gap-3 w-full max-w-full">
@@ -1199,9 +1199,15 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBackToSite }) 
                                 <span>₹{dish.price}</span>
                                 <span className="text-[10px] text-gray-400 group-hover:text-[#2E4823] transition-colors font-medium">Edit</span>
                               </div>
-                              <div className="text-[10px] text-gray-400 line-through">
-                                ₹{dish.aggregator_price || Math.round((dish.price * 1.25) / 10) * 10} (Swiggy)
-                              </div>
+                              {dish.aggregator_price ? (
+                                <div className="text-[10px] text-gray-400 line-through">
+                                  ₹{dish.aggregator_price} (Swiggy)
+                                </div>
+                              ) : (
+                                <div className="text-[10px] text-gray-400">
+                                  No app price set
+                                </div>
+                              )}
                             </button>
                           )}
                         </td>

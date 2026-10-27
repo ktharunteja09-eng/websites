@@ -32,7 +32,7 @@ export const PriceComparisonModal: React.FC<PriceComparisonModalProps> = ({
   return (
     <div
       data-lenis-prevent
-      className="fixed inset-0 z-50 overflow-y-auto bg-black/75 backdrop-blur-xs flex items-center justify-center p-2.5 sm:p-4 animate-fade-in"
+      className="fixed inset-0 z-[90] overflow-y-auto bg-black/75 backdrop-blur-xs flex items-center justify-center p-2.5 sm:p-4 animate-fade-in"
       role="dialog"
       aria-modal="true"
       aria-labelledby="price-comparison-title"

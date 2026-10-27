@@ -165,7 +165,7 @@ export const Hero: React.FC<HeroProps> = ({
         >
           <span className="flex items-center gap-1.5 font-medium">
             <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
-            Open Daily: 12:00 PM – 11:00 PM
+            Open Daily: 10:30 AM – 11:00 PM
           </span>
           <span className="hidden sm:inline">•</span>
           <span>Plot 157, Ramana Vilas Circle, Renigunta</span>

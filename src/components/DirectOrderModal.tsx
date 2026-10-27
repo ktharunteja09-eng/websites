@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect, useRef } from 'react';
+import React, { useState, useMemo, useEffect, useRef, useCallback } from 'react';
 import { CartItem, StoreOffer, OrderType, DbOrder } from '../types';
 import {
   createOrder,
@@ -15,7 +15,7 @@ import {
   findSkuOverride,
 } from '../hooks/useLiveMenu';
 import QRCode from 'qrcode';
-import { calculateTotals, isRestaurantOpen } from '../utils/cartMath';
+import { calculateTotals, isRestaurantOpen, getCanonicalSku } from '../utils/cartMath';
 import { useScrollLock } from '../utils/scrollLock';
 import {
   X,
@@ -150,6 +150,7 @@ interface DirectOrderModalProps {
   onUpdateQuantity: (id: number | string, delta: number) => void;
   onRemoveItem?: (id: number | string) => void;
   onClearCart: (force?: boolean) => void;
+  onUpdateItemPrice?: (id: number | string, newPrice: number) => void;
   offer: StoreOffer | null;
   orderType: OrderType;
   userDistanceKm: number | null;
@@ -164,6 +165,7 @@ export const DirectOrderModal: React.FC<DirectOrderModalProps> = ({
   onUpdateQuantity,
   onRemoveItem,
   onClearCart,
+  onUpdateItemPrice,
   offer,
   orderType,
   userDistanceKm,
@@ -202,7 +204,10 @@ export const DirectOrderModal: React.FC<DirectOrderModalProps> = ({
         const avail = await getOrderAvailability();
         if (!isMounted) return;
         if (avail.success && avail.data) {
-          if (!avail.data.open) {
+          const isOpen = Boolean(
+            avail.data.open ?? (avail.data as any).available ?? (avail.data.status === 'open')
+          );
+          if (!isOpen) {
             setStoreOpen(false);
             const msg = mapOrderErrorToMessage(avail.data.status, {
               opens_at: avail.data.opens_at,
@@ -214,7 +219,7 @@ export const DirectOrderModal: React.FC<DirectOrderModalProps> = ({
             setClosedMessage('');
           }
         } else {
-          const localOpen = isRestaurantOpen();
+          const localOpen = await isRestaurantOpen();
           setStoreOpen(localOpen);
           if (!localOpen) {
             setClosedMessage('Vaibhav Grand is currently closed. Operating hours are 10:30 AM to 11:00 PM.');
@@ -224,7 +229,7 @@ export const DirectOrderModal: React.FC<DirectOrderModalProps> = ({
         }
       } catch {
         if (!isMounted) return;
-        const localOpen = isRestaurantOpen();
+        const localOpen = await isRestaurantOpen();
         setStoreOpen(localOpen);
         if (!localOpen) {
           setClosedMessage('Vaibhav Grand is currently closed. Operating hours are 10:30 AM to 11:00 PM.');
@@ -333,6 +338,7 @@ export const DirectOrderModal: React.FC<DirectOrderModalProps> = ({
   // Error & coupon state
   const [formError, setFormError] = useState('');
   const [priceConfirmed, setPriceConfirmed] = useState<boolean>(false);
+  const [confirmedServerTotal, setConfirmedServerTotal] = useState<number | null>(null);
 
   // Pre-Checkout Inventory Check state
   const [soldOutItemIds, setSoldOutItemIds] = useState<(number | string)[]>([]);
@@ -348,14 +354,25 @@ export const DirectOrderModal: React.FC<DirectOrderModalProps> = ({
       const removedIds: (number | string)[] = [];
 
       for (const item of currentItems) {
+        const canonicalSku = getCanonicalSku(item);
         const baseId = String(item.id).split(':')[0].replace(/^group-/, '').trim();
+        const baseDishId = canonicalSku.split(':')[0];
+        const cleanItemName = item.name.replace(/\s*\([^)]*\)/g, '').toLowerCase().trim();
         const found = freshMenu.find(
           (m) =>
             String(m.id) === baseId ||
-            (item.name && m.name.toLowerCase().trim() === item.name.toLowerCase().trim())
+            (m.item_id && m.item_id === baseDishId) ||
+            (m.name && m.name.toLowerCase().trim() === item.name.toLowerCase().trim()) ||
+            (m.name && m.name.replace(/\s*\([^)]*\)/g, '').toLowerCase().trim() === cleanItemName)
         );
 
-        if (found && found.is_completed === true) {
+        const isSoldOut =
+          found &&
+          (found.is_completed === true ||
+            (found as any).available === false ||
+            (found as any).in_stock === false);
+
+        if (isSoldOut) {
           removedNames.push(item.name);
           removedIds.push(item.id);
         }
@@ -396,13 +413,34 @@ export const DirectOrderModal: React.FC<DirectOrderModalProps> = ({
     }
   };
 
-  // Pre-flight check when checkout modal opens: force refresh live menu
+  // Pre-flight check when checkout modal opens: force refresh live menu & sync live prices
   useEffect(() => {
     if (!isOpen || typeof window === 'undefined') return;
     refreshLiveMenu(true);
     setPriceConfirmed(false);
+    setConfirmedServerTotal(null);
     checkAndPruneSoldOutItems(items);
+
+    // Sync any live price overrides immediately so modal opens with correct prices
+    const snap = getLiveMenuSnapshot();
+    if (snap && snap.overrides && onUpdateItemPrice) {
+      items.forEach((item) => {
+        const override = findSkuOverride(item.id, snap.overrides);
+        if (
+          override &&
+          typeof override.price === 'number' &&
+          override.price > 0 &&
+          override.price !== item.price
+        ) {
+          onUpdateItemPrice(item.id, override.price);
+        }
+      });
+    }
   }, [isOpen]);
+
+  useEffect(() => {
+    setConfirmedServerTotal(null);
+  }, [items]);
 
   useEffect(() => {
     if (soldOutItemIds.length > 0) {
@@ -461,6 +499,7 @@ export const DirectOrderModal: React.FC<DirectOrderModalProps> = ({
 
   const totalSavings = totals.discount_amount + couponDiscount;
   const finalTotal = Math.max(0, totals.subtotal - totalSavings);
+  const displayPayableTotal = confirmedServerTotal !== null ? confirmedServerTotal : finalTotal;
 
   // Swiggy/Zomato live contrast calculation
   const swiggyFoodEstimate = useMemo(() => {
@@ -486,6 +525,8 @@ export const DirectOrderModal: React.FC<DirectOrderModalProps> = ({
 
   const handleApplyCoupon = () => {
     setCouponError('');
+    setConfirmedServerTotal(null);
+    setPriceConfirmed(false);
     if (!offer || !offer.coupon_code) {
       setCouponError('No active coupon code available right now.');
       return;
@@ -508,6 +549,8 @@ export const DirectOrderModal: React.FC<DirectOrderModalProps> = ({
     setCouponApplied(false);
     setCouponInput('');
     setCouponError('');
+    setConfirmedServerTotal(null);
+    setPriceConfirmed(false);
   };
 
   // Active validated order from server
@@ -531,10 +574,127 @@ export const DirectOrderModal: React.FC<DirectOrderModalProps> = ({
   const [isCompareOpen, setIsCompareOpen] = useState(false);
   const [isSubmittingOrder, setIsSubmittingOrder] = useState(false);
 
+  // Dedicated Idempotency key per order flow
+  const [currentIdempotencyKey, setCurrentIdempotencyKey] = useState<string>(() =>
+    generateIdempotencyKey()
+  );
+
+  // Tracking refs to detect opening transitions and completed order fingerprint
+  const prevIsOpenRef = useRef<boolean>(isOpen);
+  const completedOrderFingerprintRef = useRef<string | null>(null);
+
   const utrInputRef = useRef<HTMLInputElement | null>(null);
 
   // Client-side instant offline-ready QR Code data URL generator
   const [qrDataUrl, setQrDataUrl] = useState<string>('');
+
+  /**
+   * Reset the entire order flow state back to initial checkout form
+   */
+  const resetOrderFlowState = useCallback(() => {
+    // 1. Reset checkout step back to initial form
+    setCheckoutStep('form');
+
+    // 2. Clear completed / active order objects & receipts
+    setActiveOrder(null);
+    setOrderAlreadySent(false);
+    setSubmittedWhatsappUrl('');
+    setSubmittedWhatsappMessage('');
+    setCopiedReceipt(false);
+
+    // 3. Reset payment & UTR state
+    setUtr('');
+    setIsSubmittingUtr(false);
+    setUtrError('');
+    setIsUtrNetworkError(false);
+    setHasLaunchedUpiApp(false);
+    setIsUtrHighlighted(false);
+    setShowQrOnMobile(false);
+    setCopiedUpi(false);
+    setCopiedCode(false);
+    setQrDataUrl('');
+
+    // 4. Reset warnings, errors, and banners
+    setFormError('');
+    setPriceConfirmed(false);
+    setSoldOutBanner('');
+    setSoldOutItemIds([]);
+    setIsSubmittingOrder(false);
+
+    // 5. Reset coupons
+    setCouponInput('');
+    setCouponApplied(false);
+    setCouponError('');
+
+    // 6. Generate brand new idempotency key for next order
+    setCurrentIdempotencyKey(generateIdempotencyKey());
+
+    // 7. Clear pending order session cache & completed fingerprint ref
+    completedOrderFingerprintRef.current = null;
+    if (typeof sessionStorage !== 'undefined') {
+      try {
+        sessionStorage.removeItem('vaibhav_pending_order_v1');
+      } catch {}
+    }
+  }, []);
+
+  /**
+   * Safe modal close handler: cleans up completed order state before closing
+   */
+  const handleModalClose = useCallback(() => {
+    if (checkoutStep === 'completed') {
+      resetOrderFlowState();
+    }
+    onClose();
+  }, [checkoutStep, resetOrderFlowState, onClose]);
+
+  // Handle Escape key
+  useEffect(() => {
+    if (!isOpen) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        e.preventDefault();
+        handleModalClose();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isOpen, handleModalClose]);
+
+  // Reset modal state when reopening from closed state if previous state was completed OR fingerprint changed
+  useEffect(() => {
+    const wasOpen = prevIsOpenRef.current;
+    prevIsOpenRef.current = isOpen;
+
+    if (!wasOpen && isOpen) {
+      const currentFp = buildCartFingerprint(
+        items,
+        customerPhone,
+        orderType,
+        paymentMethod,
+        userLocation,
+        finalTotal
+      );
+
+      if (
+        checkoutStep === 'completed' ||
+        (completedOrderFingerprintRef.current !== null &&
+          completedOrderFingerprintRef.current !== currentFp)
+      ) {
+        resetOrderFlowState();
+      }
+    }
+  }, [
+    isOpen,
+    checkoutStep,
+    items,
+    customerPhone,
+    orderType,
+    paymentMethod,
+    userLocation,
+    finalTotal,
+    resetOrderFlowState,
+  ]);
 
   useEffect(() => {
     if (!activeOrder) {
@@ -610,9 +770,8 @@ export const DirectOrderModal: React.FC<DirectOrderModalProps> = ({
             cached.validatedOrder.payment_status &&
             cached.validatedOrder.payment_status !== 'pending'
           ) {
-            setOrderAlreadySent(true);
-            setActiveOrder(cached.validatedOrder);
-            setCheckoutStep('completed');
+            // Already paid/processed orders must not be resumed - clear cache
+            sessionStorage.removeItem('vaibhav_pending_order_v1');
           } else {
             setActiveOrder(cached.validatedOrder);
             setCheckoutStep('payment');
@@ -817,13 +976,17 @@ _Please reply "CONFIRMED" to start preparing my order._`;
             override.price !== item.price
           ) {
             hasPriceDiff = true;
+            if (onUpdateItemPrice) {
+              onUpdateItemPrice(item.id, override.price);
+            }
           }
         }
 
         if (hasPriceDiff && !priceConfirmed) {
           setIsSubmittingOrder(false);
           setPriceConfirmed(true);
-          setFormError('Note: Menu prices were just updated. Please review your updated total.');
+          const actionText = paymentMethod === 'COD' ? 'Order on WhatsApp' : 'Proceed to Payment';
+          setFormError(`Note: Item prices were updated to latest menu rates. Please review your updated total and tap "${actionText}" to confirm.`);
           return;
         }
       }
@@ -893,7 +1056,7 @@ _Please reply "CONFIRMED" to start preparing my order._`;
         userLocation,
         finalTotal
       );
-      let idempotencyKey = generateIdempotencyKey();
+      let idempotencyKey = currentIdempotencyKey || generateIdempotencyKey();
 
       if (typeof sessionStorage !== 'undefined') {
         try {
@@ -914,6 +1077,9 @@ _Please reply "CONFIRMED" to start preparing my order._`;
         } catch {}
       }
 
+      const appliedCode = couponApplied && couponInput.trim() ? couponInput.trim() : null;
+      const orderFinalTotal = confirmedServerTotal !== null ? confirmedServerTotal : Number(finalTotal);
+
       const orderPayload: DbOrder = {
         order_code: '', // server generates unguessable 8-char code
         customer_name: customerName.trim(),
@@ -925,7 +1091,7 @@ _Please reply "CONFIRMED" to start preparing my order._`;
         items_json: itemsFormattedText,
         subtotal: Number(totals.subtotal),
         discount_amount: Number(totalSavings),
-        final_total: Number(finalTotal),
+        final_total: orderFinalTotal,
         payment_method: paymentMethod,
         status: 'Initiated',
         payment_status: 'pending',
@@ -938,7 +1104,8 @@ _Please reply "CONFIRMED" to start preparing my order._`;
         items,
         offer,
         idempotencyKey,
-        paymentMethod
+        paymentMethod,
+        appliedCode
       );
 
       if (!saveResult.success) {
@@ -958,8 +1125,12 @@ _Please reply "CONFIRMED" to start preparing my order._`;
 
           let removedCount = 0;
           items.forEach((ci) => {
+            const canonicalSku = getCanonicalSku(ci);
             const isMatch = unavailableList.some(
-              (un) => un.toLowerCase().trim() === ci.name.toLowerCase().trim()
+              (un) =>
+                un.toLowerCase().trim() === ci.name.toLowerCase().trim() ||
+                String(ci.id) === String(un) ||
+                canonicalSku === String(un)
             );
             if (isMatch) {
               removedCount++;
@@ -987,8 +1158,22 @@ _Please reply "CONFIRMED" to start preparing my order._`;
               sessionStorage.removeItem('vaibhav_pending_order_v1');
             } catch {}
           }
-          setPriceConfirmed(false);
-          setFormError('Note: Menu prices were just updated. Please review your updated total.');
+          const sTotal = Number(saveResult.server_total) || Number(finalTotal);
+          setConfirmedServerTotal(sTotal);
+          setPriceConfirmed(true);
+
+          if (saveResult.lines && Array.isArray(saveResult.lines) && onUpdateItemPrice) {
+            saveResult.lines.forEach((l: any) => {
+              if (l.sku && typeof l.unit_price === 'number') {
+                onUpdateItemPrice(l.sku, l.unit_price);
+              }
+            });
+          }
+
+          const actionWord = paymentMethod === 'COD' ? 'Order on WhatsApp' : 'Proceed to Payment';
+          setFormError(
+            `Note: Total updated to ₹${sTotal} based on latest live restaurant menu pricing. Tap "${actionWord}" to confirm.`
+          );
           return;
         }
 
@@ -1009,6 +1194,13 @@ _Please reply "CONFIRMED" to start preparing my order._`;
       ) {
         setOrderAlreadySent(true);
         setActiveOrder(validatedOrder);
+        if (typeof sessionStorage !== 'undefined') {
+          try {
+            sessionStorage.removeItem('vaibhav_pending_order_v1');
+          } catch {}
+        }
+        onClearCart(true);
+        completedOrderFingerprintRef.current = currentFingerprint;
         setCheckoutStep('completed');
         setIsSubmittingOrder(false);
         return;
@@ -1050,6 +1242,7 @@ _Please reply "CONFIRMED" to start preparing my order._`;
           } catch {}
         }
         onClearCart(true);
+        completedOrderFingerprintRef.current = currentFingerprint;
 
         const isMobileDevice =
           typeof navigator !== 'undefined' &&
@@ -1142,6 +1335,16 @@ _Please reply "CONFIRMED" to start preparing my order._`;
         } catch {}
       }
       onClearCart(true);
+      completedOrderFingerprintRef.current = activeOrder
+        ? buildCartFingerprint(
+            items,
+            customerPhone,
+            orderType,
+            paymentMethod,
+            userLocation,
+            finalTotal
+          )
+        : null;
 
       // Open WhatsApp
       const isMobileDevice =
@@ -1211,12 +1414,12 @@ _Please reply "CONFIRMED" to start preparing my order._`;
   return (
     <div
       data-lenis-prevent
-      className="fixed inset-0 z-50 flex flex-col justify-end sm:justify-center items-center bg-black/80 backdrop-blur-xs overflow-hidden animate-fade-in p-0 sm:p-4"
+      className="fixed inset-0 z-[80] flex flex-col justify-end sm:justify-center items-center bg-black/80 backdrop-blur-xs overflow-hidden animate-fade-in p-0 sm:p-4"
       role="dialog"
       aria-modal="true"
       aria-labelledby="checkout-modal-title"
       onClick={(e) => {
-        if (e.target === e.currentTarget) onClose();
+        if (e.target === e.currentTarget) handleModalClose();
       }}
     >
       {/* Mobile slide-up bottom sheet container */}
@@ -1265,7 +1468,7 @@ _Please reply "CONFIRMED" to start preparing my order._`;
 
           <button
             type="button"
-            onClick={onClose}
+            onClick={handleModalClose}
             className="btn-icon rounded-full bg-white/10 hover:bg-white/20 text-white transition-colors"
             aria-label="Close modal"
           >
@@ -1380,7 +1583,7 @@ _Please reply "CONFIRMED" to start preparing my order._`;
                 )}
                 <button
                   type="button"
-                  onClick={onClose}
+                  onClick={handleModalClose}
                   className="btn-md w-full rounded-xl bg-gray-200 hover:bg-gray-300 text-gray-800 font-semibold transition-colors"
                 >
                   Back to Menu
@@ -2282,7 +2485,7 @@ _Please reply "CONFIRMED" to start preparing my order._`;
                 </span>
                 <div className="flex items-baseline gap-1.5">
                   <span className="font-['Playfair_Display'] text-xl sm:text-2xl font-bold text-[#D3452B]">
-                    Rs {finalTotal}
+                    Rs {displayPayableTotal}
                   </span>
                   {totalSavings > 0 && (
                     <span className="text-[10px] font-bold text-emerald-800 bg-emerald-100 px-1.5 py-0.5 rounded">
@@ -2331,12 +2534,12 @@ _Please reply "CONFIRMED" to start preparing my order._`;
                     <span>Fill Address &amp; Details</span>
                   ) : paymentMethod === 'UPI' ? (
                     <>
-                      <span>Proceed to Payment (Rs {finalTotal})</span>
+                      <span>Proceed to Payment (Rs {displayPayableTotal})</span>
                       <CreditCard className="w-4 h-4" />
                     </>
                   ) : (
                     <>
-                      <span>Order on WhatsApp (Rs {finalTotal})</span>
+                      <span>Order on WhatsApp (Rs {displayPayableTotal})</span>
                       <Send className="w-4 h-4" />
                     </>
                   )}

@@ -119,13 +119,13 @@ export const TrustedNeighborhood: React.FC = () => {
 
             <div className="bg-white/90 backdrop-blur-xs rounded-2xl p-5 border border-[#2E4823]/10 text-center shadow-xs">
               <div className="flex items-center justify-center gap-1 text-[#2E4823] font-bold text-2xl sm:text-3xl font-['Playfair_Display']">
-                <span>12h Daily</span>
+                <span>12.5h Daily</span>
               </div>
               <span className="text-xs font-semibold uppercase tracking-wider text-[#D3452B] mt-1 block">
                 Continuous Service
               </span>
               <p className="text-xs text-[#1C1C1C]/70 mt-1">
-                12:00 PM – 11:00 PM every day of the week
+                10:30 AM – 11:00 PM every day of the week
               </p>
             </div>
           </div>

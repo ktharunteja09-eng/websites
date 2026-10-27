@@ -2,6 +2,7 @@ import { createClient, SupabaseClient } from '@supabase/supabase-js';
 import { DbMenuItem, StoreOffer, DbOrder, PaymentStatus } from '../types';
 import { MENU_ITEMS, RESTAURANT_INFO } from '../data/restaurantData';
 import { getDishImage, BESTSELLER_TARGET_NAMES } from '../data/menuImageMap';
+import { getCanonicalSku, isOfferActive } from './cartMath';
 
 export type { DbOrder, PaymentStatus };
 
@@ -257,7 +258,7 @@ export function getLocalFallbackMenuItems(): DbMenuItem[] {
     name: item.name,
     category: item.category,
     price: item.price,
-    aggregator_price: Math.round((item.price * 1.2) / 10) * 10,
+    aggregator_price: item.aggregator_price ? Number(item.aggregator_price) : null,
     is_veg: item.isVeg,
     direct_order_eligible:
       item.category !== 'indian-breads' &&
@@ -305,6 +306,7 @@ export async function fetchMenuItems(): Promise<DbMenuItem[]> {
         return {
           ...item,
           is_completed: false,
+          available: true,
           last_reset_date: today,
         };
       }
@@ -522,13 +524,15 @@ export async function verifyAdminPin(inputPin: string): Promise<VerifyPinResult>
     }
 
     if (data && typeof data === 'object') {
-      const isOk = Boolean((data as Record<string, unknown>).ok);
+      const res = data as Record<string, unknown>;
+      const isOk = Boolean(res.success || res.ok);
+      const msg = ((res.error || res.message) as string | null) || null;
       return {
         success: isOk,
-        locked: Boolean((data as Record<string, unknown>).locked),
-        locked_until: ((data as Record<string, unknown>).locked_until as string | null) || null,
-        failed_attempts: (data as Record<string, unknown>).failed_attempts as number | undefined,
-        error: ((data as Record<string, unknown>).error as string | null) || (isOk ? null : 'Incorrect PIN.'),
+        locked: Boolean(res.locked),
+        locked_until: (res.locked_until as string | null) || null,
+        failed_attempts: res.failed_attempts as number | undefined,
+        error: msg || (isOk ? null : 'Incorrect PIN.'),
       };
     }
 
@@ -617,6 +621,7 @@ export async function morningResetAllMenuItems(adminPin?: string): Promise<boole
     localMenuItemsCache = localMenuItemsCache.map((item) => ({
       ...item,
       is_completed: false,
+      available: true,
       last_reset_date: today,
     }));
   }
@@ -636,7 +641,7 @@ export async function morningResetAllMenuItems(adminPin?: string): Promise<boole
       // Fallback direct update attempt
       const { error: directErr } = await supabase
         .from('menu_items')
-        .update({ is_completed: false, last_reset_date: today })
+        .update({ is_completed: false, available: true, last_reset_date: today })
         .neq('id', 0);
       if (directErr) throw directErr;
     }
@@ -668,7 +673,15 @@ export async function fetchStoreOffer(): Promise<StoreOffer> {
       return localStoreOfferCache;
     }
 
-    localStoreOfferCache = { ...localStoreOfferCache, ...(data as StoreOffer) };
+    const offerData = data as StoreOffer;
+    if (offerData.expires_at) {
+      const exp = new Date(offerData.expires_at).getTime();
+      if (!isNaN(exp) && exp <= Date.now()) {
+        offerData.is_active = false;
+      }
+    }
+
+    localStoreOfferCache = { ...localStoreOfferCache, ...offerData };
     return localStoreOfferCache;
   } catch (err) {
     console.error('Error fetching store_offers:', err);
@@ -749,11 +762,12 @@ export async function changeAdminPin(
     }
 
     if (data && typeof data === 'object') {
-      const isOk = Boolean((data as Record<string, unknown>).success);
+      const res = data as Record<string, unknown>;
+      const isOk = Boolean(res.success || res.ok);
       if (!isOk) {
         return {
           success: false,
-          error: ((data as Record<string, unknown>).error as string) || 'Failed to update PIN.',
+          error: ((res.error || res.message) as string) || 'Failed to update PIN.',
         };
       }
     }
@@ -865,18 +879,46 @@ export function formatTimeForDisplay(timeStr?: string): string {
  */
 export function mapOrderErrorToMessage(
   status: string,
-  details?: { items?: string[]; opens_at?: string; closes_at?: string }
+  details?: { items?: string[]; opens_at?: string; closes_at?: string },
+  cartItems?: { id: number | string; name: string }[]
 ): string {
+  const resolveNames = (rawItems?: string[]) => {
+    if (!rawItems || rawItems.length === 0) return 'One or more items';
+    return rawItems
+      .map((raw) => {
+        const rawStr = String(raw).trim();
+        const match = cartItems?.find(
+          (ci) =>
+            String(ci.id) === rawStr ||
+            getCanonicalSku(ci) === rawStr ||
+            String(ci.name).toLowerCase().trim() === rawStr.toLowerCase()
+        );
+        if (match?.name) return match.name;
+
+        // Try stripping prefixes/suffixes (e.g. "dish-284:full" -> "284", or "284:full" -> "284")
+        const cleanBase = rawStr.replace(/^dish-/, '').split(':')[0];
+        const localMatch = MENU_ITEMS.find(
+          (m) =>
+            String(m.id) === rawStr ||
+            String(m.id) === `dish-${cleanBase}` ||
+            String(m.id) === cleanBase
+        );
+        if (localMatch) {
+          const variantPart = rawStr.includes(':') ? ` (${rawStr.split(':')[1].toUpperCase()})` : '';
+          return `${localMatch.name}${variantPart}`;
+        }
+
+        return rawStr.replace(/^dish-/, '').replace(/:([a-z]+)/gi, ' ($1)');
+      })
+      .join(', ');
+  };
+
   if (status === 'item_unavailable') {
-    const names = (details?.items && details.items.length > 0)
-      ? details.items.join(', ')
-      : 'One or more items';
+    const names = resolveNames(details?.items);
     return `${names} is currently sold out.`;
   }
   if (status === 'unknown_item') {
-    const names = (details?.items && details.items.length > 0)
-      ? details.items.join(', ')
-      : 'One or more items';
+    const names = resolveNames(details?.items);
     return `${names} is currently unavailable.`;
   }
   if (status === 'price_changed') {
@@ -895,6 +937,7 @@ export function mapOrderErrorToMessage(
 
 export interface OrderAvailability {
   open: boolean;
+  available?: boolean;
   status: 'open' | 'closed' | 'closed_last_order';
   opens_at: string;
   closes_at: string;
@@ -917,6 +960,7 @@ export async function getOrderAvailability(): Promise<OrderAvailabilityResult> {
       success: true,
       data: {
         open: true,
+        available: true,
         status: 'open',
         opens_at: '10:30',
         closes_at: '23:00',
@@ -936,9 +980,18 @@ export async function getOrderAvailability(): Promise<OrderAvailabilityResult> {
         isNetworkError: isNet,
       };
     }
+    const raw = (data || {}) as Record<string, any>;
+    const isOpen = Boolean(raw.open ?? raw.available ?? (raw.status === 'open'));
     return {
       success: true,
-      data: data as OrderAvailability,
+      data: {
+        open: isOpen,
+        available: isOpen,
+        status: (raw.status as 'open' | 'closed' | 'closed_last_order') || (isOpen ? 'open' : 'closed'),
+        opens_at: raw.opens_at || '10:30',
+        closes_at: raw.closes_at || '23:00',
+        last_order_at: raw.last_order_at || '22:30',
+      },
       isNetworkError: false,
     };
   } catch (err: unknown) {
@@ -959,36 +1012,54 @@ export async function getOrderAvailability(): Promise<OrderAvailabilityResult> {
  */
 export async function createOrder(
   order: DbOrder,
-  itemsToValidate?: { id: number | string; quantity: number; name: string; price?: number }[],
+  itemsToValidate?: { id: number | string; quantity: number; name: string; price?: number; size?: string; sku?: string; portionNote?: string }[],
   offer?: StoreOffer | null,
   idempotencyKey?: string,
-  paymentMethod?: 'UPI' | 'COD'
+  paymentMethod?: 'UPI' | 'COD',
+  appliedCouponCode?: string | null
 ): Promise<CreateOrderResult> {
   const soldOutItemIds: (number | string)[] = [];
   const livePriceMap = new Map<number | string, number>();
 
   // 1. Strict Pre-Checkout Inventory Check (query live status of every item_id)
   if (itemsToValidate && itemsToValidate.length > 0) {
-    const itemIds = itemsToValidate.map((i) => i.id);
+    const dishItemIds = Array.from(
+      new Set(
+        itemsToValidate.map((i) => {
+          const sku = getCanonicalSku(i);
+          return sku.split(':')[0]; // e.g. "dish-284"
+        })
+      )
+    );
 
     if (supabase) {
       try {
         const { data: dbItems, error: fetchErr } = await supabase
           .from('menu_items')
           .select('*')
-          .in('id', itemIds);
+          .in('item_id', dishItemIds);
 
         if (!fetchErr && dbItems) {
           dbItems.forEach((d: any) => {
             if (typeof d.price === 'number') {
               livePriceMap.set(d.id, Number(d.price));
               livePriceMap.set(String(d.id), Number(d.price));
+              if (d.item_id) {
+                livePriceMap.set(d.item_id, Number(d.price));
+              }
             }
           });
 
           for (const item of itemsToValidate) {
+            const canonicalSku = getCanonicalSku(item);
+            const dishItemId = canonicalSku.split(':')[0];
+            const baseNum = dishItemId.replace('dish-', '');
+
             const dbItem: any = dbItems.find(
-              (d: any) => String(d.id) === String(item.id) || d.id === item.id
+              (d: any) =>
+                d.item_id === dishItemId ||
+                String(d.id) === baseNum ||
+                (item.name && d.name.toLowerCase().trim() === item.name.toLowerCase().trim())
             );
             if (dbItem) {
               const isInactive = dbItem.is_active === false;
@@ -1013,8 +1084,17 @@ export async function createOrder(
     // Check local items cache if Supabase query returned no live items or offline
     if (localMenuItemsCache) {
       for (const item of itemsToValidate) {
+        const canonicalSku = getCanonicalSku(item);
+        const dishItemId = canonicalSku.split(':')[0];
+        const baseNum = dishItemId.replace('dish-', '');
+
         const localItem: any = localMenuItemsCache.find(
-          (m) => String(m.id) === String(item.id) || m.id === item.id
+          (m) =>
+            m.item_id === dishItemId ||
+            String(m.id) === canonicalSku ||
+            String(m.id) === baseNum ||
+            m.id === Number(baseNum) ||
+            (item.name && m.name.toLowerCase().trim() === item.name.toLowerCase().trim())
         );
         if (localItem) {
           if (typeof localItem.price === 'number' && !livePriceMap.has(item.id)) {
@@ -1038,12 +1118,20 @@ export async function createOrder(
     // If any item is sold out, immediately abort order creation
     if (soldOutItemIds.length > 0) {
       const itemNames = soldOutItemIds.map((id) => {
+        const cartItem = itemsToValidate.find((i) => String(i.id) === String(id) || i.id === id);
+        if (cartItem && cartItem.name) return cartItem.name;
+        const canonicalSku = getCanonicalSku({ id });
+        const baseNum = canonicalSku.split(':')[0].replace('dish-', '');
         const localItem = (localMenuItemsCache || MENU_ITEMS).find(
-          (m) => String(m.id) === String(id) || m.id === id
+          (m) =>
+            String(m.id) === canonicalSku ||
+            String(m.id) === canonicalSku.split(':')[0] ||
+            String(m.id) === baseNum ||
+            m.id === Number(baseNum)
         );
         return localItem ? localItem.name : String(id);
       });
-      const friendlyMsg = mapOrderErrorToMessage('item_unavailable', { items: itemNames });
+      const friendlyMsg = mapOrderErrorToMessage('item_unavailable', { items: itemNames }, itemsToValidate);
       return {
         success: false,
         status: 'item_unavailable',
@@ -1064,7 +1152,8 @@ export async function createOrder(
     for (const item of itemsToValidate) {
       let livePrice = livePriceMap.get(item.id);
       if (typeof livePrice !== 'number' || isNaN(livePrice)) {
-        const catalogItem = MENU_ITEMS.find((m) => m.id === item.id);
+        const canonicalSku = getCanonicalSku(item);
+        const catalogItem = MENU_ITEMS.find((m) => m.id === item.id || m.id === canonicalSku || m.id === canonicalSku.split(':')[0]);
         livePrice = catalogItem ? Number(catalogItem.price) : Number(item.price || 0);
       }
       const qty = Math.max(1, Math.floor(Number(item.quantity) || 1));
@@ -1078,11 +1167,20 @@ export async function createOrder(
 
   // 3. Validate discount & final total on server
   let validatedDiscount = 0;
-  if (offer && offer.is_active) {
-    const minOrderAmt = Number(offer.min_order_amount) || 0;
-    const discountPercent = Number(offer.discount_percent) || 0;
+  if (isOfferActive(offer)) {
+    const minOrderAmt = Number(offer?.min_order_amount) || 0;
+    const discountPercent = Number(offer?.discount_percent) || 0;
     if (minOrderAmt > 0 && validatedSubtotal >= minOrderAmt && discountPercent > 0) {
       validatedDiscount = Math.round((validatedSubtotal * discountPercent) / 100);
+    }
+    if (
+      appliedCouponCode &&
+      offer?.coupon_code &&
+      appliedCouponCode.trim().toUpperCase() === offer.coupon_code.trim().toUpperCase() &&
+      minOrderAmt > 0 &&
+      validatedSubtotal >= minOrderAmt
+    ) {
+      validatedDiscount += Number(offer.coupon_flat_discount) || 0;
     }
   } else if (Number(order.discount_amount) > 0) {
     validatedDiscount = Math.min(Number(order.discount_amount), validatedSubtotal);
@@ -1127,14 +1225,19 @@ export async function createOrder(
       p_customer_phone: String(orderToSave.customer_phone).trim(),
       p_order_type: String(orderToSave.order_type || 'DELIVERY_5KM'),
       p_distance_km: orderToSave.distance_km !== null && typeof orderToSave.distance_km === 'number' ? Number(orderToSave.distance_km) : null,
-      p_items_json: (itemsToValidate || []).map((item) => ({
-        id: String(item.id),
-        name: String(item.name || ''),
-        quantity: Math.max(1, Math.floor(Number(item.quantity) || 1)),
-        price: Number(item.price) || 0,
-        variant: (item as Record<string, unknown>).portionNote ? String((item as Record<string, unknown>).portionNote) : null,
-      })),
-      p_coupon_code: offer?.coupon_code || null,
+      p_items_json: (itemsToValidate || []).map((item) => {
+        const canonicalSku = getCanonicalSku(item);
+        const variantVal = (item as any).size || (item as any).portionNote || (item as any).variant || null;
+        return {
+          id: String(item.id),
+          sku: canonicalSku,
+          name: String(item.name || ''),
+          quantity: Math.max(1, Math.floor(Number(item.quantity) || 1)),
+          price: Number(item.price) || 0,
+          variant: variantVal ? String(variantVal) : null,
+        };
+      }),
+      p_coupon_code: appliedCouponCode ? appliedCouponCode.trim() : null,
       p_address_notes: String(orderToSave.address_notes || '').trim(),
       p_maps_link: String(orderToSave.maps_link || '').trim(),
       p_payment_method: resolvedPaymentMethod,
@@ -1195,7 +1298,7 @@ export async function createOrder(
 
       if (statusVal === 'item_unavailable') {
         const unavailableItems: string[] = Array.isArray(rpcData.items) ? rpcData.items : [];
-        const msg = mapOrderErrorToMessage('item_unavailable', { items: unavailableItems });
+        const msg = mapOrderErrorToMessage('item_unavailable', { items: unavailableItems }, itemsToValidate);
         return {
           success: false,
           status: 'item_unavailable',
@@ -1209,7 +1312,7 @@ export async function createOrder(
 
       if (statusVal === 'unknown_item') {
         const unknownItems: string[] = Array.isArray(rpcData.items) ? rpcData.items : [];
-        const msg = mapOrderErrorToMessage('unknown_item', { items: unknownItems });
+        const msg = mapOrderErrorToMessage('unknown_item', { items: unknownItems }, itemsToValidate);
         return {
           success: false,
           status: 'unknown_item',
@@ -1449,8 +1552,8 @@ export async function adminUpdatePaymentStatus(
   try {
     const { data, error } = await supabase.rpc('admin_update_payment_status', {
       input_pin: pin.trim(),
-      p_order_id: Number(orderId),
-      p_payment_status: cleanStatus,
+      target_order_id: Number(orderId),
+      new_payment_status: cleanStatus,
     });
 
     if (error) {
@@ -1465,11 +1568,12 @@ export async function adminUpdatePaymentStatus(
     }
 
     if (data && typeof data === 'object') {
-      const isOk = Boolean((data as Record<string, unknown>).ok);
+      const res = data as Record<string, unknown>;
+      const isOk = Boolean(res.success || res.ok);
       if (!isOk) {
         return {
           success: false,
-          error: ((data as Record<string, unknown>).error as string) || 'Update failed.',
+          error: ((res.error || res.message) as string) || 'Update failed.',
           isNetworkError: false,
         };
       }
@@ -1592,7 +1696,7 @@ export async function updateOrderStatus(
   try {
     const { error } = await supabase.rpc('admin_update_order_status', {
       input_pin: pin,
-      target_order_id: id,
+      target_order_id: Number(id),
       new_status: status,
     });
 

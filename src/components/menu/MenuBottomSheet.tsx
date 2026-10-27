@@ -203,7 +203,7 @@ export const MenuBottomSheet: React.FC<MenuBottomSheetProps> = ({
   return createPortal(
     <AnimatePresence>
       {isOpen && (
-        <div className="fixed inset-0 z-50 md:hidden flex flex-col justify-end pointer-events-auto">
+        <div className="fixed inset-0 z-[70] md:hidden flex flex-col justify-end pointer-events-auto">
           {/* Backdrop with fade animation */}
           <motion.div
             initial={{ opacity: 0 }}
@@ -239,7 +239,7 @@ export const MenuBottomSheet: React.FC<MenuBottomSheetProps> = ({
                     mass: 0.8,
                   }
             }
-            className="fixed bottom-0 left-0 right-0 z-50 w-full bg-[#FDFBF7] rounded-t-3xl max-h-[75dvh] flex flex-col shadow-[0_-16px_48px_rgba(0,0,0,0.35)] border-t border-[#2E4823]/15 overflow-hidden"
+            className="fixed bottom-0 left-0 right-0 z-[70] w-full bg-[#FDFBF7] rounded-t-3xl max-h-[75dvh] flex flex-col shadow-[0_-16px_48px_rgba(0,0,0,0.35)] border-t border-[#2E4823]/15 overflow-hidden"
             onClick={(e) => e.stopPropagation()}
           >
             {/* Drag Handle Visual (Swipe-down capable) */}

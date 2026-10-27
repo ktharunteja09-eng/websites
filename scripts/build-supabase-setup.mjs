@@ -58,10 +58,10 @@ CREATE TABLE IF NOT EXISTS sale_settings (
   id int PRIMARY KEY DEFAULT 1,
   sale_active boolean NOT NULL DEFAULT true,
   sale_percent integer NOT NULL DEFAULT 10 CHECK (sale_percent >= 0 AND sale_percent <= 100),
-  sale_ends_at timestamptz DEFAULT (now() + interval '12 hours'),
+  sale_ends_at timestamptz DEFAULT (now() + interval '30 days'),
   min_order_amount integer DEFAULT 299,
-  coupon_code text DEFAULT 'DIRECT50',
-  coupon_flat_discount integer DEFAULT 50,
+  coupon_code text DEFAULT NULL,
+  coupon_flat_discount integer DEFAULT 0,
   free_item_name text DEFAULT 'Free 250ml Cool Drink',
   free_item_min_amount integer DEFAULT 499,
   updated_at timestamptz DEFAULT now()
@@ -96,10 +96,10 @@ CREATE TABLE IF NOT EXISTS store_offers (
   min_order_amount numeric DEFAULT 299,
   free_item_name text DEFAULT 'Free 250ml Cool Drink',
   free_item_min_amount numeric DEFAULT 499,
-  coupon_code text DEFAULT 'DIRECT50',
-  coupon_flat_discount numeric DEFAULT 50,
+  coupon_code text DEFAULT NULL,
+  coupon_flat_discount numeric DEFAULT 0,
   starts_at timestamptz DEFAULT now(),
-  expires_at timestamptz DEFAULT (now() + interval '12 hours')
+  expires_at timestamptz DEFAULT (now() + interval '30 days')
 );
 
 INSERT INTO store_offers (id) VALUES (1) ON CONFLICT (id) DO NOTHING;
@@ -1032,39 +1032,71 @@ BEGIN
       SELECT * INTO v_price_row FROM menu_prices WHERE sku = v_input_id;
     END IF;
 
-    -- C. If not found and variant is specified, try sku:variant
-    IF v_price_row IS NULL AND v_item.variant IS NOT NULL AND trim(v_item.variant) <> '' THEN
-      SELECT * INTO v_price_row FROM menu_prices
-      WHERE sku = (v_input_sku || ':' || lower(regexp_replace(v_item.variant, '\\s+', '', 'g')));
-    END IF;
-
-    -- D. If not found and input is numeric id (legacy catalog id), lookup item_id from menu_items
-    IF v_price_row IS NULL AND v_input_id ~ '^[0-9]+$' THEN
-      SELECT * INTO v_price_row FROM menu_prices
-      WHERE item_id = ('dish-' || v_input_id) OR sku = ('dish-' || v_input_id)
-      LIMIT 1;
-      IF v_price_row IS NULL THEN
-        SELECT p.* INTO v_price_row
-        FROM menu_prices p
-        JOIN menu_items m ON m.item_id = p.item_id
-        WHERE m.id = v_input_id::int
-        LIMIT 1;
+    -- C. Try with 'dish-' prefix if missing (e.g. '284:full' -> 'dish-284:full' or '284' -> 'dish-284')
+    IF v_price_row IS NULL AND NOT (v_input_sku LIKE 'dish-%') THEN
+      SELECT * INTO v_price_row FROM menu_prices WHERE sku = ('dish-' || v_input_sku);
+      IF v_price_row IS NULL AND v_input_id <> '' AND NOT (v_input_id LIKE 'dish-%') THEN
+        SELECT * INTO v_price_row FROM menu_prices WHERE sku = ('dish-' || v_input_id);
       END IF;
     END IF;
 
-    -- E. Name match fallback in menu_items
+    -- D. If sku contains colon (e.g. '284:full' or 'dish-284:full'), match base or variant
+    IF v_price_row IS NULL AND v_input_sku LIKE '%:%' THEN
+      SELECT * INTO v_price_row FROM menu_prices
+      WHERE sku = split_part(v_input_sku, ':', 1)
+         OR sku = ('dish-' || split_part(v_input_sku, ':', 1))
+         OR (item_id = ('dish-' || split_part(v_input_sku, ':', 1)) AND lower(variant) = lower(split_part(v_input_sku, ':', 2)))
+      LIMIT 1;
+    END IF;
+
+    -- E. If not found and variant is specified, try sku:variant
+    IF v_price_row IS NULL AND v_item.variant IS NOT NULL AND trim(v_item.variant) <> '' THEN
+      SELECT * INTO v_price_row FROM menu_prices
+      WHERE sku = (v_input_sku || ':' || lower(regexp_replace(v_item.variant, '\\s+', '', 'g')))
+         OR sku = ('dish-' || v_input_sku || ':' || lower(regexp_replace(v_item.variant, '\\s+', '', 'g')));
+    END IF;
+
+    -- F. If not found and input is numeric id (legacy catalog id), lookup item_id from menu_items
+    IF v_price_row IS NULL THEN
+      IF split_part(v_input_id, ':', 1) ~ '^[0-9]+$' THEN
+        SELECT * INTO v_price_row FROM menu_prices
+        WHERE item_id = ('dish-' || split_part(v_input_id, ':', 1)) OR sku = ('dish-' || split_part(v_input_id, ':', 1))
+        LIMIT 1;
+        IF v_price_row IS NULL THEN
+          SELECT p.* INTO v_price_row
+          FROM menu_prices p
+          JOIN menu_items m ON m.item_id = p.item_id
+          WHERE m.id = split_part(v_input_id, ':', 1)::int
+          LIMIT 1;
+        END IF;
+      ELSIF split_part(v_input_sku, ':', 1) ~ '^[0-9]+$' THEN
+        SELECT * INTO v_price_row FROM menu_prices
+        WHERE item_id = ('dish-' || split_part(v_input_sku, ':', 1)) OR sku = ('dish-' || split_part(v_input_sku, ':', 1))
+        LIMIT 1;
+        IF v_price_row IS NULL THEN
+          SELECT p.* INTO v_price_row
+          FROM menu_prices p
+          JOIN menu_items m ON m.item_id = p.item_id
+          WHERE m.id = split_part(v_input_sku, ':', 1)::int
+          LIMIT 1;
+        END IF;
+      END IF;
+    END IF;
+
+    -- G. Exact name match fallback for items without sizes/variants (never choose a size)
     IF v_price_row IS NULL AND v_item.name IS NOT NULL AND trim(v_item.name) <> '' THEN
       SELECT p.* INTO v_price_row
       FROM menu_prices p
       JOIN menu_items m ON m.item_id = p.item_id
       WHERE lower(trim(m.name)) = lower(trim(v_item.name))
+        AND (p.variant IS NULL OR p.variant = 'default' OR p.variant = '')
       LIMIT 1;
     END IF;
 
     -- If still not found, record as unknown_item
     IF v_price_row IS NULL THEN
-      IF NOT (v_input_sku = ANY(v_unknown_items)) THEN
-        v_unknown_items := array_append(v_unknown_items, COALESCE(NULLIF(v_input_sku, ''), v_input_id));
+      IF NOT (COALESCE(v_item.name, v_input_sku) = ANY(v_unknown_items)) THEN
+        v_unknown_items := array_append(v_unknown_items, COALESCE(v_item.name, NULLIF(v_input_sku, ''), v_input_id));
       END IF;
       CONTINUE;
     END IF;
@@ -1811,41 +1843,78 @@ BEGIN
 
     v_price_row := NULL;
 
+    -- A. Exact SKU match
     SELECT * INTO v_price_row FROM menu_prices WHERE sku = v_input_sku;
 
+    -- B. If not found and input_sku != input_id, try input_id
     IF v_price_row IS NULL AND v_input_id <> '' AND v_input_id <> v_input_sku THEN
       SELECT * INTO v_price_row FROM menu_prices WHERE sku = v_input_id;
     END IF;
 
+    -- C. Try with 'dish-' prefix if missing (e.g. '284:full' -> 'dish-284:full' or '284' -> 'dish-284')
+    IF v_price_row IS NULL AND NOT (v_input_sku LIKE 'dish-%') THEN
+      SELECT * INTO v_price_row FROM menu_prices WHERE sku = ('dish-' || v_input_sku);
+      IF v_price_row IS NULL AND v_input_id <> '' AND NOT (v_input_id LIKE 'dish-%') THEN
+        SELECT * INTO v_price_row FROM menu_prices WHERE sku = ('dish-' || v_input_id);
+      END IF;
+    END IF;
+
+    -- D. If sku contains colon (e.g. '284:full' or 'dish-284:full'), match base or variant
+    IF v_price_row IS NULL AND v_input_sku LIKE '%:%' THEN
+      SELECT * INTO v_price_row FROM menu_prices
+      WHERE sku = split_part(v_input_sku, ':', 1)
+         OR sku = ('dish-' || split_part(v_input_sku, ':', 1))
+         OR (item_id = ('dish-' || split_part(v_input_sku, ':', 1)) AND lower(variant) = lower(split_part(v_input_sku, ':', 2)))
+      LIMIT 1;
+    END IF;
+
+    -- E. If not found and variant is specified, try sku:variant
     IF v_price_row IS NULL AND v_item.variant IS NOT NULL AND trim(v_item.variant) <> '' THEN
       SELECT * INTO v_price_row FROM menu_prices
       WHERE sku = (v_input_sku || ':' || lower(regexp_replace(v_item.variant, '\\s+', '', 'g')));
     END IF;
 
-    IF v_price_row IS NULL AND v_input_id ~ '^[0-9]+\$' THEN
-      SELECT * INTO v_price_row FROM menu_prices
-      WHERE item_id = ('dish-' || v_input_id) OR sku = ('dish-' || v_input_id)
-      LIMIT 1;
-      IF v_price_row IS NULL THEN
-        SELECT p.* INTO v_price_row
-        FROM menu_prices p
-        JOIN menu_items m ON m.item_id = p.item_id
-        WHERE m.id = v_input_id::int
+    -- F. If not found and input is numeric id (legacy catalog id), lookup item_id from menu_items
+    IF v_price_row IS NULL THEN
+      IF split_part(v_input_id, ':', 1) ~ '^[0-9]+$' THEN
+        SELECT * INTO v_price_row FROM menu_prices
+        WHERE item_id = ('dish-' || split_part(v_input_id, ':', 1)) OR sku = ('dish-' || split_part(v_input_id, ':', 1))
         LIMIT 1;
+        IF v_price_row IS NULL THEN
+          SELECT p.* INTO v_price_row
+          FROM menu_prices p
+          JOIN menu_items m ON m.item_id = p.item_id
+          WHERE m.id = split_part(v_input_id, ':', 1)::int
+          LIMIT 1;
+        END IF;
+      ELSIF split_part(v_input_sku, ':', 1) ~ '^[0-9]+$' THEN
+        SELECT * INTO v_price_row FROM menu_prices
+        WHERE item_id = ('dish-' || split_part(v_input_sku, ':', 1)) OR sku = ('dish-' || split_part(v_input_sku, ':', 1))
+        LIMIT 1;
+        IF v_price_row IS NULL THEN
+          SELECT p.* INTO v_price_row
+          FROM menu_prices p
+          JOIN menu_items m ON m.item_id = p.item_id
+          WHERE m.id = split_part(v_input_sku, ':', 1)::int
+          LIMIT 1;
+        END IF;
       END IF;
     END IF;
 
+    -- G. Exact name match fallback for items without sizes/variants (never choose a size)
     IF v_price_row IS NULL AND v_item.name IS NOT NULL AND trim(v_item.name) <> '' THEN
       SELECT p.* INTO v_price_row
       FROM menu_prices p
       JOIN menu_items m ON m.item_id = p.item_id
       WHERE lower(trim(m.name)) = lower(trim(v_item.name))
+        AND (p.variant IS NULL OR p.variant = 'default' OR p.variant = '')
       LIMIT 1;
     END IF;
 
+    -- If still not found, record as unknown_item
     IF v_price_row IS NULL THEN
-      IF NOT (v_input_sku = ANY(v_unknown_items)) THEN
-        v_unknown_items := array_append(v_unknown_items, COALESCE(NULLIF(v_input_sku, ''), v_input_id));
+      IF NOT (COALESCE(v_item.name, v_input_sku) = ANY(v_unknown_items)) THEN
+        v_unknown_items := array_append(v_unknown_items, COALESCE(v_item.name, NULLIF(v_input_sku, ''), v_input_id));
       END IF;
       CONTINUE;
     END IF;

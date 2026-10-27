@@ -133,7 +133,7 @@ export const Footer: React.FC<FooterProps> = ({
               <Clock className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" />
               <div>
                 <p className="font-semibold text-white">Open Daily (365 Days)</p>
-                <p className="text-gray-400 mt-0.5">12:00 PM – 11:00 PM</p>
+                <p className="text-gray-400 mt-0.5">10:30 AM – 11:00 PM</p>
                 <p className="text-[11px] text-gray-500 mt-1">Lunch, High Tea &amp; Late Dinner</p>
               </div>
             </div>

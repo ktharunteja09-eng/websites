@@ -122,6 +122,7 @@ export interface DigitalMenuPage {
 // -------------------------------------------------------------
 export interface DbMenuItem {
   id: number;
+  item_id?: string;
   name: string;
   category: string;
   price: number;
@@ -180,11 +181,13 @@ export interface DbOrder {
 
 export interface CartItem {
   id: number | string;
+  sku?: string;
   name: string;
   category: string;
   price: number;
   quantity: number;
   isVeg: boolean;
   size?: string;
+  portionNote?: string;
 }
 

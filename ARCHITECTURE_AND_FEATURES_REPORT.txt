@@ -2,7 +2,7 @@
 VAIBHAV GRAND FAMILY RESTAURANT - WEBSITE ARCHITECTURE & FEATURES REPORT
 ================================================================================
 Generated Date: October 2026
-Website Domain: https://vaibhavgrand.com
+Website Domain: https://vaibhavgrand.in
 Location: Renigunta, Tirupati, Andhra Pradesh, India
 Technology: React 19, Vite 8, TypeScript, Tailwind CSS v4, Motion, Supabase
 

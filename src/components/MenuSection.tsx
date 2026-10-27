@@ -342,7 +342,10 @@ export const MenuSection: React.FC = () => {
   // Cart Operations (Locked when checkout modal is open or when ordering mode is exited/locked)
   const handleAddToCart = (dish: DbMenuItem) => {
     if (isCheckoutOpen) return;
-    if (!isUnlocked) return;
+    if (!isUnlocked) {
+      setOrderingMode('pickup');
+      sessionStorage.setItem('vaibhav_order_mode', 'pickup');
+    }
     if (!dish.direct_order_eligible || dish.is_completed) return;
 
     setCartItems((prev) => {
@@ -352,10 +355,13 @@ export const MenuSection: React.FC = () => {
           String(item.id) === String(dish.id) ? { ...item, quantity: item.quantity + 1 } : item
         );
       }
+      const dishIdStr = String(dish.id);
+      const dishSku = dishIdStr.startsWith('dish-') ? dishIdStr : `dish-${dishIdStr}`;
       return [
         ...prev,
         {
           id: dish.id,
+          sku: dishSku,
           name: dish.name,
           category: dish.category,
           price: dish.price,
@@ -368,14 +374,19 @@ export const MenuSection: React.FC = () => {
 
   const handleSelectVariant = (groupedDish: GroupedMobileDish, variant: ItemVariantOption) => {
     if (isCheckoutOpen) return;
-    if (!isUnlocked) return;
+    if (!isUnlocked) {
+      setOrderingMode('pickup');
+      sessionStorage.setItem('vaibhav_order_mode', 'pickup');
+    }
     if (!variant.directEligible || variant.isCompleted) return;
 
-    const lineId = `${variant.dishId}:${variant.size.toLowerCase()}`;
+    const sizeLower = variant.size.toLowerCase();
+    const lineId = `${variant.dishId}:${sizeLower}`;
+    const lineSku = `dish-${variant.dishId}:${sizeLower}`;
     const lineName = `${groupedDish.name} (${variant.size})`;
 
     setCartItems((prev) => {
-      const existing = prev.find((item) => String(item.id) === lineId);
+      const existing = prev.find((item) => String(item.id) === lineId || item.id === lineId);
       if (existing) {
         return prev.map((item) =>
           String(item.id) === lineId ? { ...item, quantity: item.quantity + 1 } : item
@@ -385,19 +396,41 @@ export const MenuSection: React.FC = () => {
         ...prev,
         {
           id: lineId,
+          sku: lineSku,
           name: lineName,
           category: groupedDish.category,
           price: variant.price,
           quantity: 1,
           isVeg: groupedDish.isVeg,
           size: variant.size,
+          portionNote: variant.size,
         },
       ];
     });
   };
 
+  const handleUpdateItemPrice = (id: number | string, newPrice: number) => {
+    setCartItems((prev) =>
+      prev.map((item) => {
+        const itemSku = item.sku || `dish-${item.id}`;
+        if (
+          String(item.id) === String(id) ||
+          item.id === id ||
+          itemSku === String(id) ||
+          String(item.id).split(':')[0] === String(id).replace('dish-', '')
+        ) {
+          return { ...item, price: newPrice };
+        }
+        return item;
+      })
+    );
+  };
+
   const handleUpdateCartQuantity = (id: number | string, delta: number) => {
-    if (!isUnlocked) return;
+    if (!isUnlocked) {
+      setOrderingMode('pickup');
+      sessionStorage.setItem('vaibhav_order_mode', 'pickup');
+    }
     setCartItems((prev) => {
       return prev
         .map((item) => {
@@ -1282,8 +1315,8 @@ export const MenuSection: React.FC = () => {
                                 )}
                               </div>
 
-                              {/* + ADD BUTTON LOGIC (Desktop: Only shown when ordering is unlocked & dish is eligible) */}
-                              {isUnlocked && isEligible && (
+                              {/* + ADD BUTTON LOGIC (Desktop: Shown when dish is eligible) */}
+                              {isEligible && (
                                 <div className="flex-shrink-0">
                                   {isCompleted ? (
                                     <button
@@ -1371,9 +1404,9 @@ export const MenuSection: React.FC = () => {
             {/* FLOATING "MENU" BUTTON (Mobile only) */}
             <MenuFloatingButton
               onClick={() => setIsSheetOpen(true)}
-              isSheetOpen={isSheetOpen}
-              isFooterVisible={isFooterVisible}
-              hasCartItems={isUnlocked && cartItems.length > 0}
+              isSheetOpen={isSheetOpen || Boolean(sizePickerDish) || isCheckoutOpen}
+              isFooterVisible={false}
+              hasCartItems={cartItems.length > 0}
               buttonRef={menuBtnRef}
             />
 
@@ -1389,7 +1422,7 @@ export const MenuSection: React.FC = () => {
 
             {/* SIZE VARIANT PICKER MODAL (Mobile only) */}
             <MenuSizePickerModal
-              isOpen={Boolean(sizePickerDish) && isUnlocked}
+              isOpen={Boolean(sizePickerDish)}
               dish={sizePickerDish}
               cartItems={cartItems}
               onClose={() => setSizePickerDish(null)}
@@ -1413,19 +1446,21 @@ export const MenuSection: React.FC = () => {
         </div>
 
         {/* MENU PRICING & INGREDIENT DISCLAIMER */}
-        <div className="mt-8 text-center max-w-3xl mx-auto px-4 pb-28 sm:pb-8">
+        <div className={`mt-8 text-center max-w-3xl mx-auto px-4 ${cartItems.length > 0 ? 'pb-40' : 'pb-28'} sm:pb-8`}>
           <p className="text-xs text-gray-500 leading-relaxed italic border-t border-gray-200/80 pt-4">
             Prices, menu items, and availability are subject to change without notice. Delivery prices on Swiggy and Zomato may vary from our dine-in menu.
           </p>
         </div>
       </div>
 
-      {/* Floating Bottom Cart Bar when items are selected (hidden while checkout modal is open or ordering is locked/exited) */}
-      {!isCheckoutOpen && isUnlocked && (
+      {/* Floating Bottom Cart Bar when items are selected (hidden while checkout modal, size picker, or category sheet is open) */}
+      {!isCheckoutOpen && !sizePickerDish && !isSheetOpen && cartItems.length > 0 && (
         <FloatingCartBar
           items={cartItems}
           offer={offer}
           onOpenCheckout={() => {
+            setIsSheetOpen(false);
+            setSizePickerDish(null);
             refetchLiveMenu(true);
             setIsCheckoutOpen(true);
           }}
@@ -1440,6 +1475,7 @@ export const MenuSection: React.FC = () => {
         onUpdateQuantity={handleUpdateCartQuantity}
         onRemoveItem={handleRemoveItem}
         onClearCart={handleClearCart}
+        onUpdateItemPrice={handleUpdateItemPrice}
         offer={offer}
         orderType={orderingMode === 'pickup' ? 'SELF_PICKUP' : 'DELIVERY_5KM'}
         userDistanceKm={userDistanceKm}

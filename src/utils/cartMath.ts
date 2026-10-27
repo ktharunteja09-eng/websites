@@ -1,4 +1,5 @@
 import { CartItem, StoreOffer } from '../types';
+import { getOrderAvailability } from './supabaseClient';
 
 export interface CartTotals {
   subtotal: number;
@@ -10,17 +11,29 @@ export interface CartTotals {
   final_total: number;
 }
 
-export const RESTAURANT_OPEN_HOUR = 11.5; // 11:30 AM
-export const RESTAURANT_CLOSE_HOUR = 22.5; // 10:30 PM
+/**
+ * Operating Hours check for Direct Ordering: 10:30 AM to 10:30 PM IST (last order).
+ * Reads the authoritative server answer from getOrderAvailability(), falling back to
+ * Indian Standard Time (Asia/Kolkata / UTC+5:30) 10:30 AM to 10:30 PM if the request fails.
+ */
+export async function isRestaurantOpen(): Promise<boolean> {
+  try {
+    const avail = await getOrderAvailability();
+    if (avail.success && avail.data) {
+      return Boolean(avail.data.open ?? (avail.data as any).available ?? (avail.data.status === 'open'));
+    }
+  } catch {
+    // Fall back to local calculation if server request fails
+  }
+  return isRestaurantOpenFallback();
+}
 
 /**
- * Operating Hours check for Direct Ordering: 11:30 AM to 10:30 PM IST.
- * Evaluates strictly against Indian Standard Time (Asia/Kolkata / UTC+5:30)
- * regardless of client device timezone or system clock offsets.
+ * Fallback operating hours calculation (10:30 AM to 10:30 PM IST) if server query fails.
  */
-export function isRestaurantOpen(): boolean {
-  const openTime = 11.5; // 11:30 AM
-  const closeTime = 22.5; // 10:30 PM
+export function isRestaurantOpenFallback(): boolean {
+  const openTime = 10.5; // 10:30 AM
+  const closeTime = 22.5; // 10:30 PM (last orders buffer before 11:00 PM close)
 
   try {
     const formatter = new Intl.DateTimeFormat('en-US', {
@@ -53,6 +66,39 @@ export function isRestaurantOpen(): boolean {
 }
 
 /**
+ * Checks whether an offer is active and has not yet expired.
+ */
+export function isOfferActive(offer: StoreOffer | null | undefined): boolean {
+  if (!offer || !offer.is_active) return false;
+  if (offer.expires_at) {
+    const expTime = new Date(offer.expires_at).getTime();
+    if (!isNaN(expTime) && expTime <= Date.now()) {
+      return false;
+    }
+  }
+  return true;
+}
+
+/**
+ * Normalizes any cart item id/sku to canonical database SKU format ('dish-X' or 'dish-X:variant')
+ */
+export function getCanonicalSku(item: { id: number | string; sku?: string; size?: string }): string {
+  if (item.sku && item.sku.startsWith('dish-')) return item.sku;
+  const idStr = String(item.id || '').trim();
+  if (idStr.startsWith('dish-')) return idStr;
+  if (idStr.includes(':')) {
+    const [base, variant] = idStr.split(':');
+    const cleanBase = base.startsWith('dish-') ? base : `dish-${base}`;
+    return `${cleanBase}:${variant.toLowerCase()}`;
+  }
+  if (/^\d+$/.test(idStr)) {
+    const sizeSuffix = item.size ? `:${item.size.toLowerCase()}` : '';
+    return `dish-${idStr}${sizeSuffix}`;
+  }
+  return idStr;
+}
+
+/**
  * Bulletproof Cart Math Engine: Runs on every cart mutation.
  * - Sums subtotal = price * quantity with strict positive integer quantity clamping
  * - Checks store_offers:
@@ -76,10 +122,12 @@ export function calculateTotals(items: CartItem[], offer: StoreOffer | null): Ca
   let has_free_item = false;
   let min_order_amount = 0;
 
-  if (offer && offer.is_active) {
-    min_order_amount = Math.max(0, Number(offer.min_order_amount) || 0);
-    const discount_percent = Math.max(0, Math.min(100, Number(offer.discount_percent) || 0));
-    const free_item_min_amount = Math.max(0, Number(offer.free_item_min_amount) || 0);
+  const activeOffer = isOfferActive(offer) ? offer : null;
+
+  if (activeOffer) {
+    min_order_amount = Math.max(0, Number(activeOffer.min_order_amount) || 0);
+    const discount_percent = Math.max(0, Math.min(100, Number(activeOffer.discount_percent) || 0));
+    const free_item_min_amount = Math.max(0, Number(activeOffer.free_item_min_amount) || 0);
 
     // Apply or dynamically strip discount
     if (min_order_amount > 0 && subtotal >= min_order_amount && discount_percent > 0) {
@@ -93,12 +141,12 @@ export function calculateTotals(items: CartItem[], offer: StoreOffer | null): Ca
     // Apply or dynamically strip free item
     const freeThreshold = free_item_min_amount > 0 ? free_item_min_amount : min_order_amount;
     if (
-      offer.free_item_name &&
-      offer.free_item_name.trim() !== '' &&
+      activeOffer.free_item_name &&
+      activeOffer.free_item_name.trim() !== '' &&
       freeThreshold > 0 &&
       subtotal >= freeThreshold
     ) {
-      free_item_name = offer.free_item_name.trim();
+      free_item_name = activeOffer.free_item_name.trim();
       has_free_item = true;
     } else {
       free_item_name = null;

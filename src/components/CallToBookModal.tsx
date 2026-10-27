@@ -79,7 +79,7 @@ export const CallToBookModal: React.FC<CallToBookModalProps> = ({ isOpen, onClos
                 <Clock className="w-4 h-4 text-[#2E4823] shrink-0 mt-0.5" />
                 <div>
                   <strong className="block text-[#1C1C1C] font-semibold">Dining Hours</strong>
-                  <span>12:00 PM – 11:00 PM (Every Day)</span>
+                  <span>10:30 AM – 11:00 PM (Every Day)</span>
                 </div>
               </div>
 

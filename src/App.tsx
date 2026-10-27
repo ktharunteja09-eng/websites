@@ -7,7 +7,6 @@ import { BackToTop } from './components/BackToTop';
 import { PolicyModal } from './components/PolicyModals';
 import { SmoothScrollProvider } from './components/SmoothScrollProvider';
 import { ScrollProgressBar } from './components/ScrollProgressBar';
-import { HelmetProvider } from 'react-helmet-async';
 import { CallToBookModal } from './components/CallToBookModal';
 import { OrderOnlineModal } from './components/OrderOnlineModal';
 import { useScrollLock } from './utils/scrollLock';
@@ -21,6 +20,8 @@ import { ReviewsPage } from './pages/ReviewsPage';
 import { GalleryPage } from './pages/GalleryPage';
 import { ContactPage } from './pages/ContactPage';
 import { NotFoundPage } from './pages/NotFoundPage';
+import { PrivacyPage } from './pages/PrivacyPage';
+import { TermsPage } from './pages/TermsPage';
 import { FlashOfferBanner } from './components/FlashOfferBanner';
 import { TopUtilityBar } from './components/TopUtilityBar';
 import { AdminDashboard } from './pages/AdminDashboard';
@@ -124,6 +125,16 @@ export const AdminPageWrapper: React.FC = () => {
   return <AdminDashboard onBackToSite={onNavigateHome} />;
 };
 
+export const PrivacyPageWrapper: React.FC = () => {
+  const { onNavigateHome, onOpenOrderModal } = useAppOutletContext();
+  return <PrivacyPage onNavigateHome={onNavigateHome} onOpenOrderModal={onOpenOrderModal} />;
+};
+
+export const TermsPageWrapper: React.FC = () => {
+  const { onNavigateHome, onOpenOrderModal } = useAppOutletContext();
+  return <TermsPage onNavigateHome={onNavigateHome} onOpenOrderModal={onOpenOrderModal} />;
+};
+
 export default function App() {
   const [privacyOpen, setPrivacyOpen] = useState<boolean>(false);
   const [termsOpen, setTermsOpen] = useState<boolean>(false);
@@ -164,11 +175,7 @@ export default function App() {
   const isAdminRoute = location.pathname === '/admin' || location.hash === '#admin' || isHashAdmin;
 
   if (isAdminRoute) {
-    return (
-      <HelmetProvider>
-        <AdminDashboard onBackToSite={() => handleNavigate('/')} />
-      </HelmetProvider>
-    );
+    return <AdminDashboard onBackToSite={() => handleNavigate('/')} />;
   }
 
   const outletContext: RouteOutletContext = {
@@ -179,8 +186,7 @@ export default function App() {
   };
 
   return (
-    <HelmetProvider>
-      <SmoothScrollProvider>
+    <SmoothScrollProvider>
         <div className="min-h-screen bg-[#FDFBF7] text-[#1C1C1C] flex flex-col selection:bg-[#2E4823] selection:text-[#FDFBF7]">
           {/* Top Utility Bar — hidden */}
           {/* <TopUtilityBar /> */}
@@ -257,6 +263,5 @@ export default function App() {
           />
         </div>
       </SmoothScrollProvider>
-    </HelmetProvider>
-  );
+    );
 }

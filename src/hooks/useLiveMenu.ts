@@ -244,7 +244,7 @@ export function useLiveMenu(): UseLiveMenuReturn {
       const activePrice = getPrice(key, fallbackPrice);
       if (!liveData) {
         if (typeof fallbackMrp === 'number' && fallbackMrp > 0) return fallbackMrp;
-        return Math.round((activePrice * 1.25) / 10) * 10;
+        return activePrice;
       }
 
       const override = findSkuOverride(key, liveData.overrides);
@@ -256,8 +256,8 @@ export function useLiveMenu(): UseLiveMenuReturn {
         return fallbackMrp;
       }
 
-      // Default standard aggregator markup (25% rounded to nearest 10)
-      return Math.round((activePrice * 1.25) / 10) * 10;
+      // No synthetic markup; return activePrice so savings is 0 unless real aggregator price is set
+      return activePrice;
     },
     [liveData, getPrice]
   );

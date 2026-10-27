@@ -90,7 +90,7 @@ export const ClosingCTA: React.FC<ClosingCTAProps> = ({ onOpenOrderModal, onOpen
           <div className="mt-8 pt-6 border-t border-white/10 flex flex-wrap items-center justify-center gap-6 text-xs text-white/70">
             <span className="flex items-center gap-1.5">
               <Clock className="w-4 h-4 text-emerald-400" />
-              Open Daily 12:00 PM &ndash; 11:00 PM
+              Open Daily 10:30 AM &ndash; 11:00 PM
             </span>
             <span className="flex items-center gap-1.5">
               <MapPin className="w-4 h-4 text-[#D3452B]" />

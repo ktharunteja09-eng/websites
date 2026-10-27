@@ -1,7 +1,6 @@
 import React from 'react';
 import { X, ShieldCheck, FileText } from 'lucide-react';
 import { RESTAURANT_INFO } from '../data/restaurantData';
-import { useScrollLock } from '../utils/scrollLock';
 
 interface ModalProps {
   isOpen: boolean;
@@ -11,23 +10,26 @@ interface ModalProps {
 }
 
 export const PolicyModal: React.FC<ModalProps> = ({ isOpen, onClose, title, type }) => {
-  useScrollLock(isOpen);
-
   if (!isOpen) return null;
 
   return (
     <div
-      className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm touch-none flex items-center justify-center p-4 sm:p-6 animate-in fade-in duration-200"
+      data-lenis-prevent
+      className="fixed inset-0 z-50 overflow-y-auto bg-black/75 backdrop-blur-xs flex items-center justify-center p-3 sm:p-6 animate-in fade-in duration-200"
       role="dialog"
       aria-modal="true"
       aria-label={title}
+      onClick={(e) => {
+        if (e.target === e.currentTarget) onClose();
+      }}
     >
       <div
-        className="bg-[#FDFBF7] text-[#1C1C1C] rounded-3xl max-w-2xl w-full max-h-[85vh] shadow-2xl border border-[#2E4823]/10 flex flex-col overflow-hidden"
+        data-lenis-prevent
+        className="relative w-full max-w-2xl bg-[#FDFBF7] text-[#1C1C1C] rounded-2xl sm:rounded-3xl shadow-2xl border border-[#2E4823]/15 flex flex-col max-h-[90dvh] sm:max-h-[85vh] overflow-hidden my-auto"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Modal Header */}
-        <div className="p-6 border-b border-[#2E4823]/10 flex items-center justify-between bg-[#F7F3EB]">
+        <div className="p-5 sm:p-6 border-b border-[#2E4823]/10 flex items-center justify-between bg-[#F7F3EB] shrink-0">
           <div className="flex items-center gap-3">
             {type === 'privacy' ? (
               <ShieldCheck className="w-6 h-6 text-[#2E4823]" />
@@ -42,14 +44,18 @@ export const PolicyModal: React.FC<ModalProps> = ({ isOpen, onClose, title, type
             type="button"
             onClick={onClose}
             aria-label="Close dialog"
-            className="w-9 h-9 rounded-full bg-white text-gray-500 hover:text-[#1C1C1C] hover:bg-gray-100 flex items-center justify-center transition-colors"
+            className="w-9 h-9 rounded-full bg-white text-gray-500 hover:text-[#1C1C1C] hover:bg-gray-100 flex items-center justify-center transition-colors shadow-xs"
           >
             <X className="w-5 h-5" />
           </button>
         </div>
 
         {/* Modal Body */}
-        <div className="p-6 sm:p-8 overflow-y-auto text-sm leading-relaxed text-gray-700 space-y-4">
+        <div
+          data-lenis-prevent
+          className="p-5 sm:p-8 flex-1 min-h-0 overflow-y-auto overscroll-contain text-sm leading-relaxed text-gray-700 space-y-4"
+          style={{ WebkitOverflowScrolling: 'touch', touchAction: 'pan-y' }}
+        >
           {type === 'privacy' && (
             <>
               <p className="font-medium text-gray-900">
@@ -114,11 +120,11 @@ export const PolicyModal: React.FC<ModalProps> = ({ isOpen, onClose, title, type
         </div>
 
         {/* Modal Footer */}
-        <div className="p-4 sm:p-5 border-t border-[#2E4823]/10 bg-[#F7F3EB] flex justify-end">
+        <div className="p-4 sm:p-5 border-t border-[#2E4823]/10 bg-[#F7F3EB] flex justify-end shrink-0">
           <button
             type="button"
             onClick={onClose}
-            className="px-5 py-2.5 rounded-xl bg-[#2E4823] text-white text-sm font-semibold hover:bg-[#223719] transition-colors"
+            className="px-5 py-2.5 rounded-xl bg-[#2E4823] text-white text-sm font-semibold hover:bg-[#223719] transition-colors shadow-xs"
           >
             I Understand
           </button>
