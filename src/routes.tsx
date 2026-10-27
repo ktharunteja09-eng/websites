@@ -10,6 +10,9 @@ import App, {
   GalleryPageWrapper,
   ContactPageWrapper,
   NotFoundPageWrapper,
+  AdminPageWrapper,
+  PrivacyPageWrapper,
+  TermsPageWrapper,
 } from './App';
 
 export const routes: RouteRecord[] = [
@@ -44,6 +47,30 @@ export const routes: RouteRecord[] = [
       {
         path: 'contact',
         element: <ContactPageWrapper />,
+      },
+      {
+        path: 'admin',
+        element: <AdminPageWrapper />,
+      },
+      {
+        path: 'privacy',
+        element: <PrivacyPageWrapper />,
+      },
+      {
+        path: 'privacy-policy',
+        element: <Navigate to="/privacy" replace />,
+      },
+      {
+        path: 'terms',
+        element: <TermsPageWrapper />,
+      },
+      {
+        path: 'terms-and-conditions',
+        element: <Navigate to="/terms" replace />,
+      },
+      {
+        path: 'terms-of-service',
+        element: <Navigate to="/terms" replace />,
       },
       // 301-equivalent client and SSG redirects for aliases
       {

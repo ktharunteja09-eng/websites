@@ -57,7 +57,7 @@ export const ClosingCTA: React.FC<ClosingCTAProps> = ({ onOpenOrderModal, onOpen
               type="button"
               onClick={onOpenBookModal}
               id="closing-cta-reserve-btn"
-              className="w-full sm:w-auto inline-flex items-center justify-center gap-2.5 px-7 py-3.5 rounded-xl bg-[#2E4823] hover:bg-[#24391c] text-white font-semibold text-base shadow-[0_4px_20px_rgba(46,72,35,0.4)] hover:shadow-[0_6px_25px_rgba(46,72,35,0.6)] transition-all duration-200 transform hover:scale-[1.02] active:scale-[0.98] cursor-pointer"
+              className="btn-lg w-full sm:w-auto rounded-xl bg-[#2E4823] hover:bg-[#24391c] text-white font-semibold shadow-[0_4px_20px_rgba(46,72,35,0.4)] hover:shadow-[0_6px_25px_rgba(46,72,35,0.6)] transition-all duration-200 transform hover:scale-[1.02] active:scale-[0.98] cursor-pointer"
             >
               <Calendar className="w-5 h-5 text-amber-300" />
               <span>Call to Book</span>
@@ -68,7 +68,7 @@ export const ClosingCTA: React.FC<ClosingCTAProps> = ({ onOpenOrderModal, onOpen
               type="button"
               onClick={onOpenOrderModal}
               id="closing-cta-order-btn"
-              className="w-full sm:w-auto inline-flex items-center justify-center gap-2.5 px-7 py-3.5 rounded-xl bg-[#D3452B] hover:bg-[#BD3B22] text-white font-semibold text-base shadow-[0_4px_20px_rgba(211,69,43,0.4)] hover:shadow-[0_6px_25px_rgba(211,69,43,0.6)] transition-all duration-200 transform hover:scale-[1.02] active:scale-[0.98] cursor-pointer"
+              className="btn-lg w-full sm:w-auto rounded-xl bg-[#D3452B] hover:bg-[#BD3B22] text-white font-semibold shadow-[0_4px_20px_rgba(211,69,43,0.4)] hover:shadow-[0_6px_25px_rgba(211,69,43,0.6)] transition-all duration-200 transform hover:scale-[1.02] active:scale-[0.98] cursor-pointer"
             >
               <UtensilsCrossed className="w-5 h-5" />
               <span>Order Online</span>
@@ -90,7 +90,7 @@ export const ClosingCTA: React.FC<ClosingCTAProps> = ({ onOpenOrderModal, onOpen
           <div className="mt-8 pt-6 border-t border-white/10 flex flex-wrap items-center justify-center gap-6 text-xs text-white/70">
             <span className="flex items-center gap-1.5">
               <Clock className="w-4 h-4 text-emerald-400" />
-              Open Daily 12:00 PM &ndash; 11:00 PM
+              Open Daily 10:30 AM &ndash; 11:00 PM
             </span>
             <span className="flex items-center gap-1.5">
               <MapPin className="w-4 h-4 text-[#D3452B]" />

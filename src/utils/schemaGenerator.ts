@@ -1,5 +1,6 @@
 import { RESTAURANT_INFO, MENU_CATEGORIES, MENU_ITEMS, TESTIMONIALS } from '../data/restaurantData';
-import { PHOTO_MENU_ITEMS } from '../data/photoMenuData';
+import { getDishImage } from '../data/menuImageMap';
+import { SITE_URL } from '../data/config';
 
 /**
  * Generates Schema.org LocalBusiness / Restaurant JSON-LD structured data.
@@ -9,18 +10,18 @@ export function getRestaurantSchema() {
   return {
     '@context': 'https://schema.org',
     '@type': ['Restaurant', 'FoodEstablishment', 'LocalBusiness'],
-    '@id': 'https://vaibhavgrand.com/#restaurant',
+    '@id': `${SITE_URL}/#restaurant`,
     name: RESTAURANT_INFO.name,
     alternateName: ['Vaibhav Grand', 'Vaibhav Restaurant Renigunta', 'Vaibhav Grand Tirupati'],
     description:
       'Premier family restaurant in Renigunta, Tirupati specializing in authentic Arabian Chicken & Mutton Mandi platters, firewood Hyderabadi Dum Biryani family buckets, live charcoal tandoori grills, and Mughlai curries. Featuring 100% AC family seating, certified Halal meats, and easy highway parking.',
     image: [
-      'https://vaibhavgrand.com/assets/vaibhav-grand-webp-images/front6.webp',
-      'https://vaibhavgrand.com/assets/vaibhav-grand-webp-images/food14.webp',
-      'https://vaibhavgrand.com/assets/vaibhav-grand-webp-images/ambiance.webp',
-      'https://vaibhavgrand.com/assets/vaibhav-grand-webp-images/food12.webp'
+      `${SITE_URL}/assets/images/chicken_mandi_hero_1789894879370.webp`,
+      `${SITE_URL}/assets/vaibhav-grand-webp-images/front.webp`,
+      `${SITE_URL}/assets/vaibhav-grand-webp-images/ambiance1.webp`,
+      `${SITE_URL}/assets/vaibhav-grand-webp-images/food1.webp`
     ],
-    url: 'https://vaibhavgrand.com/',
+    url: `${SITE_URL}/`,
     telephone: `+91-${RESTAURANT_INFO.phone}`,
     email: RESTAURANT_INFO.email,
     priceRange: '₹₹',
@@ -72,11 +73,11 @@ export function getRestaurantSchema() {
           'Saturday',
           'Sunday'
         ],
-        opens: '12:00',
+        opens: '10:30',
         closes: '23:00'
       }
     ],
-    menu: 'https://vaibhavgrand.com/menu',
+    menu: `${SITE_URL}/menu`,
     acceptsReservations: true,
     aggregateRating: {
       '@type': 'AggregateRating',
@@ -86,12 +87,11 @@ export function getRestaurantSchema() {
       worstRating: '1'
     },
     sameAs: [
-      RESTAURANT_INFO.googleMapsUrl,
       RESTAURANT_INFO.instagramUrl,
       RESTAURANT_INFO.facebookUrl,
       RESTAURANT_INFO.swiggyUrl,
       RESTAURANT_INFO.zomatoUrl,
-      RESTAURANT_INFO.justdialUrl
+      RESTAURANT_INFO.googleMapsUrl
     ]
   };
 }
@@ -107,16 +107,16 @@ export function getMenuSchema() {
     '@context': 'https://schema.org',
     '@type': 'Menu',
     name: 'Vaibhav Grand Culinary Menu',
-    url: 'https://vaibhavgrand.com/menu',
+    url: `${SITE_URL}/menu`,
     inLanguage: 'en',
-    mainEntityOfPage: 'https://vaibhavgrand.com/menu',
+    mainEntityOfPage: `${SITE_URL}/menu`,
     hasMenuSection: categories.map((cat) => {
       const items = MENU_ITEMS.filter((item) => item.category === cat.id);
       return {
         '@type': 'MenuSection',
         name: cat.label,
         hasMenuItem: items.map((dish) => {
-          const photoMatch = PHOTO_MENU_ITEMS.find((p) => p.name.toLowerCase() === dish.name.toLowerCase());
+          const dishImage = getDishImage(dish.name);
           return {
             '@type': 'MenuItem',
             name: dish.name,
@@ -128,8 +128,8 @@ export function getMenuSchema() {
               availability: 'https://schema.org/InStock'
             },
             ...(dish.isVeg ? { suitableForDiet: 'https://schema.org/VegetarianDiet' } : {}),
-            ...(photoMatch?.image
-              ? { image: `https://vaibhavgrand.com${photoMatch.image}` }
+            ...(dishImage
+              ? { image: `${SITE_URL}${dishImage}` }
               : {})
           };
         })
@@ -146,7 +146,7 @@ export function getReviewsSchema() {
   return {
     '@context': 'https://schema.org',
     '@type': 'Restaurant',
-    '@id': 'https://vaibhavgrand.com/#restaurant',
+    '@id': `${SITE_URL}/#restaurant`,
     name: RESTAURANT_INFO.name,
     aggregateRating: {
       '@type': 'AggregateRating',

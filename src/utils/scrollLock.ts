@@ -10,8 +10,10 @@ let originalBodyLeft = '';
 let originalBodyRight = '';
 let originalBodyWidth = '';
 
+const isBrowser = typeof window !== 'undefined' && typeof document !== 'undefined' && !(typeof process !== 'undefined' && Boolean(process.versions?.node));
+
 export function lockScroll() {
-  if (typeof window === 'undefined' || typeof document === 'undefined') return;
+  if (!isBrowser) return;
 
   lockCount++;
   if (lockCount === 1) {
@@ -28,7 +30,6 @@ export function lockScroll() {
     }
 
     originalBodyOverflow = document.body.style.overflow;
-    originalHtmlOverflow = document.documentElement.style.overflow;
     originalBodyPosition = document.body.style.position;
     originalBodyTop = document.body.style.top;
     originalBodyLeft = document.body.style.left;
@@ -41,12 +42,11 @@ export function lockScroll() {
     document.body.style.right = '0';
     document.body.style.width = '100%';
     document.body.style.overflow = 'hidden';
-    document.documentElement.style.overflow = 'hidden';
   }
 }
 
 export function unlockScroll() {
-  if (typeof window === 'undefined' || typeof document === 'undefined') return;
+  if (!isBrowser) return;
 
   lockCount = Math.max(0, lockCount - 1);
   if (lockCount === 0) {
@@ -56,7 +56,6 @@ export function unlockScroll() {
     document.body.style.right = originalBodyRight;
     document.body.style.width = originalBodyWidth;
     document.body.style.overflow = originalBodyOverflow;
-    document.documentElement.style.overflow = originalHtmlOverflow;
 
     window.scrollTo(0, savedScrollY);
 

@@ -1,5 +1,6 @@
 import React from 'react';
 import { RESTAURANT_INFO } from '../data/restaurantData';
+import { WHATSAPP_NUMBER } from '../utils/supabaseClient';
 import { MapPin, Clock, Phone, Mail, Instagram, Facebook, MessageCircle, ExternalLink, Star } from 'lucide-react';
 import { BrandEmblem } from './BrandEmblem';
 
@@ -25,16 +26,15 @@ export const Footer: React.FC<FooterProps> = ({
 
           {/* Column 1: Restaurant Brand & Address */}
           <div className="space-y-4">
-            <div className="flex items-center gap-3">
-              <BrandEmblem className="w-10 h-10 shrink-0" idSuffix="footer" />
-              <div className="flex flex-col">
-                <span className="font-['Playfair_Display'] text-2xl font-bold tracking-tight text-white">
-                  Vaibhav Grand
-                </span>
-                <span className="text-[10px] uppercase tracking-[0.2em] text-[#D3452B] font-semibold mt-0.5">
-                  Family Restaurant • Renigunta
-                </span>
-              </div>
+            <div className="flex items-center">
+              <img
+                src="/assets/images/vaibhav-grand-logo.png"
+                alt="Vaibhav Grand Family Restaurant Logo"
+                width={1766}
+                height={866}
+                loading="lazy"
+                className="h-16 sm:h-18 w-auto object-contain select-none"
+              />
             </div>
 
             <p className="text-xs sm:text-sm text-gray-400 leading-relaxed">
@@ -133,7 +133,7 @@ export const Footer: React.FC<FooterProps> = ({
               <Clock className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" />
               <div>
                 <p className="font-semibold text-white">Open Daily (365 Days)</p>
-                <p className="text-gray-400 mt-0.5">12:00 PM – 11:00 PM</p>
+                <p className="text-gray-400 mt-0.5">10:30 AM – 11:00 PM</p>
                 <p className="text-[11px] text-gray-500 mt-1">Lunch, High Tea &amp; Late Dinner</p>
               </div>
             </div>
@@ -201,13 +201,13 @@ export const Footer: React.FC<FooterProps> = ({
               <div className="flex items-center gap-2.5">
                 {/* WhatsApp */}
                 <a
-                  href={`https://wa.me/91${RESTAURANT_INFO.phone}?text=Hi%2C%20I%27d%20like%20to%20know%20more%20%2F%20book%20a%20table`}
+                  href={`https://api.whatsapp.com/send?phone=${WHATSAPP_NUMBER}&text=Hi%2C%20I%27d%20like%20to%20know%20more%20%2F%20book%20a%20table`}
                   target="_blank"
                   rel="noopener noreferrer"
                   aria-label="Chat with Vaibhav Grand on WhatsApp"
-                  className="w-9 h-9 rounded-full bg-white/10 hover:bg-[#25D366] text-white flex items-center justify-center transition-colors"
+                  className="btn-icon rounded-full bg-white/10 hover:bg-[#25D366] text-white transition-colors"
                 >
-                  <MessageCircle className="w-4 h-4" />
+                  <MessageCircle className="w-5 h-5" />
                 </a>
 
                 {/* Instagram */}
@@ -216,9 +216,9 @@ export const Footer: React.FC<FooterProps> = ({
                   target="_blank"
                   rel="noopener noreferrer"
                   aria-label="Follow Vaibhav Grand on Instagram"
-                  className="w-9 h-9 rounded-full bg-white/10 hover:bg-[#E1306C] text-white flex items-center justify-center transition-colors"
+                  className="btn-icon rounded-full bg-white/10 hover:bg-[#E1306C] text-white transition-colors"
                 >
-                  <Instagram className="w-4 h-4" />
+                  <Instagram className="w-5 h-5" />
                 </a>
 
                 {/* Facebook */}
@@ -227,9 +227,9 @@ export const Footer: React.FC<FooterProps> = ({
                   target="_blank"
                   rel="noopener noreferrer"
                   aria-label="Follow Vaibhav Grand on Facebook"
-                  className="w-9 h-9 rounded-full bg-white/10 hover:bg-[#1877F2] text-white flex items-center justify-center transition-colors"
+                  className="btn-icon rounded-full bg-white/10 hover:bg-[#1877F2] text-white transition-colors"
                 >
-                  <Facebook className="w-4 h-4" />
+                  <Facebook className="w-5 h-5" />
                 </a>
               </div>
             </div>
@@ -253,10 +253,11 @@ export const Footer: React.FC<FooterProps> = ({
           <div className="flex items-center gap-6">
             <button
               type="button"
-              onClick={onOpen404}
+              onClick={() => onNavigate('/admin')}
               className="hover:text-white transition-colors underline-offset-4 hover:underline text-[11px]"
+              aria-label="Admin Portal"
             >
-              404 Page
+              Admin Portal
             </button>
             <button
               type="button"
@@ -271,6 +272,14 @@ export const Footer: React.FC<FooterProps> = ({
               className="hover:text-white transition-colors underline-offset-4 hover:underline text-[11px]"
             >
               Terms of Service
+            </button>
+            <button
+              type="button"
+              onClick={onOpen404}
+              id="footer-404-link"
+              className="hover:text-amber-300 text-gray-400 transition-colors underline-offset-4 hover:underline text-[11px] font-semibold"
+            >
+              404 Page
             </button>
           </div>
         </div>

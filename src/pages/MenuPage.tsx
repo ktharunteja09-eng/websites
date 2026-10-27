@@ -22,8 +22,8 @@ export const MenuPage: React.FC<MenuPageProps> = ({
       {/* Dynamic SEO & Schema.org Menu */}
       <SEO path="/menu" jsonLd={getMenuSchema()} />
 
-      {/* Subpage Header Banner */}
-      <div className="bg-[#1C1C1C] text-white py-14 sm:py-20 relative overflow-hidden">
+      {/* Subpage Header Banner (Optimized for Mobile & Desktop) */}
+      <div className="bg-[#1C1C1C] text-white py-8 sm:py-16 relative overflow-hidden">
         <div className="absolute inset-0 opacity-20 pointer-events-none">
           <img
             src="/assets/vaibhav-grand-webp-images/food14.webp"
@@ -37,7 +37,7 @@ export const MenuPage: React.FC<MenuPageProps> = ({
 
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10 text-center">
           {/* Breadcrumb */}
-          <nav className="flex items-center justify-center gap-2 text-xs font-semibold text-gray-400 mb-4" aria-label="Breadcrumb">
+          <nav className="flex items-center justify-center gap-2 text-[11px] sm:text-xs font-semibold text-gray-400 mb-2.5 sm:mb-4" aria-label="Breadcrumb">
             <button
               type="button"
               onClick={onNavigateHome}
@@ -50,18 +50,18 @@ export const MenuPage: React.FC<MenuPageProps> = ({
             <span className="text-amber-400">Culinary Menu</span>
           </nav>
 
-          <span className="text-xs uppercase font-bold tracking-[0.25em] text-[#D3452B] block mb-2">
+          <span className="text-[10px] sm:text-xs uppercase font-bold tracking-[0.25em] text-[#D3452B] block mb-1.5 sm:mb-2">
             VAIBHAV GRAND DINING
           </span>
-          <h1 className="font-['Playfair_Display'] text-4xl sm:text-5xl lg:text-6xl font-bold tracking-tight">
+          <h1 className="font-['Playfair_Display'] text-2xl sm:text-4xl lg:text-5xl font-bold tracking-tight">
             Our Grand Culinary Menu
           </h1>
-          <div className="w-16 h-1 bg-[#D3452B] mx-auto mt-4 rounded-full" />
-          <p className="mt-4 text-base sm:text-lg text-white/80 max-w-2xl mx-auto leading-relaxed">
+          <div className="w-12 sm:w-16 h-0.5 sm:h-1 bg-[#D3452B] mx-auto mt-2.5 sm:mt-4 rounded-full" />
+          <p className="mt-2.5 sm:mt-4 text-xs sm:text-base text-white/80 max-w-2xl mx-auto leading-relaxed">
             Authentic Arabic Mandi feasts, Hyderabadi dum biryani family buckets, clay-oven tandoori grills, rich curries &amp; thick milkshakes.
           </p>
 
-          <div className="mt-6 flex flex-wrap items-center justify-center gap-4 text-xs sm:text-sm text-gray-300">
+          <div className="mt-4 sm:mt-6 flex flex-wrap items-center justify-center gap-2 sm:gap-4 text-[11px] sm:text-sm text-gray-300">
             <span>Dine-In • Takeaway • Doorstep Delivery</span>
             <span>•</span>
             <span className="font-bold text-amber-300">

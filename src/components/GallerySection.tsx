@@ -101,7 +101,7 @@ export const GallerySection: React.FC = () => {
                     block: 'nearest',
                   });
                 }}
-                className={`px-3.5 sm:px-4 py-2 rounded-xl text-xs sm:text-sm font-semibold whitespace-nowrap shrink-0 transition-all duration-200 ${
+                className={`btn-sm rounded-xl font-semibold whitespace-nowrap shrink-0 transition-all duration-200 ${
                   activeCategory === cat
                     ? 'bg-[#2E4823] text-white shadow-xs font-bold'
                     : 'text-gray-600 hover:text-[#2E4823]'
@@ -175,30 +175,30 @@ export const GallerySection: React.FC = () => {
             <button
               type="button"
               onClick={closeLightbox}
-              className="absolute top-4 right-4 z-50 p-2.5 rounded-full bg-white/10 hover:bg-white/20 text-white transition-colors"
+              className="btn-icon absolute top-4 right-4 z-50 rounded-full bg-white/10 hover:bg-white/20 text-white transition-colors"
               aria-label="Close Lightbox"
             >
-              <X className="w-6 h-6" />
+              <X className="w-5 h-5" />
             </button>
 
             {/* Left Nav Arrow */}
             <button
               type="button"
               onClick={handlePrev}
-              className="absolute left-4 z-50 p-3 rounded-full bg-white/10 hover:bg-white/25 text-white transition-colors hidden sm:flex items-center justify-center"
+              className="btn-icon absolute left-4 z-50 rounded-full bg-white/10 hover:bg-white/25 text-white transition-colors hidden sm:flex items-center justify-center"
               aria-label="Previous Photo"
             >
-              <ChevronLeft className="w-6 h-6" />
+              <ChevronLeft className="w-5 h-5" />
             </button>
 
             {/* Right Nav Arrow */}
             <button
               type="button"
               onClick={handleNext}
-              className="absolute right-4 z-50 p-3 rounded-full bg-white/10 hover:bg-white/25 text-white transition-colors hidden sm:flex items-center justify-center"
+              className="btn-icon absolute right-4 z-50 rounded-full bg-white/10 hover:bg-white/25 text-white transition-colors hidden sm:flex items-center justify-center"
               aria-label="Next Photo"
             >
-              <ChevronRight className="w-6 h-6" />
+              <ChevronRight className="w-5 h-5" />
             </button>
 
             {/* Active Image Container */}
@@ -211,6 +211,7 @@ export const GallerySection: React.FC = () => {
                 alt={activePhoto.altText}
                 width={1000}
                 height={750}
+                loading="lazy"
                 className="max-h-[75vh] w-auto max-w-full rounded-2xl object-contain shadow-2xl"
               />
               <div className="mt-4 text-center">

@@ -1,16 +1,22 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { HERO_SLIDES, RESTAURANT_INFO } from '../data/restaurantData';
-import { Phone, ChevronDown, Utensils, Star, ExternalLink, Calendar, BookOpen } from 'lucide-react';
+import { Phone, ChevronDown, Utensils, Star, ExternalLink, BookOpen, ArrowRight, TrendingDown, Sparkles } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { useLenis } from './SmoothScrollProvider';
 
 interface HeroProps {
-  onOpenBookModal: () => void;
+  onOpenBookModal?: () => void;
   onOpenOrderModal: () => void;
   onNavigate?: (page: string) => void;
+  onOpenCompareModal?: () => void;
 }
 
-export const Hero: React.FC<HeroProps> = ({ onOpenBookModal, onOpenOrderModal, onNavigate }) => {
+export const Hero: React.FC<HeroProps> = ({ 
+  onOpenBookModal, 
+  onOpenOrderModal, 
+  onNavigate,
+  onOpenCompareModal,
+}) => {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [orderDropdownOpen, setOrderDropdownOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
@@ -19,6 +25,7 @@ export const Hero: React.FC<HeroProps> = ({ onOpenBookModal, onOpenOrderModal, o
 
   // Auto crossfade every 5 seconds
   useEffect(() => {
+    if (typeof window === 'undefined' || (typeof process !== 'undefined' && Boolean(process.versions?.node))) return;
     const timer = setInterval(() => {
       setCurrentIndex((prev) => (prev + 1) % HERO_SLIDES.length);
     }, 5000);
@@ -27,6 +34,7 @@ export const Hero: React.FC<HeroProps> = ({ onOpenBookModal, onOpenOrderModal, o
 
   // Preload all slides immediately in memory
   useEffect(() => {
+    if (typeof window === 'undefined' || typeof Image === 'undefined' || (typeof process !== 'undefined' && Boolean(process.versions?.node))) return;
     HERO_SLIDES.forEach((slide) => {
       const img = new Image();
       img.src = slide.imageUrl;
@@ -35,6 +43,7 @@ export const Hero: React.FC<HeroProps> = ({ onOpenBookModal, onOpenOrderModal, o
 
   // Butter-smooth, zero-React-re-render compositor parallax using requestAnimationFrame
   useEffect(() => {
+    if (typeof window === 'undefined' || (typeof process !== 'undefined' && Boolean(process.versions?.node))) return;
     let rafId: number | null = null;
     const handleScroll = () => {
       if (rafId !== null) return;
@@ -156,28 +165,31 @@ export const Hero: React.FC<HeroProps> = ({ onOpenBookModal, onOpenOrderModal, o
         >
           <span className="flex items-center gap-1.5 font-medium">
             <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
-            Open Daily: 12:00 PM – 11:00 PM
+            Open Daily: 10:30 AM – 11:00 PM
           </span>
           <span className="hidden sm:inline">•</span>
           <span>Plot 157, Ramana Vilas Circle, Renigunta</span>
         </motion.div>
 
-        {/* 3 Call to Action Buttons */}
+        {/* Call to Action Buttons: Direct Order & View Menu */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.7, delay: 0.5, ease: 'easeOut' }}
           className="mt-8 flex flex-col sm:flex-row items-center justify-center gap-3.5 w-full sm:w-auto"
         >
-          {/* Call to Book Table Button */}
+          {/* Order Online Button (Primary Conversion CTA) */}
           <button
             type="button"
-            onClick={onOpenBookModal}
-            id="hero-reserve-btn"
-            className="btn-shimmer w-full sm:w-auto min-w-[180px] min-h-[50px] px-7 py-3.5 rounded-full bg-[#2E4823] hover:bg-[#233719] text-[#FDFBF7] font-bold text-sm sm:text-base shadow-[0_4px_16px_rgba(46,72,35,0.5)] hover:shadow-[0_8px_24px_rgba(46,72,35,0.6)] transition-all duration-200 transform hover:scale-[1.03] active:scale-[0.98] flex items-center justify-center gap-2 border border-white/20 focus:outline-none"
+            id="hero-order-btn"
+            onClick={onOpenOrderModal}
+            className="btn-shimmer btn-lg relative w-full sm:w-auto rounded-full bg-[#D3452B] hover:bg-[#BD3B22] text-white font-bold shadow-[0_4px_20px_rgba(211,69,43,0.55)] hover:shadow-[0_8px_28px_rgba(211,69,43,0.7)] transition-all duration-200 transform hover:scale-[1.03] active:scale-[0.98] focus:outline-none"
           >
-            <Calendar className="w-4 h-4 text-amber-300" />
-            <span>Call to Book</span>
+            <Utensils className="w-5 h-5" />
+            <span>Order Online</span>
+            <span className="ml-1 text-[10px] font-extrabold uppercase bg-amber-400 text-[#1C1C1C] px-2 py-0.5 rounded-full shadow-xs tracking-wider">
+              Save 25%+
+            </span>
           </button>
 
           {/* View Menu Button */}
@@ -185,22 +197,49 @@ export const Hero: React.FC<HeroProps> = ({ onOpenBookModal, onOpenOrderModal, o
             type="button"
             onClick={() => onNavigate ? onNavigate('menu') : scrollTo('#menu', { offset: -70, duration: 1.15 })}
             id="hero-menu-btn"
-            className="w-full sm:w-auto min-w-[180px] min-h-[50px] px-7 py-3.5 rounded-full bg-white/15 hover:bg-white/25 text-white font-bold text-sm sm:text-base backdrop-blur-md border border-white/30 transition-all duration-200 transform hover:scale-[1.03] active:scale-[0.98] flex items-center justify-center gap-2"
+            className="btn-lg w-full sm:w-auto rounded-full bg-white/15 hover:bg-white/25 text-white font-bold backdrop-blur-md border border-white/30 transition-all duration-200 transform hover:scale-[1.03] active:scale-[0.98]"
           >
-            <BookOpen className="w-4 h-4 text-white" />
+            <BookOpen className="w-5 h-5 text-white" />
             <span>View Full Menu</span>
           </button>
+        </motion.div>
 
-          {/* Order Online Button */}
-          <button
-            type="button"
-            id="hero-order-btn"
-            onClick={onOpenOrderModal}
-            className="btn-shimmer w-full sm:w-auto min-w-[180px] min-h-[50px] px-7 py-3.5 rounded-full bg-[#D3452B] hover:bg-[#BD3B22] text-white font-bold text-sm sm:text-base shadow-[0_4px_16px_rgba(211,69,43,0.5)] hover:shadow-[0_8px_26px_rgba(211,69,43,0.65)] transition-all duration-200 transform hover:scale-[1.03] active:scale-[0.98] flex items-center justify-center gap-2 focus:outline-none"
-          >
-            <Utensils className="w-4 h-4" />
-            <span>Order Online</span>
-          </button>
+        {/* Direct Order Trust & Savings Strip */}
+        <motion.div
+          initial={{ opacity: 0, y: 16 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.7, delay: 0.55, ease: 'easeOut' }}
+          className="mt-6 w-full max-w-2xl bg-black/50 backdrop-blur-md rounded-2xl p-3 sm:p-3.5 border border-white/20 shadow-xl flex flex-col sm:flex-row items-center justify-between gap-3 text-left"
+        >
+          <div className="flex items-center gap-3">
+            <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-amber-400 to-[#D3452B] text-white flex items-center justify-center font-bold text-sm shrink-0 shadow-md">
+              ₹
+            </div>
+            <div>
+              <div className="flex items-center gap-2 flex-wrap">
+                <span className="text-xs sm:text-sm font-bold text-white">
+                  Order Direct &amp; Save ₹150–₹250+
+                </span>
+                <span className="text-[10px] bg-emerald-500/90 text-white font-extrabold px-1.5 py-0.2 rounded uppercase">
+                  Zero App Markup
+                </span>
+              </div>
+              <p className="text-[11px] sm:text-xs text-white/80 mt-0.5">
+                ₹0 Platform Fees • Real Dine-In Menu Prices • Free 5km Delivery above ₹299
+              </p>
+            </div>
+          </div>
+
+          {onOpenCompareModal && (
+            <button
+              type="button"
+              onClick={onOpenCompareModal}
+              className="btn-sm shrink-0 w-full sm:w-auto rounded-xl bg-white/15 hover:bg-white/25 text-amber-300 hover:text-white border border-amber-400/40 font-bold transition-all active:scale-95"
+            >
+              <span>Compare Prices</span>
+              <ArrowRight className="w-3.5 h-3.5" />
+            </button>
+          )}
         </motion.div>
 
         {/* Hero Slider Dots & Active Slide Name */}

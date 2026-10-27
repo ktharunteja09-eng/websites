@@ -123,7 +123,7 @@ export const WhyChooseUs: React.FC = () => {
         'Generous family buckets that save significantly compared to single orders',
         'Bountiful Mandi platters accompanied by complimentary salad, mayo & salan',
         'Affordable daily prices for college students, families & pilgrims',
-        'Direct takeaway and doorstep delivery via Swiggy & Zomato'
+        'Save 25%–35% by ordering direct on our website with ₹0 platform fees & free 5km delivery'
       ],
       dishHighlight: {
         name: 'Family Chicken Dum Biryani',

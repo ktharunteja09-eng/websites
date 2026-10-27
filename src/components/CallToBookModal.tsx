@@ -48,7 +48,7 @@ export const CallToBookModal: React.FC<CallToBookModalProps> = ({ isOpen, onClos
             </button>
 
             <div className="flex items-center gap-3 mb-2">
-              <BrandEmblem className="w-8 h-8 text-amber-400" />
+              <BrandEmblem className="h-8 w-auto object-contain" />
               <span className="text-xs uppercase tracking-widest text-amber-300 font-bold">
                 Table Reservations &amp; Gatherings
               </span>
@@ -79,7 +79,7 @@ export const CallToBookModal: React.FC<CallToBookModalProps> = ({ isOpen, onClos
                 <Clock className="w-4 h-4 text-[#2E4823] shrink-0 mt-0.5" />
                 <div>
                   <strong className="block text-[#1C1C1C] font-semibold">Dining Hours</strong>
-                  <span>12:00 PM – 11:00 PM (Every Day)</span>
+                  <span>10:30 AM – 11:00 PM (Every Day)</span>
                 </div>
               </div>
 

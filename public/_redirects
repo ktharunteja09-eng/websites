@@ -1,0 +1,13 @@
+/dishes /menu 301
+/our-dishes /menu 301
+/why-us /about 301
+/specialties /about 301
+/events /catering 301
+/testimonials /reviews 301
+/hours /contact 301
+/location /contact 301
+/home / 301
+
+# Admin SPA fallback for hard refreshes (serves pre-rendered admin/index.html with 200)
+/admin /admin/index.html 200
+/admin/* /admin/index.html 200

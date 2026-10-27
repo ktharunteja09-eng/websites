@@ -22,6 +22,8 @@ export const SmoothScrollProvider: React.FC<SmoothScrollProviderProps> = ({ chil
   const rafRef = useRef<number | null>(null);
 
   useEffect(() => {
+    if (typeof window === 'undefined' || (typeof process !== 'undefined' && Boolean(process.versions?.node))) return;
+
     // Initialize Lenis with luxury exponential ease-out for a silky "butter-smooth" glide
     const lenis = new Lenis({
       duration: 1.15,

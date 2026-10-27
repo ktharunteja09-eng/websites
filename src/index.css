@@ -156,3 +156,71 @@ button:active,
   animation-play-state: paused;
 }
 
+/* ─── Shared Button Size Scale ──────────────────────────────────────────────
+   Apply these size-only utilities to existing buttons.
+   Never set color or font-family here.
+   lg  → hero / closing CTA  (h-12 / 48 px)
+   md  → default text CTA    (h-11 / 44 px)
+   sm  → dense / chip / ADD  (visible h-9 / 36 px, 44 px touch area via ::before)
+   icon→ icon-only buttons   (44 × 44 px)
+   ──────────────────────────────────────────────────────────────────────────── */
+.btn-lg {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 3rem;          /* 48 px */
+  padding-left: 2rem;    /* px-8 */
+  padding-right: 2rem;
+  font-size: 1rem;       /* 16 px */
+  gap: 0.5rem;           /* 8 px */
+  white-space: nowrap;
+}
+
+.btn-md {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 2.75rem;       /* 44 px */
+  padding-left: 1.5rem;  /* px-6 */
+  padding-right: 1.5rem;
+  font-size: 0.875rem;   /* 14 px */
+  gap: 0.5rem;
+  white-space: nowrap;
+}
+
+.btn-sm {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 2.25rem;       /* 36 px visible */
+  padding-left: 1rem;    /* px-4 */
+  padding-right: 1rem;
+  font-size: 0.8125rem;  /* 13 px */
+  gap: 0.375rem;
+  white-space: nowrap;
+}
+
+/* Invisible 44 px touch target around sm buttons */
+.btn-sm::before {
+  content: '';
+  position: absolute;
+  inset: -0.25rem;       /* expands hit area by 4 px each side (≥44 px tall) */
+}
+
+.btn-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.75rem;        /* 44 px */
+  height: 2.75rem;
+  flex-shrink: 0;
+}
+
+/* Inputs / selects standardised height */
+.input-md {
+  height: 2.75rem;       /* 44 px */
+  padding-left: 1rem;
+  padding-right: 1rem;
+  font-size: 0.875rem;
+}

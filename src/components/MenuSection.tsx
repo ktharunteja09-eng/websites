@@ -1,19 +1,472 @@
-import React, { useState, useMemo } from 'react';
-import { MENU_ITEMS, MENU_CATEGORIES, RESTAURANT_INFO, PHOTO_MENU_ITEMS } from '../data/restaurantData';
-import { Search, ExternalLink, Phone, Sparkles, Camera, ListOrdered, Utensils } from 'lucide-react';
+import React, { useState, useMemo, useEffect } from 'react';
+import { MENU_CATEGORIES, RESTAURANT_INFO, MENU_ITEMS } from '../data/restaurantData';
+import {
+  Search,
+  ExternalLink,
+  Phone,
+  Sparkles,
+  Utensils,
+  MapPin,
+  ShoppingBag,
+  Plus,
+  Minus,
+  CheckCircle2,
+  AlertTriangle,
+  RotateCcw,
+  Navigation,
+  X,
+  TrendingDown,
+  ShieldCheck,
+  Gift,
+  Percent,
+} from 'lucide-react';
 import { motion } from 'motion/react';
-import { PhotoMenu } from './PhotoMenu';
-import { MenuCategoryType } from '../types';
+import { MenuCategoryType, DbMenuItem, CartItem, StoreOffer, OrderType } from '../types';
+import { useLiveMenu } from '../hooks/useLiveMenu';
+import {
+  fetchMenuItems,
+  fetchStoreOffer,
+  getLocalFallbackMenuItems,
+  calculateHaversineDistanceKm,
+  verifyDeliveryDistance,
+  RESTAURANT_COORDS,
+  DELIVERY_RADIUS_KM,
+  SWIGGY_URL,
+  ZOMATO_URL,
+} from '../utils/supabaseClient';
+import { FloatingCartBar } from './FloatingCartBar';
+import { DirectOrderModal } from './DirectOrderModal';
+import { PriceComparisonModal } from './PriceComparisonModal';
+import { useLenis } from './SmoothScrollProvider';
+import { MenuStickyPills } from './menu/MenuStickyPills';
+import { MenuBottomSheet } from './menu/MenuBottomSheet';
+import { MenuMobileItemCard } from './menu/MenuMobileItemCard';
+import { MenuSizePickerModal } from './menu/MenuSizePickerModal';
+import { MenuFloatingButton } from './menu/MenuFloatingButton';
+import { groupDishesForMobile, GroupedMobileDish, ItemVariantOption } from '../utils/menuVariants';
 
 export const MenuSection: React.FC = () => {
-  const [menuViewMode, setMenuViewMode] = useState<'list' | 'cards'>('list');
+  const { getPrice, getMrp, getSavings, isAvailable, sale, refetch: refetchLiveMenu } = useLiveMenu();
   const [selectedCategory, setSelectedCategory] = useState<MenuCategoryType>('all');
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [dietFilter, setDietFilter] = useState<'all' | 'veg' | 'non-veg'>('all');
+  const [isCompareModalOpen, setIsCompareModalOpen] = useState<boolean>(false);
+
+  // Mobile Classic Menu States
+  const { scrollTo } = useLenis();
+  const [isSheetOpen, setIsSheetOpen] = useState<boolean>(false);
+  const [isFooterVisible, setIsFooterVisible] = useState<boolean>(false);
+  const [sizePickerDish, setSizePickerDish] = useState<GroupedMobileDish | null>(null);
+  const [activeCategory, setActiveCategory] = useState<string>('all');
+  const [headerHeight, setHeaderHeight] = useState<number>(68);
+  const isScrollingProgrammatically = React.useRef<boolean>(false);
+  const scrollTimeoutRef = React.useRef<number | null>(null);
+  const menuBtnRef = React.useRef<HTMLButtonElement | null>(null);
+
+  // Supabase Data (Pre-initialized with fallback menu for complete static HTML pre-rendering)
+  const [dishes, setDishes] = useState<DbMenuItem[]>(() => getLocalFallbackMenuItems());
+  const [offer, setOffer] = useState<StoreOffer | null>(null);
+  const [loading, setLoading] = useState<boolean>(true);
+
+  // Ordering & Geolocation State
+  const [orderingMode, setOrderingMode] = useState<'none' | 'delivery' | 'pickup'>('none');
+  const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null);
+  const [userDistanceKm, setUserDistanceKm] = useState<number | null>(null);
+  const [locationError, setLocationError] = useState<boolean>(false);
+  const [geoStatus, setGeoStatus] = useState<'idle' | 'checking' | 'eligible' | 'outside' | 'error'>('idle');
+  const [showEligibleOnly, setShowEligibleOnly] = useState<boolean>(false);
+
+  // Cart & Checkout State (Synced to localStorage - ONLY sku, quantity, size)
+  const [cartItems, setCartItems] = useState<CartItem[]>([]);
+  const [cartNotice, setCartNotice] = useState<string | null>(null);
+  const [cartHydrated, setCartHydrated] = useState<boolean>(false);
+  const [isCheckoutOpen, setIsCheckoutOpen] = useState<boolean>(false);
+
+  // Cart Hydration on mount: drop legacy/missing IDs and derive current prices
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    try {
+      const saved = localStorage.getItem('cart');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          const validItems: CartItem[] = [];
+          let hadDropped = false;
+
+          for (const raw of parsed) {
+            const rawId = String(raw.sku || raw.id || '').trim();
+            const qty = Math.max(1, Number(raw.quantity) || 1);
+            if (!rawId) continue;
+
+            // Immediately drop old photo menu IDs (e.g. s-..., c-..., b-..., br-..., bev-..., r-..., n-..., m1, m3)
+            if (/^(s-|c-|b-|br-|bev-|r-|n-|m1$|m3$)/i.test(rawId)) {
+              hadDropped = true;
+              continue;
+            }
+
+            // Look up in classic catalog (base ID or variant ID)
+            const [baseKey, variantSize] = rawId.split(':');
+            const catalogMatch =
+              dishes.find((d) => String(d.id) === baseKey || String(d.id) === rawId) ||
+              MENU_ITEMS.find((m) => m.id === baseKey || m.id === rawId);
+
+            if (!catalogMatch) {
+              hadDropped = true;
+              continue;
+            }
+
+            const currentPrice = getPrice(rawId, Number(catalogMatch.price) || 0);
+            const sizeLabel =
+              raw.size ||
+              (variantSize ? variantSize.charAt(0).toUpperCase() + variantSize.slice(1) : undefined);
+            const itemName =
+              sizeLabel && !catalogMatch.name.includes(`(${sizeLabel})`)
+                ? `${catalogMatch.name} (${sizeLabel})`
+                : catalogMatch.name;
+
+            validItems.push({
+              id: rawId,
+              name: itemName,
+              category: catalogMatch.category,
+              price: currentPrice,
+              quantity: qty,
+              isVeg: 'is_veg' in catalogMatch ? catalogMatch.is_veg : catalogMatch.isVeg,
+              size: sizeLabel,
+            });
+          }
+
+          if (hadDropped) {
+            setCartNotice('Some items are no longer available and were removed from your cart.');
+          }
+          setCartItems(validItems);
+        }
+      }
+    } catch {}
+    setCartHydrated(true);
+  }, []);
+
+  // LocalStorage Persistence: store ONLY sku, quantity, and size (never prices or totals)
+  useEffect(() => {
+    if (!cartHydrated || typeof window === 'undefined') return;
+    try {
+      const serialized = cartItems.map((item) => ({
+        sku: String(item.id),
+        quantity: item.quantity,
+        size: item.size,
+      }));
+      localStorage.setItem('cart', JSON.stringify(serialized));
+      window.dispatchEvent(
+        new CustomEvent('cart-updated', { detail: { count: cartItems.length } })
+      );
+    } catch {}
+  }, [cartItems, cartHydrated]);
+
+  // Keep in-memory cart prices synchronized with live prices
+  useEffect(() => {
+    if (!cartHydrated || cartItems.length === 0) return;
+    setCartItems((prev) => {
+      let changed = false;
+      const updated = prev.map((item) => {
+        const livePrice = getPrice(item.id, item.price);
+        if (livePrice !== item.price && livePrice > 0) {
+          changed = true;
+          return { ...item, price: livePrice };
+        }
+        return item;
+      });
+      return changed ? updated : prev;
+    });
+  }, [getPrice, cartHydrated]);
+
+  // Fetch Menu & Store Offer from Supabase (with daily auto-reset)
+  useEffect(() => {
+    let isMounted = true;
+
+    async function loadData() {
+      setLoading(true);
+      const [fetchedItems, fetchedOffer] = await Promise.all([
+        fetchMenuItems(),
+        fetchStoreOffer(),
+      ]);
+
+      if (!isMounted) return;
+      setDishes(fetchedItems);
+      setOffer(fetchedOffer);
+      setLoading(false);
+    }
+
+    loadData();
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  // Restore previously verified GPS session if available
+  useEffect(() => {
+    try {
+      const savedMode = sessionStorage.getItem('vaibhav_order_mode');
+      if (savedMode === 'takeaway' || savedMode === 'pickup') {
+        setOrderingMode('pickup');
+        setShowEligibleOnly(true);
+        setGeoStatus('idle');
+      }
+
+      // Check delivery_gps_cache first
+      const cachedGps = sessionStorage.getItem('delivery_gps_cache');
+      if (cachedGps) {
+        const parsed = JSON.parse(cachedGps);
+        const dist = typeof parsed.distanceKm === 'number' && parsed.distanceKm > 0 ? parsed.distanceKm : null;
+        const isEligible = dist !== null && dist > 0 && dist <= 5.0 && Boolean(parsed.eligible);
+        setUserDistanceKm(dist);
+        if (isEligible && savedMode !== 'takeaway' && savedMode !== 'pickup') {
+          setGeoStatus('eligible');
+          setOrderingMode('delivery');
+          setShowEligibleOnly(true);
+        } else if (!isEligible && savedMode !== 'takeaway' && savedMode !== 'pickup') {
+          setGeoStatus('outside');
+          setOrderingMode('none');
+        }
+      } else {
+        const savedGeo = sessionStorage.getItem('vaibhav_delivery_geo');
+        if (savedGeo) {
+          const parsed = JSON.parse(savedGeo);
+          const dist = typeof parsed.distanceKm === 'number' ? parsed.distanceKm : parsed.roadKm;
+          if (typeof dist === 'number' && dist > 0) {
+            const isEligible = Boolean(parsed.eligible) && dist > 0 && dist <= 5.0;
+            setUserDistanceKm(dist);
+            if (isEligible && savedMode !== 'takeaway' && savedMode !== 'pickup') {
+              setGeoStatus('eligible');
+              setOrderingMode('delivery');
+              setShowEligibleOnly(true);
+            } else if (!isEligible && savedMode !== 'takeaway' && savedMode !== 'pickup') {
+              setGeoStatus('outside');
+              setOrderingMode('none');
+            }
+          }
+        }
+      }
+    } catch {}
+  }, []);
+
+  // Handle Geolocation Check for 5.0 km Direct Delivery (via ORS with Haversine fallback)
+  const handleUnlockDelivery = () => {
+    setLocationError(false);
+    if (!navigator.geolocation) {
+      setLocationError(true);
+      setUserDistanceKm(null);
+      setGeoStatus('outside');
+      setOrderingMode('none');
+      sessionStorage.setItem('delivery_gps_cache', JSON.stringify({ distanceKm: null, eligible: false }));
+      sessionStorage.setItem('vaibhav_order_mode', 'outside');
+      return;
+    }
+
+    setGeoStatus('checking');
+
+    let handled = false;
+    let watchdogTimer: ReturnType<typeof setTimeout> | null = null;
+
+    const triggerOutsideState = (err?: GeolocationPositionError | { code: number; message: string }) => {
+      if (handled) return;
+      handled = true;
+      if (watchdogTimer) clearTimeout(watchdogTimer);
+
+      console.warn('Native GPS error or blocked, switching to Outside 5km / Takeaway state:', err);
+      // Code 1: PERMISSION_DENIED, Code 2: POSITION_UNAVAILABLE, Code 3: TIMEOUT
+      setLocationError(true);
+      setUserDistanceKm(null);
+      setGeoStatus('outside');
+      setOrderingMode('none');
+      sessionStorage.setItem('delivery_gps_cache', JSON.stringify({ distanceKm: null, eligible: false }));
+      sessionStorage.setItem('vaibhav_order_mode', 'outside');
+    };
+
+    // Safety watchdog: Give full 15s to native GPS, trigger after 16s if browser freezes
+    watchdogTimer = setTimeout(() => {
+      triggerOutsideState({ code: 3, message: 'GPS watchdog timeout exceeded' });
+    }, 16000);
+
+    try {
+      navigator.geolocation.getCurrentPosition(
+        async (position) => {
+          if (handled) return;
+          handled = true;
+          if (watchdogTimer) clearTimeout(watchdogTimer);
+
+          const lat = position.coords.latitude;
+          const lng = position.coords.longitude;
+          setUserLocation({ lat, lng });
+
+          try {
+            const result = await verifyDeliveryDistance(lat, lng);
+            const dist = typeof result.distanceKm === 'number' ? result.distanceKm : (typeof result.roadKm === 'number' ? result.roadKm : null);
+            const isEligible = Boolean(result.eligible) && dist !== null && dist > 0 && dist <= 5.0;
+            setUserDistanceKm(dist);
+            setLocationError(false);
+
+            sessionStorage.setItem('delivery_gps_cache', JSON.stringify({ distanceKm: dist, eligible: isEligible }));
+            if (isEligible) {
+              setGeoStatus('eligible');
+              setOrderingMode('delivery');
+              setShowEligibleOnly(true);
+              sessionStorage.setItem('vaibhav_order_mode', 'delivery');
+            } else {
+              setGeoStatus('outside');
+              setOrderingMode('none');
+              sessionStorage.setItem('vaibhav_order_mode', 'outside');
+            }
+          } catch {
+            triggerOutsideState({ code: 2, message: 'Distance verification failed' });
+          }
+        },
+        (error) => {
+          // Native PositionError codes: 1 (Permission Denied), 2 (Position Unavailable), 3 (Timeout)
+          triggerOutsideState(error);
+        },
+        { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 }
+      );
+    } catch {
+      triggerOutsideState({ code: 2, message: 'Geolocation invocation exception' });
+    }
+  };
+
+  // Handle Unlock for Self-Pickup
+  const handleUnlockPickup = () => {
+    setLocationError(false);
+    setOrderingMode('pickup');
+    setShowEligibleOnly(true);
+    // Keep delivery_gps_cache so rejection or verified state survives tab switching
+    sessionStorage.setItem('vaibhav_order_mode', 'pickup');
+  };
+
+  // Cart Operations (Locked when checkout modal is open or when ordering mode is exited/locked)
+  const handleAddToCart = (dish: DbMenuItem) => {
+    if (isCheckoutOpen) return;
+    if (!isUnlocked) {
+      setOrderingMode('pickup');
+      sessionStorage.setItem('vaibhav_order_mode', 'pickup');
+    }
+    if (!dish.direct_order_eligible || dish.is_completed) return;
+
+    setCartItems((prev) => {
+      const existing = prev.find((item) => String(item.id) === String(dish.id));
+      if (existing) {
+        return prev.map((item) =>
+          String(item.id) === String(dish.id) ? { ...item, quantity: item.quantity + 1 } : item
+        );
+      }
+      const dishIdStr = String(dish.id);
+      const dishSku = dishIdStr.startsWith('dish-') ? dishIdStr : `dish-${dishIdStr}`;
+      return [
+        ...prev,
+        {
+          id: dish.id,
+          sku: dishSku,
+          name: dish.name,
+          category: dish.category,
+          price: dish.price,
+          quantity: 1,
+          isVeg: dish.is_veg,
+        },
+      ];
+    });
+  };
+
+  const handleSelectVariant = (groupedDish: GroupedMobileDish, variant: ItemVariantOption) => {
+    if (isCheckoutOpen) return;
+    if (!isUnlocked) {
+      setOrderingMode('pickup');
+      sessionStorage.setItem('vaibhav_order_mode', 'pickup');
+    }
+    if (!variant.directEligible || variant.isCompleted) return;
+
+    const sizeLower = variant.size.toLowerCase();
+    const lineId = `${variant.dishId}:${sizeLower}`;
+    const lineSku = `dish-${variant.dishId}:${sizeLower}`;
+    const lineName = `${groupedDish.name} (${variant.size})`;
+
+    setCartItems((prev) => {
+      const existing = prev.find((item) => String(item.id) === lineId || item.id === lineId);
+      if (existing) {
+        return prev.map((item) =>
+          String(item.id) === lineId ? { ...item, quantity: item.quantity + 1 } : item
+        );
+      }
+      return [
+        ...prev,
+        {
+          id: lineId,
+          sku: lineSku,
+          name: lineName,
+          category: groupedDish.category,
+          price: variant.price,
+          quantity: 1,
+          isVeg: groupedDish.isVeg,
+          size: variant.size,
+          portionNote: variant.size,
+        },
+      ];
+    });
+  };
+
+  const handleUpdateItemPrice = (id: number | string, newPrice: number) => {
+    setCartItems((prev) =>
+      prev.map((item) => {
+        const itemSku = item.sku || `dish-${item.id}`;
+        if (
+          String(item.id) === String(id) ||
+          item.id === id ||
+          itemSku === String(id) ||
+          String(item.id).split(':')[0] === String(id).replace('dish-', '')
+        ) {
+          return { ...item, price: newPrice };
+        }
+        return item;
+      })
+    );
+  };
+
+  const handleUpdateCartQuantity = (id: number | string, delta: number) => {
+    if (!isUnlocked) {
+      setOrderingMode('pickup');
+      sessionStorage.setItem('vaibhav_order_mode', 'pickup');
+    }
+    setCartItems((prev) => {
+      return prev
+        .map((item) => {
+          if (String(item.id) === String(id) || item.id === id) {
+            const newQty = item.quantity + delta;
+            return newQty > 0 ? { ...item, quantity: newQty } : null;
+          }
+          return item;
+        })
+        .filter((item): item is CartItem => item !== null);
+    });
+  };
+
+  const handleRemoveItem = (id: number | string) => {
+    setCartItems((prev) => prev.filter((item) => String(item.id) !== String(id) && item.id !== id));
+  };
+
+  const handleClearCart = (force = false) => {
+    // Only allow clearing while checkout modal is open if force is explicitly passed
+    if (isCheckoutOpen && !force) return;
+    setCartItems([]);
+    try {
+      localStorage.removeItem('cart');
+    } catch {}
+  };
+
+  const isUnlocked = orderingMode !== 'none';
 
   // Filtered menu items
   const filteredDishes = useMemo(() => {
-    return MENU_ITEMS.filter((item) => {
+    return dishes.filter((item) => {
+      // Direct delivery filter toggle
+      if (isUnlocked && showEligibleOnly && !item.direct_order_eligible) {
+        return false;
+      }
+
       // Category filter
       const matchesCategory =
         selectedCategory === 'all' || item.category === selectedCategory;
@@ -23,20 +476,185 @@ export const MenuSection: React.FC = () => {
         dietFilter === 'all'
           ? true
           : dietFilter === 'veg'
-          ? item.isVeg
-          : !item.isVeg;
+          ? item.is_veg
+          : !item.is_veg;
 
       // Search query filter
       const q = searchQuery.toLowerCase().trim();
       const matchesQuery =
         !q ||
         item.name.toLowerCase().includes(q) ||
-        item.description.toLowerCase().includes(q) ||
+        (item.description && item.description.toLowerCase().includes(q)) ||
         (item.portionNote && item.portionNote.toLowerCase().includes(q));
 
       return matchesCategory && matchesDiet && matchesQuery;
     });
-  }, [selectedCategory, searchQuery, dietFilter]);
+  }, [dishes, selectedCategory, searchQuery, dietFilter, isUnlocked, showEligibleOnly]);
+
+  // Category dish counts
+  const categoryCounts = useMemo(() => {
+    const counts: Record<string, number> = { all: dishes.length };
+    dishes.forEach((d) => {
+      counts[d.category] = (counts[d.category] || 0) + 1;
+    });
+    return counts;
+  }, [dishes]);
+
+  // Group filtered dishes into ordered categories based on MENU_CATEGORIES
+  const groupedSections = useMemo(() => {
+    const categoryMap = new Map<string, { id: string; label: string; items: DbMenuItem[] }>();
+
+    MENU_CATEGORIES.forEach((cat) => {
+      if (cat.id !== 'all') {
+        categoryMap.set(cat.id, { id: cat.id, label: cat.label, items: [] });
+      }
+    });
+
+    filteredDishes.forEach((item) => {
+      let grp = categoryMap.get(item.category);
+      if (!grp) {
+        grp = { id: item.category, label: item.category, items: [] };
+        categoryMap.set(item.category, grp);
+      }
+      grp.items.push(item);
+    });
+
+    return Array.from(categoryMap.values()).filter((g) => g.items.length > 0);
+  }, [filteredDishes]);
+
+  // Group mobile dishes with size variants for each section
+  const groupedSectionsWithMobile = useMemo(() => {
+    return groupedSections.map((section) => ({
+      ...section,
+      mobileItems: groupDishesForMobile(section.items),
+    }));
+  }, [groupedSections]);
+
+  // Mobile categories list for pills and bottom sheet
+  const mobileCategories = useMemo(() => {
+    return MENU_CATEGORIES.filter((c) => c.id !== 'all').map((cat) => ({
+      id: cat.id,
+      label: cat.label,
+      count: categoryCounts[cat.id] ?? 0,
+    }));
+  }, [categoryCounts]);
+
+  // Programmatic scroll to category with smooth Lenis, suppressed observer, and auto-centering
+  const handleSelectCategory = (catId: string) => {
+    setActiveCategory(catId);
+    isScrollingProgrammatically.current = true;
+
+    const targetEl = document.getElementById(`category-${catId}`);
+    if (targetEl) {
+      // Offset accounts for sticky navbar + sticky pills row height
+      const offset = -(headerHeight + 54);
+      const prefersReducedMotion =
+        typeof window !== 'undefined' &&
+        window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+      if (prefersReducedMotion) {
+        const top = targetEl.getBoundingClientRect().top + window.scrollY + offset;
+        window.scrollTo({ top, behavior: 'instant' });
+        isScrollingProgrammatically.current = false;
+      } else {
+        scrollTo(targetEl, { offset, duration: 0.85 });
+        if (scrollTimeoutRef.current) clearTimeout(scrollTimeoutRef.current);
+        scrollTimeoutRef.current = window.setTimeout(() => {
+          isScrollingProgrammatically.current = false;
+        }, 900);
+      }
+    }
+  };
+
+  // 1. Measure sticky header height dynamically and listen for resize + DOM mutations
+  useEffect(() => {
+    if (typeof window === 'undefined' || (typeof process !== 'undefined' && Boolean(process.versions?.node))) return;
+
+    const headerEl = document.querySelector('header');
+    const measureHeader = () => {
+      if (headerEl) {
+        const h = Math.round(headerEl.getBoundingClientRect().height);
+        if (h > 0) {
+          setHeaderHeight(h);
+          document.documentElement.style.setProperty('--header-height', `${h}px`);
+        }
+      }
+    };
+
+    measureHeader();
+    window.addEventListener('resize', measureHeader, { passive: true });
+
+    let resizeObserver: ResizeObserver | null = null;
+    if (typeof ResizeObserver !== 'undefined' && headerEl) {
+      resizeObserver = new ResizeObserver(() => {
+        measureHeader();
+      });
+      resizeObserver.observe(headerEl);
+    }
+
+    return () => {
+      window.removeEventListener('resize', measureHeader);
+      if (resizeObserver) resizeObserver.disconnect();
+    };
+  }, []);
+
+  // 2. Scroll-spy IntersectionObserver on category sections
+  useEffect(() => {
+    if (
+      typeof window === 'undefined' ||
+      typeof IntersectionObserver === 'undefined' ||
+      (typeof process !== 'undefined' && Boolean(process.versions?.node))
+    ) {
+      return;
+    }
+
+    const categoryElements = document.querySelectorAll('[id^="category-"]');
+    if (categoryElements.length === 0) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (isScrollingProgrammatically.current) return;
+
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            const id = entry.target.id.replace('category-', '');
+            setActiveCategory(id);
+          }
+        });
+      },
+      {
+        rootMargin: `-${headerHeight + 52}px 0px -65% 0px`,
+        threshold: 0,
+      }
+    );
+
+    categoryElements.forEach((el) => observer.observe(el));
+    return () => observer.disconnect();
+  }, [headerHeight, groupedSections]);
+
+  // 3. Footer visibility observer to fade out floating Menu button
+  useEffect(() => {
+    if (
+      typeof window === 'undefined' ||
+      typeof IntersectionObserver === 'undefined' ||
+      (typeof process !== 'undefined' && Boolean(process.versions?.node))
+    ) {
+      return;
+    }
+
+    const footerEl = document.querySelector('footer');
+    if (!footerEl) return;
+
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        setIsFooterVisible(entry.isIntersecting);
+      },
+      { rootMargin: '0px', threshold: 0.05 }
+    );
+
+    observer.observe(footerEl);
+    return () => observer.disconnect();
+  }, []);
 
   // Order buttons component to reuse at TOP and BOTTOM
   const OrderBanner = ({ idPrefix }: { idPrefix: string }) => (
@@ -56,7 +674,7 @@ export const MenuSection: React.FC = () => {
       <div className="flex flex-col sm:flex-row items-center gap-3 w-full sm:w-auto">
         {/* Swiggy Button */}
         <a
-          href={RESTAURANT_INFO.swiggyUrl}
+          href={SWIGGY_URL}
           target="_blank"
           rel="noopener noreferrer"
           id={`${idPrefix}-swiggy-btn`}
@@ -71,7 +689,7 @@ export const MenuSection: React.FC = () => {
 
         {/* Zomato Button */}
         <a
-          href={RESTAURANT_INFO.zomatoUrl}
+          href={ZOMATO_URL}
           target="_blank"
           rel="noopener noreferrer"
           id={`${idPrefix}-zomato-btn`}
@@ -114,56 +732,293 @@ export const MenuSection: React.FC = () => {
           </p>
         </motion.div>
 
-        {/* View Mode Toggle: Classic A La Carte Menu vs Visual Photo Menu */}
-        <div className="flex justify-center mb-8">
-          <div className="inline-flex p-1.5 rounded-2xl bg-[#F7F3EB] border border-[#2E4823]/15 shadow-inner">
-            <button
-              type="button"
-              onClick={() => setMenuViewMode('list')}
-              className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-xs sm:text-sm font-bold transition-all duration-200 ${
-                menuViewMode === 'list'
-                  ? 'bg-[#2E4823] text-white shadow-md'
-                  : 'text-gray-700 hover:text-[#2E4823]'
-              }`}
-            >
-              <ListOrdered className="w-4 h-4" />
-              <span>Classic Menu</span>
-            </button>
-            <button
-              type="button"
-              onClick={() => setMenuViewMode('cards')}
-              className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-xs sm:text-sm font-bold transition-all duration-200 ${
-                menuViewMode === 'cards'
-                  ? 'bg-[#2E4823] text-white shadow-md'
-                  : 'text-gray-700 hover:text-[#2E4823]'
-              }`}
-            >
-              <Camera className="w-4 h-4 text-amber-300" />
-              <span>Photo Menu</span>
-            </button>
+        {/* ------------------------------------------------------------- */}
+        {/* TOP BAR ABOVE MENU: UNLOCK 5 KM DELIVERY & SELF-PICKUP        */}
+        {/* ------------------------------------------------------------- */}
+        <div className="mb-6 sm:mb-8">
+          {!isUnlocked ? (
+            /* Locked Default State: Mobile-optimized Direct Ordering Card */
+            <div>
+              <div className="bg-gradient-to-r from-[#2E4823] via-[#1E3216] to-[#2E4823] rounded-2xl sm:rounded-3xl p-4 sm:p-6 text-white shadow-xl flex flex-col md:flex-row items-stretch md:items-center justify-between gap-4 border border-white/10">
+                <div className="text-center md:text-left">
+                  <div className="inline-flex items-center gap-1.5 text-amber-300 text-[10px] sm:text-xs font-bold uppercase tracking-wider mb-1.5 bg-white/10 px-3 py-1 rounded-full">
+                    <Sparkles className="w-3.5 h-3.5 text-amber-300" />
+                    <span>Dine-In Rates at Home (Save 20% to 35% vs Apps)</span>
+                  </div>
+                  <h3 className="font-['Playfair_Display'] text-lg sm:text-2xl font-bold">
+                    Order Direct from Our Kitchen &amp; Save
+                  </h3>
+                  <p className="text-xs sm:text-sm text-white/80 mt-1 max-w-xl hidden sm:block">
+                    Enjoy real restaurant prices, ₹0 platform charges, free delivery above ₹299, plus a free drink above ₹499 with code <strong>DIRECT50</strong>.
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() => setIsCompareModalOpen(true)}
+                    className="mt-2 inline-flex items-center gap-1 text-xs text-amber-300 font-extrabold hover:text-white underline transition-colors"
+                  >
+                    <TrendingDown className="w-3.5 h-3.5" />
+                    <span>Compare Live Prices vs Swiggy/Zomato (Save ₹120–₹250+) →</span>
+                  </button>
+                </div>
+
+                {/* Action Buttons: 2-column on mobile, inline on desktop */}
+                <div className="grid grid-cols-2 sm:flex sm:flex-row items-center gap-2 sm:gap-3 w-full md:w-auto shrink-0">
+                  <button
+                    type="button"
+                    onClick={handleUnlockDelivery}
+                    disabled={geoStatus === 'checking'}
+                    className="py-2.5 sm:py-3.5 px-3 sm:px-5 rounded-xl sm:rounded-2xl bg-[#D3452B] hover:bg-[#B3351E] disabled:bg-gray-500 text-white font-bold text-xs sm:text-sm shadow-md flex flex-col sm:flex-row items-center justify-center gap-1 sm:gap-2 transition-transform transform active:scale-95 text-center min-h-[48px]"
+                  >
+                    <MapPin className="w-4 h-4 text-amber-200 shrink-0" />
+                    <span className="flex flex-col sm:inline items-center justify-center">
+                      {geoStatus === 'checking' ? (
+                        <span>Detecting Location...</span>
+                      ) : (
+                        <>
+                          <span className="sm:hidden leading-tight">Verify Location</span>
+                          <span className="hidden sm:inline">Verify Location to Unlock Delivery</span>
+                        </>
+                      )}
+                    </span>
+                    <span className="text-[10px] text-amber-200/90 font-normal sm:hidden leading-none">
+                      To Unlock Delivery
+                    </span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={handleUnlockPickup}
+                    className="py-2.5 sm:py-3.5 px-3 sm:px-5 rounded-xl sm:rounded-2xl bg-white/10 hover:bg-white/20 border border-white/20 text-white font-bold text-xs sm:text-sm shadow-sm flex flex-col sm:flex-row items-center justify-center gap-1 sm:gap-2 transition-colors text-center min-h-[48px]"
+                  >
+                    <ShoppingBag className="w-4 h-4 text-amber-300 shrink-0" />
+                    <span>
+                      <span className="sm:hidden leading-tight">Self-Pickup</span>
+                      <span className="hidden sm:inline">Order for Self-Pickup</span>
+                    </span>
+                    <span className="text-[10px] text-white/75 font-normal sm:hidden leading-none">
+                      Ready in 20m
+                    </span>
+                  </button>
+                </div>
+              </div>
+
+              {/* High-Converting 4 Perks Ticker */}
+              <div className="mt-3 grid grid-cols-2 sm:grid-cols-4 gap-2 text-center text-xs">
+                <div className="bg-[#F7F3EB] p-2.5 rounded-xl border border-[#2E4823]/10 shadow-2xs">
+                  <span className="font-extrabold text-[#2E4823] block text-xs sm:text-sm">💰 20–35% Cheaper</span>
+                  <span className="text-[10.5px] text-gray-600">Dine-in menu rates</span>
+                </div>
+                <div className="bg-[#F7F3EB] p-2.5 rounded-xl border border-[#2E4823]/10 shadow-2xs">
+                  <span className="font-extrabold text-[#2E4823] block text-xs sm:text-sm">🛵 FREE 5km Delivery</span>
+                  <span className="text-[10.5px] text-gray-600">On orders above ₹299</span>
+                </div>
+                <div className="bg-[#F7F3EB] p-2.5 rounded-xl border border-[#2E4823]/10 shadow-2xs">
+                  <span className="font-extrabold text-[#2E4823] block text-xs sm:text-sm">🥤 Free Drink Offer</span>
+                  <span className="text-[10.5px] text-gray-600">Above ₹499 (DIRECT50)</span>
+                </div>
+                <div className="bg-[#F7F3EB] p-2.5 rounded-xl border border-[#2E4823]/10 shadow-2xs">
+                  <span className="font-extrabold text-[#2E4823] block text-xs sm:text-sm">⚡ ₹0 Hidden Fees</span>
+                  <span className="text-[10.5px] text-gray-600">Zero app commission</span>
+                </div>
+              </div>
+            </div>
+          ) : (
+            /* Unlocked Ordering Active Bar (Clean, Compact Single-Row on Mobile) */
+            <div className="bg-[#2E4823] rounded-2xl sm:rounded-3xl p-3 sm:p-4 text-white shadow-lg flex flex-row items-center justify-between gap-2.5 sm:gap-3 animate-fade-in">
+              <div className="flex items-center gap-2.5 sm:gap-3 min-w-0 flex-1">
+                <span className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl sm:rounded-2xl bg-white/15 flex items-center justify-center text-amber-300 shrink-0">
+                  {orderingMode === 'delivery' ? (
+                    <MapPin className="w-4 h-4 sm:w-5 sm:h-5 text-amber-200" />
+                  ) : (
+                    <ShoppingBag className="w-4 h-4 sm:w-5 sm:h-5 text-amber-200" />
+                  )}
+                </span>
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-center gap-1.5 sm:gap-2">
+                    <span className="font-bold text-xs sm:text-base truncate">
+                      {orderingMode === 'delivery'
+                        ? '🛵 5 km Delivery Active'
+                        : '🛍️ Self-Pickup Active'}
+                    </span>
+                    {userDistanceKm !== null && orderingMode === 'delivery' && (
+                      <span className="text-[9px] sm:text-[11px] bg-white/20 px-1.5 sm:px-2 py-0.2 rounded-full font-mono shrink-0">
+                        {userDistanceKm} km
+                      </span>
+                    )}
+                  </div>
+                  <p className="text-[10px] sm:text-[11px] text-white/75 truncate">
+                    Tap &quot;+ Add&quot; on dishes to build your WhatsApp order.
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex items-center shrink-0">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setOrderingMode('none');
+                    setShowEligibleOnly(false);
+                    setGeoStatus('idle');
+                    setCartItems([]);
+                    sessionStorage.removeItem('vaibhav_order_mode');
+                    sessionStorage.removeItem('delivery_gps_cache');
+                    localStorage.removeItem('direct_order_cart');
+                  }}
+                  className="text-xs bg-white/15 hover:bg-white/25 px-2.5 py-1.5 rounded-xl font-semibold transition-colors flex items-center gap-1 text-white active:scale-95"
+                >
+                  <X className="w-3.5 h-3.5" />
+                  <span className="hidden sm:inline">Exit Order Mode</span>
+                  <span className="sm:hidden">Exit</span>
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* ------------------------------------------------------------- */}
+          {/* OUTSIDE ZONE (> 5km OR GPS DENIED): Premium Alert Card       */}
+          {/* ------------------------------------------------------------- */}
+          {(geoStatus === 'outside' || geoStatus === 'error') && (
+            <div className="mt-3 sm:mt-4 bg-[#F7F3EB] rounded-2xl sm:rounded-3xl p-4 sm:p-5 border-2 border-[#D3452B]/40 shadow-md animate-fade-in">
+              <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-3 sm:gap-4">
+                <div className="flex items-start gap-2.5 sm:gap-3">
+                  <span className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl sm:rounded-2xl bg-red-100 text-[#D3452B] flex items-center justify-center shrink-0 mt-0.5 text-base">
+                    📍
+                  </span>
+                  <div>
+                    {locationError ? (
+                      <>
+                        <h4 className="font-['Playfair_Display'] text-sm sm:text-base font-bold text-[#1C1C1C]">
+                          📍 Location Access Failed
+                        </h4>
+                        <p className="text-xs text-gray-600 mt-0.5">
+                          We couldn&apos;t detect your exact location. To proceed with Direct Delivery, please ensure your device GPS is turned on and location permissions are allowed for this browser.
+                        </p>
+                      </>
+                    ) : (
+                      <>
+                        <h4 className="font-['Playfair_Display'] text-sm sm:text-base font-bold text-[#1C1C1C]">
+                          📍 Outside 5km Delivery Zone. Order via:
+                        </h4>
+                        <p className="text-xs text-gray-600 mt-0.5">
+                          {userDistanceKm !== null
+                            ? `You are ${userDistanceKm} km away. We deliver directly up to 5.0 km road distance.`
+                            : 'Direct doorstep delivery is limited to 5 km. Order via Swiggy/Zomato or switch to Takeaway!'}
+                        </p>
+                      </>
+                    )}
+                  </div>
+                </div>
+
+                {/* 3 Big Touch-Friendly Buttons */}
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 w-full lg:w-auto pt-1 lg:pt-0">
+                  <button
+                    type="button"
+                    onClick={handleUnlockPickup}
+                    className="min-h-[44px] px-4 py-2.5 rounded-xl bg-[#2E4823] hover:bg-[#223719] text-white font-bold text-xs sm:text-sm flex items-center justify-center gap-1.5 shadow-xs transition-transform transform active:scale-95 text-center"
+                  >
+                    <span>🛍️ Switch to Takeaway</span>
+                  </button>
+
+                  <a
+                    href={SWIGGY_URL}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="min-h-[44px] px-4 py-2.5 rounded-xl bg-[#FC8019] hover:bg-[#E57315] text-white font-bold text-xs sm:text-sm flex items-center justify-center gap-1.5 shadow-xs transition-transform transform active:scale-95 text-center"
+                  >
+                    <span>🛵 Order on Swiggy</span>
+                    <ExternalLink className="w-3.5 h-3.5" />
+                  </a>
+
+                  <a
+                    href={ZOMATO_URL}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="min-h-[44px] px-4 py-2.5 rounded-xl bg-[#E23744] hover:bg-[#CB202D] text-white font-bold text-xs sm:text-sm flex items-center justify-center gap-1.5 shadow-xs transition-transform transform active:scale-95 text-center"
+                  >
+                    <span>🛵 Order on Zomato</span>
+                    <ExternalLink className="w-3.5 h-3.5" />
+                  </a>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* ORDER BUTTONS AT TOP OF MENU: Desktop full banner & Mobile slim partner bar */}
+        <div className="mb-6 sm:mb-8">
+          {/* Mobile slim partner bar (Takes minimal vertical space!) */}
+          <div className="sm:hidden flex items-center justify-between bg-[#F7F3EB] px-3.5 py-2.5 rounded-2xl border border-[#2E4823]/10 text-xs shadow-2xs">
+            <span className="text-gray-600 font-medium text-[11px]">Beyond 5 km? Order via:</span>
+            <div className="flex items-center gap-2">
+              <a
+                href={SWIGGY_URL}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="px-2 py-1 rounded-lg bg-[#FC8019] text-white font-bold text-[10px] flex items-center gap-1"
+              >
+                <span>Swiggy</span>
+                <ExternalLink className="w-2.5 h-2.5" />
+              </a>
+              <a
+                href={ZOMATO_URL}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="px-2 py-1 rounded-lg bg-[#E23744] text-white font-bold text-[10px] flex items-center gap-1"
+              >
+                <span>Zomato</span>
+                <ExternalLink className="w-2.5 h-2.5" />
+              </a>
+              <button
+                type="button"
+                onClick={() => setIsCompareModalOpen(true)}
+                className="px-2 py-1 rounded-lg bg-[#2E4823] text-white font-bold text-[10px] flex items-center gap-1"
+              >
+                <span>Compare</span>
+              </button>
+            </div>
+          </div>
+
+          {/* Desktop full banner (Hidden on mobile) */}
+          <div className="hidden sm:block">
+            <OrderBanner idPrefix="menu-top" />
+            <div className="mt-2.5 text-center">
+              <p className="text-xs sm:text-sm font-semibold text-[#2E4823] flex items-center justify-center gap-1.5">
+                <Phone className="w-3.5 h-3.5 text-[#D3452B]" />
+                Prefer to call? Order directly at{' '}
+                <a href="tel:7947142432" className="text-[#D3452B] hover:underline font-bold">
+                  7947142432
+                </a>{' '}
+                for takeaway!
+              </p>
+            </div>
           </div>
         </div>
 
-        {/* ORDER BUTTONS AT TOP OF MENU */}
-        <div className="mb-8">
-          <OrderBanner idPrefix="menu-top" />
-          <div className="mt-2.5 text-center">
-            <p className="text-xs sm:text-sm font-semibold text-[#2E4823] flex items-center justify-center gap-1.5">
-              <Phone className="w-3.5 h-3.5 text-[#D3452B]" />
-              Prefer to call? Order directly at{' '}
-              <a href="tel:7947142432" className="text-[#D3452B] hover:underline font-bold">
-                7947142432
-              </a>{' '}
-              for takeaway!
-            </p>
+        {/* NOTICE BANNER: Shown if unavailable/legacy items were dropped on load */}
+        {cartNotice && (
+          <div className="mb-4 p-3.5 rounded-xl bg-amber-50 border border-amber-200 text-amber-900 text-xs flex items-center justify-between gap-3 shadow-xs">
+            <div className="flex items-center gap-2">
+              <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0" />
+              <span>{cartNotice}</span>
+            </div>
+            <button
+              type="button"
+              onClick={() => setCartNotice(null)}
+              className="text-amber-800 hover:text-amber-950 font-bold text-xs underline shrink-0"
+            >
+              Dismiss
+            </button>
           </div>
-        </div>
+        )}
 
-        {/* CONDITIONALLY RENDER PHOTO MENU (62 PROCESSED WEBP DISHES) OR INTERACTIVE LIST */}
-        {menuViewMode === 'cards' ? (
-          <PhotoMenu />
-        ) : (
-          <>
+        {/* STICKY CATEGORY PILLS WITH SCROLL-SPY (Mobile only, sticky directly under navbar) */}
+            <MenuStickyPills
+              categories={mobileCategories}
+              activeCategory={activeCategory}
+              onSelectCategory={handleSelectCategory}
+              headerHeight={headerHeight}
+            />
+
             {/* SEARCH / FILTER CONTROLS BAR */}
             <div className="bg-[#F7F3EB] rounded-2xl p-4 sm:p-5 border border-[#2E4823]/10 mb-8 shadow-sm">
               <div className="flex flex-col md:flex-row items-center justify-between gap-4">
@@ -232,28 +1087,72 @@ export const MenuSection: React.FC = () => {
               <div className="mt-4 pt-3 border-t border-[#2E4823]/10 flex items-center gap-2 overflow-x-auto no-scrollbar pb-1">
                 {MENU_CATEGORIES.map((cat) => {
                   const isSelected = selectedCategory === cat.id;
+                  const count = categoryCounts[cat.id] ?? 0;
                   return (
                     <button
                       key={cat.id}
                       type="button"
                       onClick={() => setSelectedCategory(cat.id)}
-                      className={`px-4 py-2 rounded-full text-xs font-semibold whitespace-nowrap transition-all duration-200 ${
+                      className={`px-3.5 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap transition-all duration-200 flex items-center gap-1.5 ${
                         isSelected
                           ? 'bg-[#2E4823] text-[#FDFBF7] shadow-sm'
                           : 'bg-white text-[#1C1C1C]/80 hover:bg-[#2E4823]/10 hover:text-[#2E4823]'
                       }`}
                     >
-                      {cat.label}
+                      <span>{cat.label}</span>
+                      <span
+                        className={`text-[10px] px-1.5 py-0.5 rounded-full font-bold ${
+                          isSelected ? 'bg-white/20 text-white' : 'bg-gray-100 text-gray-600'
+                        }`}
+                      >
+                        {count}
+                      </span>
                     </button>
                   );
                 })}
               </div>
             </div>
 
+            {/* Quick Filter Toggle when Direct Ordering is Unlocked */}
+            {isUnlocked && (
+              <div className="mb-6 flex flex-col sm:flex-row items-center justify-between gap-3 bg-[#F7F3EB] p-3 rounded-2xl border border-[#2E4823]/15">
+                <span className="text-xs font-bold text-[#2E4823] flex items-center gap-1.5">
+                  <Sparkles className="w-4 h-4 text-[#D3452B]" />
+                  <span>Direct Ordering View Options:</span>
+                </span>
+
+                <div className="inline-flex p-1 rounded-xl bg-white border border-gray-200 shadow-2xs">
+                  <button
+                    type="button"
+                    onClick={() => setShowEligibleOnly(true)}
+                    className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
+                      showEligibleOnly
+                        ? 'bg-[#2E4823] text-white shadow-2xs'
+                        : 'text-gray-600 hover:text-[#2E4823]'
+                    }`}
+                  >
+                    🛵 Delivery Eligible Items Only
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setShowEligibleOnly(false)}
+                    className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
+                      !showEligibleOnly
+                        ? 'bg-[#2E4823] text-white shadow-2xs'
+                        : 'text-gray-600 hover:text-[#2E4823]'
+                    }`}
+                  >
+                    📖 View Full Classic Menu
+                  </button>
+                </div>
+              </div>
+            )}
+
             {/* Dishes Count Indicator */}
             <div className="flex items-center justify-between mb-6 px-2 text-xs text-gray-500 font-medium">
               <span>
                 Showing <strong className="text-[#2E4823]">{filteredDishes.length}</strong> delicious dishes
+                {isUnlocked && showEligibleOnly && ' (Delivery Eligible)'}
               </span>
               {(searchQuery || dietFilter !== 'all' || selectedCategory !== 'all') && (
                 <button
@@ -270,7 +1169,7 @@ export const MenuSection: React.FC = () => {
               )}
             </div>
 
-            {/* CATEGORIZED 2-COLUMN GRID */}
+            {/* CATEGORIZED 2-COLUMN GRID (Classic Layout Preserved!) */}
             {filteredDishes.length === 0 ? (
               <div className="text-center py-16 bg-[#F7F3EB] rounded-2xl p-8 border border-dashed border-gray-300">
                 <Utensils className="w-10 h-10 text-gray-400 mx-auto mb-3" />
@@ -293,68 +1192,243 @@ export const MenuSection: React.FC = () => {
                 </button>
               </div>
             ) : (
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-x-12 gap-y-6">
-                {filteredDishes.map((item) => (
-                  <article
-                    key={item.id}
-                    className="p-4 rounded-xl transition-colors duration-200 hover:bg-[#F7F3EB]/60 flex flex-col justify-between border-b border-[#2E4823]/10 pb-4"
+              <div className="space-y-10 pb-[180px]">
+                {groupedSectionsWithMobile.map((section) => (
+                  <section
+                    key={section.id}
+                    id={`category-${section.id}`}
+                    className="scroll-mt-32 sm:scroll-mt-36 bg-white/70 backdrop-blur-xs rounded-3xl p-4 sm:p-7 border border-[#2E4823]/10 shadow-xs"
                   >
-                    <div>
-                      {/* Top line: Dish Name (with veg/non-veg indicator) & Price in #D3452B */}
-                      <div className="flex items-baseline justify-between gap-4">
-                        <div className="flex items-center gap-2">
-                          {/* Green square for Veg, Red triangle for Non-veg */}
-                          <span
-                            className={`w-3.5 h-3.5 rounded-xs border flex items-center justify-center shrink-0 ${
-                              item.isVeg ? 'border-green-600' : 'border-[#D3452B]'
-                            }`}
-                            title={item.isVeg ? 'Vegetarian' : 'Non-Vegetarian'}
-                          >
-                            <span
-                              className={`w-1.5 h-1.5 rounded-full ${
-                                item.isVeg ? 'bg-green-600' : 'bg-[#D3452B]'
-                              }`}
-                            />
-                          </span>
-
-                          <h3 className="font-['Playfair_Display'] text-base sm:text-lg font-bold text-[#1C1C1C] hover:text-[#2E4823] transition-colors">
-                            {item.name}
-                          </h3>
-
-                          {item.isChefSpecial && (
-                            <span className="hidden sm:inline-block text-[10px] uppercase font-bold text-[#D3452B] bg-[#D3452B]/10 px-2 py-0.5 rounded-md">
-                              Special
-                            </span>
-                          )}
-                        </div>
-
-                        {/* Price right aligned in #D3452B */}
-                        <div className="text-right shrink-0">
-                          <span className="font-bold text-base sm:text-lg text-[#D3452B]">
-                            ₹{item.price}
-                          </span>
-                        </div>
-                      </div>
-
-                      {/* Italicized short description */}
-                      <p className="mt-1 text-xs sm:text-sm text-gray-500 italic font-normal leading-relaxed pl-5">
-                        {item.description}
-                      </p>
-                    </div>
-
-                    {item.portionNote && (
-                      <div className="mt-1.5 pl-5 flex items-center gap-2">
-                        <span className="text-[11px] text-[#2E4823] font-medium bg-[#2E4823]/5 px-2 py-0.5 rounded">
-                          {item.portionNote}
+                    {/* Category Title Header */}
+                    <div className="flex items-center justify-between border-b-2 border-[#2E4823]/15 pb-3.5 mb-6">
+                      <div className="flex items-center gap-2.5">
+                        <span className="w-2.5 h-2.5 rounded-full bg-[#D3452B]" />
+                        <h2 className="font-['Playfair_Display'] text-lg sm:text-2xl font-bold text-[#2E4823]">
+                          {section.label}
+                        </h2>
+                        <span className="text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-[#2E4823]/10 text-[#2E4823]">
+                          {section.items.length} {section.items.length === 1 ? 'dish' : 'dishes'}
                         </span>
                       </div>
-                    )}
-                  </article>
+                      <span className="text-[11px] font-bold text-[#D3452B] uppercase tracking-wider hidden sm:inline">
+                        Dine-In Menu
+                      </span>
+                    </div>
+
+                    {/* Responsive Dish Cards Grid for Desktop (hidden below md, pixel-identical on md+) */}
+                    <div className="hidden md:grid md:grid-cols-2 lg:grid-cols-3 gap-4 lg:gap-6">
+                      {section.items.map((item) => {
+                        const cartItem = cartItems.find((c) => c.id === item.id);
+                        const isEligible = item.direct_order_eligible;
+                        const isCompleted = !isAvailable(item.id, !item.is_completed);
+                        const activePrice = getPrice(item.id, item.price);
+                        const activeAggPrice = getMrp(item.id, item.aggregator_price, item.price);
+                        const activeSavings = getSavings(activePrice, activeAggPrice);
+                        const showDual = isEligible && activeSavings > 0;
+
+                        return (
+                          <article
+                            key={item.id}
+                            className={`p-3.5 sm:p-4 rounded-2xl transition-colors duration-200 hover:bg-[#F7F3EB]/70 flex flex-col justify-between border border-[#2E4823]/10 shadow-2xs ${
+                              isCompleted && isUnlocked ? 'opacity-70 bg-red-50/20' : 'bg-white/80'
+                            }`}
+                          >
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-start gap-2.5 min-w-0">
+                                {/* Green square for Veg, Red triangle for Non-veg */}
+                                <span
+                                  className={`w-3.5 h-3.5 rounded-xs border flex items-center justify-center shrink-0 mt-1 ${
+                                    item.is_veg ? 'border-green-600' : 'border-[#D3452B]'
+                                  }`}
+                                  title={item.is_veg ? 'Vegetarian' : 'Non-Vegetarian'}
+                                >
+                                  <span
+                                    className={`w-1.5 h-1.5 rounded-full ${
+                                      item.is_veg ? 'bg-green-600' : 'bg-[#D3452B]'
+                                    }`}
+                                  />
+                                </span>
+
+                                <div className="min-w-0 flex-1">
+                                  <div className="flex flex-wrap items-center gap-1.5">
+                                    <h3 className="font-['Playfair_Display'] text-base sm:text-lg font-bold text-[#1C1C1C] hover:text-[#2E4823] transition-colors line-clamp-2 break-words leading-snug">
+                                      {item.name}
+                                    </h3>
+
+                                    {item.isChefSpecial && (
+                                      <span className="text-[10px] uppercase font-bold text-[#D3452B] bg-[#D3452B]/10 px-2 py-0.5 rounded-md shrink-0">
+                                        Special
+                                      </span>
+                                    )}
+
+                                    {/* Stock Status Badge if completed */}
+                                    {isUnlocked && isCompleted && (
+                                      <span className="text-[10px] uppercase font-bold text-red-700 bg-red-100 px-2 py-0.5 rounded-md shrink-0">
+                                        Completed for Today
+                                      </span>
+                                    )}
+
+                                    {/* Dine-in only badge for non-eligible items when ordering mode is active */}
+                                    {isUnlocked && !isEligible && (
+                                      <span className="text-[10px] font-semibold text-gray-500 bg-gray-200/80 px-2 py-0.5 rounded-md shrink-0">
+                                        Dine-In Only
+                                      </span>
+                                    )}
+                                  </div>
+
+                                  {/* Italicized short description */}
+                                  {item.description && (
+                                    <p className="mt-1 text-xs sm:text-sm text-gray-500 italic font-normal leading-relaxed line-clamp-2 break-words">
+                                      {item.description}
+                                    </p>
+                                  )}
+
+                                  {item.portionNote && (
+                                    <div className="mt-1.5 flex items-center gap-2">
+                                      <span className="text-[11px] text-[#2E4823] font-medium bg-[#2E4823]/5 px-2 py-0.5 rounded">
+                                        {item.portionNote}
+                                      </span>
+                                    </div>
+                                  )}
+                                </div>
+                              </div>
+                            </div>
+
+                            {/* Bottom Row: Dual Pricing & Add Button Wrapper */}
+                            <div className="mt-3 pt-3 border-t border-[#2E4823]/10 flex items-center justify-between gap-2.5">
+                              {/* Dual-Pricing: Stack vertically on mobile but side-by-side on desktop */}
+                              <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2 min-w-0 flex-1">
+                                <div className="flex items-center gap-1.5 flex-wrap">
+                                  {showDual && (
+                                    <span className="text-[10px] sm:text-[11px] text-gray-400 line-through font-mono whitespace-nowrap">
+                                      App Price: ₹{activeAggPrice}
+                                    </span>
+                                  )}
+                                  <span className="font-bold text-sm sm:text-base text-[#2E4823] whitespace-nowrap">
+                                    Direct Price: ₹{activePrice}
+                                  </span>
+                                </div>
+                                {showDual && activeSavings > 0 && (
+                                  <span className="inline-block text-[9px] sm:text-[10px] font-extrabold bg-[#25D366] text-white px-2 py-0.5 rounded-full shadow-xs whitespace-nowrap self-start sm:self-auto">
+                                    Save ₹{activeSavings}!
+                                  </span>
+                                )}
+                              </div>
+
+                              {/* + ADD BUTTON LOGIC (Desktop: Shown when dish is eligible) */}
+                              {isEligible && (
+                                <div className="flex-shrink-0">
+                                  {isCompleted ? (
+                                    <button
+                                      type="button"
+                                      disabled
+                                      className="px-2.5 py-1 text-[11px] font-bold rounded-lg bg-gray-200 text-gray-500 disabled:opacity-50 disabled:bg-gray-200 disabled:text-gray-500 disabled:active:scale-100 cursor-not-allowed whitespace-nowrap"
+                                    >
+                                      Sold Out
+                                    </button>
+                                  ) : cartItem ? (
+                                    /* Quantity Stepper if already in cart (Locked when checkout is active) */
+                                    <div
+                                      className={`flex items-center bg-[#2E4823] text-white rounded-lg shadow-2xs flex-shrink-0 transition-opacity ${
+                                        isCheckoutOpen ? 'opacity-40 cursor-not-allowed' : ''
+                                      }`}
+                                    >
+                                      <button
+                                        type="button"
+                                        disabled={isCheckoutOpen}
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          handleUpdateCartQuantity(item.id, -1);
+                                        }}
+                                        className="w-6 h-6 flex items-center justify-center hover:bg-white/20 disabled:hover:bg-transparent disabled:cursor-not-allowed rounded-l-lg transition-colors"
+                                        aria-label="Decrease quantity"
+                                      >
+                                        <Minus className="w-3 h-3" />
+                                      </button>
+                                      <span className="w-6 text-center text-xs font-mono font-bold">
+                                        {cartItem.quantity}
+                                      </span>
+                                      <button
+                                        type="button"
+                                        disabled={isCheckoutOpen}
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          handleUpdateCartQuantity(item.id, 1);
+                                        }}
+                                        className="w-6 h-6 flex items-center justify-center hover:bg-white/20 disabled:hover:bg-transparent disabled:cursor-not-allowed rounded-r-lg transition-colors"
+                                        aria-label="Increase quantity"
+                                      >
+                                        <Plus className="w-3 h-3" />
+                                      </button>
+                                    </div>
+                                  ) : (
+                                    /* Initial "+ Add" Button */
+                                    <button
+                                      type="button"
+                                      disabled={isCompleted || isCheckoutOpen}
+                                      onClick={() => handleAddToCart({ ...item, price: activePrice })}
+                                      className="px-3 py-1.5 text-xs font-bold rounded-lg bg-[#2E4823] hover:bg-[#223719] disabled:opacity-50 disabled:bg-gray-200 disabled:text-gray-500 disabled:active:scale-100 disabled:cursor-not-allowed text-white shadow-2xs flex items-center gap-1 transition-transform transform active:scale-95 flex-shrink-0 whitespace-nowrap"
+                                    >
+                                      <Plus className="w-3.5 h-3.5" />
+                                      <span>Add</span>
+                                    </button>
+                                  )}
+                                </div>
+                              )}
+                            </div>
+                          </article>
+                        );
+                      })}
+                    </div>
+
+                    {/* Mobile Dish Cards List (Dense horizontal flex layout below md) */}
+                    <div className="md:hidden divide-y divide-[#2E4823]/10">
+                      {section.mobileItems.map((dish, itemIdx) => (
+                        <MenuMobileItemCard
+                          key={dish.baseId}
+                          dish={dish}
+                          imageIndex={itemIdx}
+                          cartItems={cartItems}
+                          isUnlocked={isUnlocked}
+                          onAddToCart={(d) => handleAddToCart(d.primaryDish)}
+                          onUpdateCartQuantity={handleUpdateCartQuantity}
+                          onOpenSizePicker={(d) => setSizePickerDish(d)}
+                        />
+                      ))}
+                    </div>
+                  </section>
                 ))}
               </div>
             )}
-          </>
-        )}
+
+            {/* FLOATING "MENU" BUTTON (Mobile only) */}
+            <MenuFloatingButton
+              onClick={() => setIsSheetOpen(true)}
+              isSheetOpen={isSheetOpen || Boolean(sizePickerDish) || isCheckoutOpen}
+              isFooterVisible={false}
+              hasCartItems={cartItems.length > 0}
+              buttonRef={menuBtnRef}
+            />
+
+            {/* CATEGORY BOTTOM SHEET (Mobile only) */}
+            <MenuBottomSheet
+              isOpen={isSheetOpen}
+              onClose={() => setIsSheetOpen(false)}
+              categories={mobileCategories}
+              activeCategory={activeCategory}
+              onSelectCategory={handleSelectCategory}
+              triggerButtonRef={menuBtnRef}
+            />
+
+            {/* SIZE VARIANT PICKER MODAL (Mobile only) */}
+            <MenuSizePickerModal
+              isOpen={Boolean(sizePickerDish)}
+              dish={sizePickerDish}
+              cartItems={cartItems}
+              onClose={() => setSizePickerDish(null)}
+              onSelectVariant={handleSelectVariant}
+              onUpdateCartQuantity={handleUpdateCartQuantity}
+            />
 
         {/* ORDER BUTTONS AT BOTTOM OF MENU */}
         <div className="mt-12">
@@ -372,12 +1446,77 @@ export const MenuSection: React.FC = () => {
         </div>
 
         {/* MENU PRICING & INGREDIENT DISCLAIMER */}
-        <div className="mt-8 text-center max-w-3xl mx-auto px-4">
+        <div className={`mt-8 text-center max-w-3xl mx-auto px-4 ${cartItems.length > 0 ? 'pb-40' : 'pb-28'} sm:pb-8`}>
           <p className="text-xs text-gray-500 leading-relaxed italic border-t border-gray-200/80 pt-4">
             Prices, menu items, and availability are subject to change without notice. Delivery prices on Swiggy and Zomato may vary from our dine-in menu.
           </p>
         </div>
       </div>
+
+      {/* Floating Bottom Cart Bar when items are selected (hidden while checkout modal, size picker, or category sheet is open) */}
+      {!isCheckoutOpen && !sizePickerDish && !isSheetOpen && cartItems.length > 0 && (
+        <FloatingCartBar
+          items={cartItems}
+          offer={offer}
+          onOpenCheckout={() => {
+            setIsSheetOpen(false);
+            setSizePickerDish(null);
+            refetchLiveMenu(true);
+            setIsCheckoutOpen(true);
+          }}
+        />
+      )}
+
+      {/* Direct Order Checkout Modal */}
+      <DirectOrderModal
+        isOpen={isCheckoutOpen}
+        onClose={() => setIsCheckoutOpen(false)}
+        items={cartItems}
+        onUpdateQuantity={handleUpdateCartQuantity}
+        onRemoveItem={handleRemoveItem}
+        onClearCart={handleClearCart}
+        onUpdateItemPrice={handleUpdateItemPrice}
+        offer={offer}
+        orderType={orderingMode === 'pickup' ? 'SELF_PICKUP' : 'DELIVERY_5KM'}
+        userDistanceKm={userDistanceKm}
+        userLocation={userLocation}
+        onSwitchOrderType={(type: OrderType) => {
+          if (type === 'SELF_PICKUP') {
+            setOrderingMode('pickup');
+            sessionStorage.setItem('vaibhav_order_mode', 'pickup');
+          } else {
+            try {
+              const cached = sessionStorage.getItem('delivery_gps_cache');
+              if (cached) {
+                const parsed = JSON.parse(cached);
+                const dist = typeof parsed.distanceKm === 'number' && parsed.distanceKm > 0 ? parsed.distanceKm : null;
+                const isEligible = dist !== null && dist > 0 && dist <= 5.0 && Boolean(parsed.eligible);
+                setUserDistanceKm(dist);
+                if (isEligible) {
+                  setGeoStatus('eligible');
+                  setOrderingMode('delivery');
+                  sessionStorage.setItem('vaibhav_order_mode', 'delivery');
+                } else {
+                  setGeoStatus('outside');
+                  setOrderingMode('none');
+                  sessionStorage.setItem('vaibhav_order_mode', 'outside');
+                }
+                return;
+              }
+            } catch {}
+            setOrderingMode('delivery');
+          }
+        }}
+      />
+
+      {/* Price Comparison vs Aggregators Modal */}
+      <PriceComparisonModal
+        isOpen={isCompareModalOpen}
+        onClose={() => setIsCompareModalOpen(false)}
+        onOrderDirect={() => {
+          handleUnlockDelivery();
+        }}
+      />
     </section>
   );
 };

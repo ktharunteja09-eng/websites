@@ -1,6 +1,7 @@
 import React from 'react';
-import { Helmet } from 'react-helmet-async';
+import { Head } from 'vite-react-ssg';
 import siteMetadata from '../../metadata.json';
+import { SITE_URL } from '../data/config';
 
 interface SEOProps {
   title?: string;
@@ -11,6 +12,7 @@ interface SEOProps {
   keywords?: string[];
   preloadImage?: string;
   jsonLd?: Record<string, unknown> | Array<Record<string, unknown>>;
+  noindex?: boolean;
 }
 
 export const SEO: React.FC<SEOProps> = ({
@@ -22,25 +24,56 @@ export const SEO: React.FC<SEOProps> = ({
   keywords,
   preloadImage,
   jsonLd,
+  noindex = false,
 }) => {
-  const routesMeta = (siteMetadata as unknown as { routes?: Record<string, { title?: string; description?: string; canonical?: string; ogType?: string; keywords?: string[] }> }).routes || {};
+  const routesMeta = (siteMetadata as unknown as {
+    routes?: Record<string, { title?: string; description?: string; canonical?: string; ogType?: string; keywords?: string[] }>;
+  }).routes || {};
   const routeConfig = routesMeta[path] || {};
 
-  const siteUrl = siteMetadata.siteUrl || 'https://vaibhavgrand.com';
   const finalTitle = title || routeConfig.title || siteMetadata.name;
   const finalDescription = description || routeConfig.description || siteMetadata.description;
-  const canonicalUrl = routeConfig.canonical || `${siteUrl}${path === '/' ? '' : path}`;
-  const finalOgImage = ogImage || siteMetadata.defaultOgImage || `${siteUrl}/assets/vaibhav-grand-webp-images/front6.webp`;
+
+  // Canonical rule:
+  // Root '/' gets a trailing slash ('https://vaibhavgrand.in/')
+  // All subpages get NO trailing slash ('https://vaibhavgrand.in/menu')
+  // This consistently matches sitemap.xml and Cloudflare static directory outputs
+  let canonicalUrl = routeConfig.canonical;
+  if (canonicalUrl) {
+    canonicalUrl = canonicalUrl
+      .replace(/^https?:\/\/vaibhavgrand\.(com|in)/, SITE_URL)
+      .replace(/^https?:\/\/vaibhav-grand\.vercel\.app/, SITE_URL);
+  } else {
+    const cleanPath = path.replace(/^\/+/, '').replace(/\/+$/, '');
+    canonicalUrl = cleanPath ? `${SITE_URL}/${cleanPath}` : `${SITE_URL}/`;
+  }
+
+  // Ensure og:image and twitter:image are absolute URLs on SITE_URL
+  const toAbsoluteUrl = (imgUrl?: string): string => {
+    if (!imgUrl) {
+      return `${SITE_URL}/assets/images/chicken_mandi_hero_1789894879370.webp`;
+    }
+    if (imgUrl.startsWith('http://') || imgUrl.startsWith('https://')) {
+      return imgUrl
+        .replace(/^https?:\/\/vaibhavgrand\.(com|in)/, SITE_URL)
+        .replace(/^https?:\/\/vaibhav-grand\.vercel\.app/, SITE_URL);
+    }
+    const clean = imgUrl.startsWith('/') ? imgUrl : `/${imgUrl}`;
+    return `${SITE_URL}${clean}`;
+  };
+
+  const finalOgImage = toAbsoluteUrl(ogImage || siteMetadata.defaultOgImage);
   const finalOgType = ogType || routeConfig.ogType || 'website';
   const finalKeywords = keywords || routeConfig.keywords || [];
 
   return (
-    <Helmet>
+    <Head>
       {/* Primary Meta */}
       <title>{finalTitle}</title>
       <meta name="title" content={finalTitle} />
       <meta name="description" content={finalDescription} />
       <link rel="canonical" href={canonicalUrl} />
+      {noindex && <meta name="robots" content="noindex, nofollow" />}
       {finalKeywords.length > 0 && (
         <meta name="keywords" content={finalKeywords.join(', ')} />
       )}
@@ -71,6 +104,6 @@ export const SEO: React.FC<SEOProps> = ({
           {JSON.stringify(jsonLd)}
         </script>
       )}
-    </Helmet>
+    </Head>
   );
 };

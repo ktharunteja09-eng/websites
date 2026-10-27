@@ -1,4 +1,6 @@
 User-agent: *
 Allow: /
+Disallow: /admin
+Disallow: /api/
 
-Sitemap: https://vaibhavgrand.com/sitemap.xml
+Sitemap: https://vaibhavgrand.in/sitemap.xml
