@@ -8,7 +8,6 @@ import { PolicyModal } from './components/PolicyModals';
 import { SmoothScrollProvider } from './components/SmoothScrollProvider';
 import { ScrollProgressBar } from './components/ScrollProgressBar';
 import { CallToBookModal } from './components/CallToBookModal';
-import { OrderOnlineModal } from './components/OrderOnlineModal';
 import { useScrollLock } from './utils/scrollLock';
 import { clearReloadGuard } from './utils/errorHandler';
 
@@ -16,16 +15,19 @@ import { clearReloadGuard } from './utils/errorHandler';
 import { HomePage } from './pages/HomePage';
 import { MenuPage } from './pages/MenuPage';
 import { AboutPage } from './pages/AboutPage';
-import { CateringPage } from './pages/CateringPage';
-import { ReviewsPage } from './pages/ReviewsPage';
-import { GalleryPage } from './pages/GalleryPage';
 import { ContactPage } from './pages/ContactPage';
 import { NotFoundPage } from './pages/NotFoundPage';
 import { PrivacyPage } from './pages/PrivacyPage';
 import { TermsPage } from './pages/TermsPage';
 import { FlashOfferBanner } from './components/FlashOfferBanner';
 import { TopUtilityBar } from './components/TopUtilityBar';
-import { AdminDashboard } from './pages/AdminDashboard';
+
+// Lazy-loaded non-critical pages & heavy checkout modal
+const CateringPage = React.lazy(() => import('./pages/CateringPage').then((m) => ({ default: m.CateringPage })));
+const ReviewsPage = React.lazy(() => import('./pages/ReviewsPage').then((m) => ({ default: m.ReviewsPage })));
+const GalleryPage = React.lazy(() => import('./pages/GalleryPage').then((m) => ({ default: m.GalleryPage })));
+const AdminDashboard = React.lazy(() => import('./pages/AdminDashboard').then((m) => ({ default: m.AdminDashboard })));
+const OrderOnlineModal = React.lazy(() => import('./components/OrderOnlineModal').then((m) => ({ default: m.OrderOnlineModal })));
 
 export interface RouteOutletContext {
   onOpenOrderModal: () => void;
@@ -75,33 +77,39 @@ export const AboutPageWrapper: React.FC = () => {
 export const CateringPageWrapper: React.FC = () => {
   const { onOpenOrderModal, onOpenBookModal, onNavigateHome } = useAppOutletContext();
   return (
-    <CateringPage
-      onOpenOrderModal={onOpenOrderModal}
-      onOpenBookModal={onOpenBookModal}
-      onNavigateHome={onNavigateHome}
-    />
+    <React.Suspense fallback={<div className="min-h-screen bg-[#FDFBF7]" />}>
+      <CateringPage
+        onOpenOrderModal={onOpenOrderModal}
+        onOpenBookModal={onOpenBookModal}
+        onNavigateHome={onNavigateHome}
+      />
+    </React.Suspense>
   );
 };
 
 export const ReviewsPageWrapper: React.FC = () => {
   const { onOpenOrderModal, onOpenBookModal, onNavigateHome } = useAppOutletContext();
   return (
-    <ReviewsPage
-      onOpenOrderModal={onOpenOrderModal}
-      onOpenBookModal={onOpenBookModal}
-      onNavigateHome={onNavigateHome}
-    />
+    <React.Suspense fallback={<div className="min-h-screen bg-[#FDFBF7]" />}>
+      <ReviewsPage
+        onOpenOrderModal={onOpenOrderModal}
+        onOpenBookModal={onOpenBookModal}
+        onNavigateHome={onNavigateHome}
+      />
+    </React.Suspense>
   );
 };
 
 export const GalleryPageWrapper: React.FC = () => {
   const { onOpenOrderModal, onOpenBookModal, onNavigateHome } = useAppOutletContext();
   return (
-    <GalleryPage
-      onOpenOrderModal={onOpenOrderModal}
-      onOpenBookModal={onOpenBookModal}
-      onNavigateHome={onNavigateHome}
-    />
+    <React.Suspense fallback={<div className="min-h-screen bg-[#FDFBF7]" />}>
+      <GalleryPage
+        onOpenOrderModal={onOpenOrderModal}
+        onOpenBookModal={onOpenBookModal}
+        onNavigateHome={onNavigateHome}
+      />
+    </React.Suspense>
   );
 };
 
@@ -123,7 +131,11 @@ export const NotFoundPageWrapper: React.FC = () => {
 
 export const AdminPageWrapper: React.FC = () => {
   const { onNavigateHome } = useAppOutletContext();
-  return <AdminDashboard onBackToSite={onNavigateHome} />;
+  return (
+    <React.Suspense fallback={<div className="min-h-screen bg-[#FDFBF7]" />}>
+      <AdminDashboard onBackToSite={onNavigateHome} />
+    </React.Suspense>
+  );
 };
 
 export const PrivacyPageWrapper: React.FC = () => {
@@ -177,7 +189,11 @@ export default function App() {
   const isAdminRoute = location.pathname === '/admin' || location.hash === '#admin' || isHashAdmin;
 
   if (isAdminRoute) {
-    return <AdminDashboard onBackToSite={() => handleNavigate('/')} />;
+    return (
+      <React.Suspense fallback={<div className="min-h-screen bg-[#FDFBF7]" />}>
+        <AdminDashboard onBackToSite={() => handleNavigate('/')} />
+      </React.Suspense>
+    );
   }
 
   const outletContext: RouteOutletContext = {
@@ -243,11 +259,15 @@ export default function App() {
           />
 
           {/* Order Online Modal with Location Eligibility Checker */}
-          <OrderOnlineModal
-            isOpen={orderOpen}
-            onClose={() => setOrderOpen(false)}
-            onNavigate={handleNavigate}
-          />
+          {orderOpen && (
+            <React.Suspense fallback={null}>
+              <OrderOnlineModal
+                isOpen={orderOpen}
+                onClose={() => setOrderOpen(false)}
+                onNavigate={handleNavigate}
+              />
+            </React.Suspense>
+          )}
 
           {/* Policy Modals */}
           <PolicyModal

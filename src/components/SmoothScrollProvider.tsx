@@ -1,8 +1,8 @@
 import React, { createContext, useContext, useEffect, useRef, useState } from 'react';
-import Lenis from 'lenis';
+import type LenisType from 'lenis';
 
 interface LenisContextType {
-  lenis: Lenis | null;
+  lenis: LenisType | null;
   scrollTo: (target: string | HTMLElement | number, options?: { offset?: number; duration?: number; immediate?: boolean }) => void;
 }
 
@@ -18,44 +18,70 @@ interface SmoothScrollProviderProps {
 }
 
 export const SmoothScrollProvider: React.FC<SmoothScrollProviderProps> = ({ children }) => {
-  const [lenisInstance, setLenisInstance] = useState<Lenis | null>(null);
+  const [lenisInstance, setLenisInstance] = useState<LenisType | null>(null);
   const rafRef = useRef<number | null>(null);
 
   useEffect(() => {
     if (typeof window === 'undefined' || (typeof process !== 'undefined' && Boolean(process.versions?.node))) return;
 
-    // Initialize Lenis with luxury exponential ease-out for a silky "butter-smooth" glide
-    const lenis = new Lenis({
-      duration: 1.15,
-      easing: (t: number) => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
-      orientation: 'vertical',
-      gestureOrientation: 'vertical',
-      smoothWheel: true,
-      wheelMultiplier: 0.95,
-      touchMultiplier: 1,
-      syncTouch: false,
-      infinite: false,
-    });
+    let isDestroyed = false;
+    let lenis: LenisType | null = null;
 
-    setLenisInstance(lenis);
+    // Dynamically import Lenis after first paint to keep the critical path lean
+    const initLenis = () => {
+      import('lenis')
+        .then(({ default: LenisClass }) => {
+          if (isDestroyed) return;
 
-    // Bind to requestAnimationFrame
-    function raf(time: number) {
-      lenis.raf(time);
-      rafRef.current = requestAnimationFrame(raf);
-    }
-    rafRef.current = requestAnimationFrame(raf);
+          lenis = new LenisClass({
+            duration: 1.15,
+            easing: (t: number) => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
+            orientation: 'vertical',
+            gestureOrientation: 'vertical',
+            smoothWheel: true,
+            wheelMultiplier: 0.95,
+            touchMultiplier: 1,
+            syncTouch: false,
+            infinite: false,
+          });
 
-    // Make lenis globally accessible for convenience
-    (window as unknown as { lenis: Lenis }).lenis = lenis;
+          setLenisInstance(lenis);
 
-    return () => {
-      if (rafRef.current) {
-        cancelAnimationFrame(rafRef.current);
-      }
-      lenis.destroy();
-      setLenisInstance(null);
+          function raf(time: number) {
+            lenis?.raf(time);
+            rafRef.current = requestAnimationFrame(raf);
+          }
+          rafRef.current = requestAnimationFrame(raf);
+
+          (window as unknown as { lenis: LenisType }).lenis = lenis;
+        })
+        .catch((err) => {
+          console.warn('Deferred Lenis load failed:', err);
+        });
     };
+
+    if ('requestIdleCallback' in window) {
+      const idleId = (window as unknown as { requestIdleCallback: (cb: () => void, opts?: { timeout: number }) => number })
+        .requestIdleCallback(initLenis, { timeout: 2000 });
+      return () => {
+        isDestroyed = true;
+        if ('cancelIdleCallback' in window) {
+          (window as unknown as { cancelIdleCallback: (id: number) => void }).cancelIdleCallback(idleId);
+        }
+        if (rafRef.current) cancelAnimationFrame(rafRef.current);
+        lenis?.destroy();
+        setLenisInstance(null);
+      };
+    } else {
+      const timer = setTimeout(initLenis, 150);
+      return () => {
+        isDestroyed = true;
+        clearTimeout(timer);
+        if (rafRef.current) cancelAnimationFrame(rafRef.current);
+        lenis?.destroy();
+        setLenisInstance(null);
+      };
+    }
   }, []);
 
   const scrollTo = (
@@ -69,7 +95,7 @@ export const SmoothScrollProvider: React.FC<SmoothScrollProviderProps> = ({ chil
         immediate: options?.immediate ?? false,
       });
     } else {
-      // Fallback
+      // Fallback native smooth scroll before Lenis loads
       if (typeof target === 'string') {
         const el = document.querySelector(target);
         if (el) {

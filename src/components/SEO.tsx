@@ -11,6 +11,8 @@ interface SEOProps {
   ogType?: string;
   keywords?: string[];
   preloadImage?: string;
+  preloadImageSrcSet?: string;
+  preloadImageSizes?: string;
   jsonLd?: Record<string, unknown> | Array<Record<string, unknown>>;
   noindex?: boolean;
 }
@@ -23,6 +25,8 @@ export const SEO: React.FC<SEOProps> = ({
   ogType = 'website',
   keywords,
   preloadImage,
+  preloadImageSrcSet,
+  preloadImageSizes,
   jsonLd,
   noindex = false,
 }) => {
@@ -95,7 +99,14 @@ export const SEO: React.FC<SEOProps> = ({
 
       {/* LCP Image Preload */}
       {preloadImage && (
-        <link rel="preload" as="image" href={preloadImage} fetchPriority="high" />
+        <link
+          rel="preload"
+          as="image"
+          href={preloadImage}
+          {...(preloadImageSrcSet ? { imageSrcSet: preloadImageSrcSet } : {})}
+          {...(preloadImageSizes ? { imageSizes: preloadImageSizes } : {})}
+          fetchPriority="high"
+        />
       )}
 
       {/* JSON-LD Structured Data */}

@@ -188,7 +188,10 @@ export default defineConfig(({ mode }) => {
               if (id.includes('react') || id.includes('react-dom') || id.includes('scheduler')) {
                 return 'vendor-react';
               }
-              if (id.includes('motion') || id.includes('lenis')) {
+              if (id.includes('lenis')) {
+                return 'vendor-lenis';
+              }
+              if (id.includes('motion')) {
                 return 'vendor-motion';
               }
             }

@@ -29,7 +29,9 @@ export const HERO_SLIDES = [
     title: 'Vaibhav Special Chicken Mandi',
     subtitle: 'Communal Arabic Platter with Tender Char-grilled Chicken & Fragrant Saffron Basmati',
     category: 'Arabic Mandi Specialty',
-    imageUrl: '/assets/images/chicken_mandi_hero_1789894879370.webp',
+    imageUrl: '/assets/images/chicken_mandi_hero_1080w.webp',
+    srcSet: '/assets/images/chicken_mandi_hero_640w.webp 640w, /assets/images/chicken_mandi_hero_1080w.webp 1080w, /assets/images/chicken_mandi_hero_1400w.webp 1400w',
+    sizes: '(max-width: 640px) 640px, (max-width: 1080px) 1080px, 1400px',
     altText: 'Vaibhav Special Chicken Mandi platter served at Vaibhav Grand Family Restaurant, Renigunta, Tirupati'
   },
   {

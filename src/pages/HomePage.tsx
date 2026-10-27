@@ -33,7 +33,9 @@ export const HomePage: React.FC<HomePageProps> = ({
       {/* Dynamic SEO & Schema.org LocalBusiness */}
       <SEO
         path="/"
-        preloadImage="/assets/images/chicken_mandi_hero_1789894879370.webp"
+        preloadImage="/assets/images/chicken_mandi_hero_1080w.webp"
+        preloadImageSrcSet="/assets/images/chicken_mandi_hero_640w.webp 640w, /assets/images/chicken_mandi_hero_1080w.webp 1080w, /assets/images/chicken_mandi_hero_1400w.webp 1400w"
+        preloadImageSizes="(max-width: 640px) 640px, (max-width: 1080px) 1080px, 1400px"
         jsonLd={getRestaurantSchema()}
       />
 
