@@ -4,8 +4,6 @@ import { WHATSAPP_NUMBER } from '../utils/supabaseClient';
 import {
   Menu,
   X,
-  ChevronDown,
-  ExternalLink,
   Calendar,
   Utensils,
   Phone,
@@ -34,9 +32,7 @@ export const Navbar: React.FC<NavbarProps> = ({
   onOpenBookModal,
 }) => {
   const [isScrolled, setIsScrolled] = useState(false);
-  const [orderDropdownOpen, setOrderDropdownOpen] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const dropdownRef = useRef<HTMLDivElement>(null);
   const headerRef = useRef<HTMLDivElement>(null);
   const logoRef = useRef<HTMLButtonElement>(null);
 
@@ -137,16 +133,7 @@ export const Navbar: React.FC<NavbarProps> = ({
     };
   }, []);
 
-  // Close dropdown on click outside
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
-        setOrderDropdownOpen(false);
-      }
-    };
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, []);
+
 
   // Close drawer on ESC key
   useEffect(() => {
@@ -265,81 +252,15 @@ export const Navbar: React.FC<NavbarProps> = ({
             </button>
 
             {/* Order Online Button */}
-            <div className="relative" ref={dropdownRef}>
-              <button
-                type="button"
-                id="navbar-order-online-btn"
-                aria-expanded={orderDropdownOpen}
-                aria-haspopup="true"
-                onClick={() => setOrderDropdownOpen((prev) => !prev)}
-                className="btn-shimmer btn-md bg-[#D3452B] hover:bg-[#BD3B22] text-[#FDFBF7] font-semibold rounded-full shadow-[0_4px_14px_rgba(211,69,43,0.3)] hover:shadow-[0_6px_20px_rgba(211,69,43,0.4)] transition-all duration-200 transform hover:scale-[1.03] active:scale-[0.98] focus:outline-none"
-              >
-                <span>Order Online</span>
-                <ChevronDown
-                  className={`w-3.5 h-3.5 transition-transform duration-200 ${orderDropdownOpen ? 'rotate-180' : ''}`}
-                />
-              </button>
-
-              {/* Dropdown Menu */}
-              {orderDropdownOpen && (
-                <div
-                  id="order-dropdown-menu"
-                  className="absolute right-0 mt-2 w-64 bg-white rounded-xl shadow-[0_12px_32px_rgba(0,0,0,0.15)] border border-[#2E4823]/10 p-2 z-50 animate-in fade-in zoom-in-95 duration-150"
-                  role="menu"
-                >
-                  <div className="px-3 py-1.5 border-b border-gray-100 text-xs text-gray-500 font-medium">
-                    Order for Doorstep Delivery
-                  </div>
-
-                  <a
-                    href={RESTAURANT_INFO.swiggyUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="flex items-center justify-between px-3 py-2.5 my-1 rounded-lg text-sm font-medium text-[#1C1C1C] hover:bg-[#F7F3EB] hover:text-[#D3452B] transition-colors group"
-                    role="menuitem"
-                  >
-                    <div className="flex items-center gap-2.5">
-                      <span className="w-7 h-7 rounded-full bg-[#FC8019]/15 text-[#FC8019] flex items-center justify-center font-bold text-xs">
-                        S
-                      </span>
-                      <div className="text-left">
-                        <div className="font-semibold text-gray-900 group-hover:text-[#D3452B]">Order via Swiggy</div>
-                        <div className="text-[11px] text-gray-500">Live delivery tracking</div>
-                      </div>
-                    </div>
-                    <ExternalLink className="w-4 h-4 text-gray-400 group-hover:text-[#D3452B]" />
-                  </a>
-
-                  <a
-                    href={RESTAURANT_INFO.zomatoUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="flex items-center justify-between px-3 py-2.5 rounded-lg text-sm font-medium text-[#1C1C1C] hover:bg-[#F7F3EB] hover:text-[#D3452B] transition-colors group"
-                    role="menuitem"
-                  >
-                    <div className="flex items-center gap-2.5">
-                      <span className="w-7 h-7 rounded-full bg-[#E23744]/15 text-[#E23744] flex items-center justify-center font-bold text-xs">
-                        Z
-                      </span>
-                      <div className="text-left">
-                        <div className="font-semibold text-gray-900 group-hover:text-[#D3452B]">Order via Zomato</div>
-                        <div className="text-[11px] text-gray-500">Menu &amp; ratings</div>
-                      </div>
-                    </div>
-                    <ExternalLink className="w-4 h-4 text-gray-400 group-hover:text-[#D3452B]" />
-                  </a>
-
-                  <div className="mt-2 pt-2 border-t border-gray-100 px-3 py-1 text-center">
-                    <a
-                      href={`tel:${RESTAURANT_INFO.phone}`}
-                      className="text-xs text-[#2E4823] font-semibold hover:underline block"
-                    >
-                      Prefer to call? {RESTAURANT_INFO.phone} (Takeaway)
-                    </a>
-                  </div>
-                </div>
-              )}
-            </div>
+            <button
+              type="button"
+              id="navbar-order-online-btn"
+              aria-label="Order Online from Vaibhav Grand Kitchen"
+              onClick={onOpenOrderModal}
+              className="btn-shimmer btn-md bg-[#D3452B] hover:bg-[#BD3B22] text-[#FDFBF7] font-semibold rounded-full shadow-[0_4px_14px_rgba(211,69,43,0.3)] hover:shadow-[0_6px_20px_rgba(211,69,43,0.4)] transition-all duration-200 transform hover:scale-[1.03] active:scale-[0.98] focus:outline-none"
+            >
+              <span>Order Online</span>
+            </button>
           </div>
 
           {/* Mobile Actions: Order Button + Direct Call + Hamburger (Red Onion NYC Exact Header Pattern) */}

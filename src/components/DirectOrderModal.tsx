@@ -41,6 +41,7 @@ import {
   ShieldCheck,
 } from 'lucide-react';
 import { PriceComparisonModal } from './PriceComparisonModal';
+import { RESTAURANT_INFO } from '../data/restaurantData';
 
 // TEST ONLY: personal UPI ID. Replace with the restaurant's own UPI ID before going live.
 export const MERCHANT_UPI_ID = 'Tarunteja190820071@ibl';
@@ -825,14 +826,15 @@ export const DirectOrderModal: React.FC<DirectOrderModalProps> = ({
         .replace(/[^\S\r\n]+/g, ' ')
         .trim();
 
+    const isPickup = order.order_type !== 'DELIVERY_5KM';
     const safeCustomerName = sanitize(order.customer_name || '');
     const safeAddressText = sanitize(order.address_notes || '');
-    const modeText = order.order_type === 'DELIVERY_5KM' ? 'Delivery' : 'Pickup';
+    const modeText = isPickup ? 'Pickup' : 'Delivery';
     const mapsLink = order.maps_link || 'Self-Pickup at Restaurant';
 
     let firstLine = `New Order: Order ${order.order_code}`;
     if (order.payment_method === 'COD') {
-      firstLine = `PAYMENT: Cash on Delivery (Collect Rs ${order.final_total}) | Order ${order.order_code}`;
+      firstLine = `PAYMENT: ${isPickup ? 'Cash at Pickup' : 'Cash on Delivery'} (Collect Rs ${order.final_total}) | Order ${order.order_code}`;
     } else if (utrNumber) {
       firstLine = `CHECK SOUNDBOX: Rs ${order.final_total} | UPI Ref: ${utrNumber} | Order ${order.order_code}`;
     }
@@ -859,14 +861,22 @@ export const DirectOrderModal: React.FC<DirectOrderModalProps> = ({
       itemsFormatted = sanitize(order.items_json);
     }
 
+    const pickupNote =
+      !safeAddressText || safeAddressText === 'Self-Pickup at Restaurant'
+        ? 'None'
+        : safeAddressText;
+
+    const locationDetails = isPickup
+      ? `*Pickup Note:* ${pickupNote}\nPickup from: ${RESTAURANT_INFO.name}, Renigunta`
+      : `*Address:* ${safeAddressText}\nSystem GPS Pin: ${mapsLink}`;
+
     return `${firstLine}
 
 *DIRECT ORDER INVOICE*
 *Order ID:* #${order.order_code}
 *Mode:* ${modeText} | *Payment:* ${order.payment_method}
 *Customer:* ${safeCustomerName} | +91 ${order.customer_phone}
-*Address:* ${safeAddressText}
-System GPS Pin: ${mapsLink}
+${locationDetails}
 --------------------------------
 *ITEMS:*
 ${itemsFormatted}
@@ -1519,7 +1529,9 @@ _Please reply "CONFIRMED" to start preparing my order._`;
               <div className="bg-[#F7F3EB] rounded-2xl p-4 text-left text-xs sm:text-sm text-gray-700 space-y-2 border border-[#2E4823]/15">
                 <div className="font-mono font-bold text-xs text-[#2E4823] pb-1 border-b border-gray-200">
                   {activeOrder.payment_method === 'COD'
-                    ? `COLLECT CASH: Rs ${activeOrder.final_total} upon delivery or pickup`
+                    ? `COLLECT CASH: Rs ${activeOrder.final_total} upon ${
+                        activeOrder.order_type === 'DELIVERY_5KM' ? 'delivery' : 'pickup'
+                      }`
                     : `CHECK SOUNDBOX: Rs ${activeOrder.final_total} | UPI Ref: ${utr || 'Pending'}`}
                 </div>
                 <p className="flex items-center justify-between">
@@ -1533,7 +1545,9 @@ _Please reply "CONFIRMED" to start preparing my order._`;
                   <span className="font-semibold">
                     {activeOrder.payment_method === 'UPI'
                       ? 'UPI Payment'
-                      : 'Cash on Delivery'}
+                      : activeOrder.order_type === 'DELIVERY_5KM'
+                      ? 'Cash on Delivery'
+                      : 'Cash at Pickup'}
                   </span>
                 </p>
                 <p className="flex items-center justify-between">
@@ -2454,10 +2468,10 @@ _Please reply "CONFIRMED" to start preparing my order._`;
                       </div>
                       <div>
                         <p className="text-xs font-bold text-gray-900">
-                          Cash on Delivery
+                          {isTakeaway ? 'Cash at Pickup' : 'Cash on Delivery'}
                         </p>
                         <p className="text-[10px] text-gray-500 mt-0.5">
-                          Pay upon delivery or pickup
+                          {isTakeaway ? 'Pay upon pickup at counter' : 'Pay upon delivery'}
                         </p>
                       </div>
                     </button>

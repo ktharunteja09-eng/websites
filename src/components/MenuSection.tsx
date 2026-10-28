@@ -203,49 +203,57 @@ export const MenuSection: React.FC = () => {
 
   // Restore previously verified GPS session if available
   useEffect(() => {
-    try {
-      const savedMode = sessionStorage.getItem('vaibhav_order_mode');
-      if (savedMode === 'takeaway' || savedMode === 'pickup') {
-        setOrderingMode('pickup');
-        setShowEligibleOnly(true);
-        setGeoStatus('idle');
-      }
-
-      // Check delivery_gps_cache first
-      const cachedGps = sessionStorage.getItem('delivery_gps_cache');
-      if (cachedGps) {
-        const parsed = JSON.parse(cachedGps);
-        const dist = typeof parsed.distanceKm === 'number' && parsed.distanceKm > 0 ? parsed.distanceKm : null;
-        const isEligible = dist !== null && dist > 0 && dist <= 5.0 && Boolean(parsed.eligible);
-        setUserDistanceKm(dist);
-        if (isEligible && savedMode !== 'takeaway' && savedMode !== 'pickup') {
-          setGeoStatus('eligible');
-          setOrderingMode('delivery');
+    const restoreOrderMode = () => {
+      try {
+        const savedMode = sessionStorage.getItem('vaibhav_order_mode');
+        if (savedMode === 'takeaway' || savedMode === 'pickup') {
+          setOrderingMode('pickup');
           setShowEligibleOnly(true);
-        } else if (!isEligible && savedMode !== 'takeaway' && savedMode !== 'pickup') {
-          setGeoStatus('outside');
-          setOrderingMode('none');
+          setGeoStatus('idle');
         }
-      } else {
-        const savedGeo = sessionStorage.getItem('vaibhav_delivery_geo');
-        if (savedGeo) {
-          const parsed = JSON.parse(savedGeo);
-          const dist = typeof parsed.distanceKm === 'number' ? parsed.distanceKm : parsed.roadKm;
-          if (typeof dist === 'number' && dist > 0) {
-            const isEligible = Boolean(parsed.eligible) && dist > 0 && dist <= 5.0;
-            setUserDistanceKm(dist);
-            if (isEligible && savedMode !== 'takeaway' && savedMode !== 'pickup') {
-              setGeoStatus('eligible');
-              setOrderingMode('delivery');
-              setShowEligibleOnly(true);
-            } else if (!isEligible && savedMode !== 'takeaway' && savedMode !== 'pickup') {
-              setGeoStatus('outside');
-              setOrderingMode('none');
+
+        // Check delivery_gps_cache first
+        const cachedGps = sessionStorage.getItem('delivery_gps_cache');
+        if (cachedGps) {
+          const parsed = JSON.parse(cachedGps);
+          const dist = typeof parsed.distanceKm === 'number' && parsed.distanceKm > 0 ? parsed.distanceKm : null;
+          const isEligible = dist !== null && dist > 0 && dist <= 5.0 && Boolean(parsed.eligible);
+          setUserDistanceKm(dist);
+          if (isEligible && savedMode !== 'takeaway' && savedMode !== 'pickup') {
+            setGeoStatus('eligible');
+            setOrderingMode('delivery');
+            setShowEligibleOnly(true);
+          } else if (!isEligible && savedMode !== 'takeaway' && savedMode !== 'pickup') {
+            setGeoStatus('outside');
+            setOrderingMode('none');
+          }
+        } else {
+          const savedGeo = sessionStorage.getItem('vaibhav_delivery_geo');
+          if (savedGeo) {
+            const parsed = JSON.parse(savedGeo);
+            const dist = typeof parsed.distanceKm === 'number' ? parsed.distanceKm : parsed.roadKm;
+            if (typeof dist === 'number' && dist > 0) {
+              const isEligible = Boolean(parsed.eligible) && dist > 0 && dist <= 5.0;
+              setUserDistanceKm(dist);
+              if (isEligible && savedMode !== 'takeaway' && savedMode !== 'pickup') {
+                setGeoStatus('eligible');
+                setOrderingMode('delivery');
+                setShowEligibleOnly(true);
+              } else if (!isEligible && savedMode !== 'takeaway' && savedMode !== 'pickup') {
+                setGeoStatus('outside');
+                setOrderingMode('none');
+              }
             }
           }
         }
-      }
-    } catch {}
+      } catch {}
+    };
+
+    restoreOrderMode();
+    window.addEventListener('vaibhav-order-mode-changed', restoreOrderMode);
+    return () => {
+      window.removeEventListener('vaibhav-order-mode-changed', restoreOrderMode);
+    };
   }, []);
 
   // Handle Geolocation Check for 5.0 km Direct Delivery (via ORS with Haversine fallback)
@@ -341,11 +349,7 @@ export const MenuSection: React.FC = () => {
 
   // Cart Operations (Locked when checkout modal is open or when ordering mode is exited/locked)
   const handleAddToCart = (dish: DbMenuItem) => {
-    if (isCheckoutOpen) return;
-    if (!isUnlocked) {
-      setOrderingMode('pickup');
-      sessionStorage.setItem('vaibhav_order_mode', 'pickup');
-    }
+    if (isCheckoutOpen || !isUnlocked) return;
     if (!dish.direct_order_eligible || dish.is_completed) return;
 
     setCartItems((prev) => {
@@ -373,11 +377,7 @@ export const MenuSection: React.FC = () => {
   };
 
   const handleSelectVariant = (groupedDish: GroupedMobileDish, variant: ItemVariantOption) => {
-    if (isCheckoutOpen) return;
-    if (!isUnlocked) {
-      setOrderingMode('pickup');
-      sessionStorage.setItem('vaibhav_order_mode', 'pickup');
-    }
+    if (isCheckoutOpen || !isUnlocked) return;
     if (!variant.directEligible || variant.isCompleted) return;
 
     const sizeLower = variant.size.toLowerCase();
@@ -1315,8 +1315,8 @@ export const MenuSection: React.FC = () => {
                                 )}
                               </div>
 
-                              {/* + ADD BUTTON LOGIC (Desktop: Shown when dish is eligible) */}
-                              {isEligible && (
+                              {/* + ADD BUTTON LOGIC (Desktop: Shown when order type is chosen and dish is eligible) */}
+                              {isUnlocked && isEligible && (
                                 <div className="flex-shrink-0">
                                   {isCompleted ? (
                                     <button

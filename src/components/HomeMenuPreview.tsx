@@ -1,9 +1,10 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { motion } from 'motion/react';
 import { BookOpen, ExternalLink, Phone, ArrowRight, Utensils, TrendingDown, Sparkles, Star, ShieldCheck } from 'lucide-react';
-import { RESTAURANT_INFO, MENU_ITEMS } from '../data/restaurantData';
-import { MenuItem } from '../types';
+import { RESTAURANT_INFO, MENU_ITEMS, MENU_CATEGORIES } from '../data/restaurantData';
+import { MenuItem, MenuCategoryType } from '../types';
 import { useLiveMenu } from '../hooks/useLiveMenu';
+import { extractSizeFromDish } from '../utils/menuVariants';
 import { getDishImage } from '../data/menuImageMap';
 import mandiImg from '../assets/events/vaibhav spacialk.webp';
 import biryaniImg from '../assets/events/hydrabad chicken dum biriyanik.webp';
@@ -49,17 +50,78 @@ interface HomeMenuPreviewProps {
   onOpenCompareModal?: () => void;
 }
 
-// 8 Top Signature & Bestselling Dishes for Classic Desktop View (Untouched)
-const PREVIEW_DISH_IDS = [
-  'vaibhav-special-mandi',
-  'hyderabadi-chicken-dum-biryani',
-  'chicken-dum-biryani-bucket',
-  'sizzling-tandoori-chicken',
-  'chicken-lollipop',
-  'dragon-chicken',
-  'paneer-butter-masala',
-  'butter-naan',
-];
+// Deterministic varied selection: 1 dish from each of 8 different categories spread across the menu (no availability/completed filtering)
+function getInitialPreviewDishes(
+  items: MenuItem[],
+  categories: { id: MenuCategoryType; label: string }[]
+): MenuItem[] {
+  const validCats = categories
+    .filter((c) => c.id !== 'all')
+    .filter((c) => items.some((item) => item.category === c.id));
+
+  if (validCats.length === 0) return items.slice(0, 8);
+
+  const selectedDishes: MenuItem[] = [];
+  const selectedBaseNames = new Set<string>();
+  const usedCatIds = new Set<string>();
+
+  const targetCount = Math.min(8, validCats.length);
+  const targetCatIndices: number[] = [];
+  for (let k = 0; k < targetCount; k++) {
+    targetCatIndices.push(Math.floor((k * (validCats.length - 1)) / (targetCount - 1)));
+  }
+
+  for (const catIdx of targetCatIndices) {
+    const cat = validCats[catIdx];
+    if (!cat || usedCatIds.has(cat.id)) continue;
+
+    const catItems = items.filter((item) => item.category === cat.id);
+    const chosen =
+      catItems.find((item) => {
+        const base = extractSizeFromDish(item.name, item.portionNote).baseName.toLowerCase();
+        return item.isChefSpecial && !selectedBaseNames.has(base);
+      }) ||
+      catItems.find((item) => {
+        const base = extractSizeFromDish(item.name, item.portionNote).baseName.toLowerCase();
+        return !selectedBaseNames.has(base);
+      });
+
+    if (chosen) {
+      const base = extractSizeFromDish(chosen.name, chosen.portionNote).baseName.toLowerCase();
+      selectedBaseNames.add(base);
+      usedCatIds.add(cat.id);
+      selectedDishes.push(chosen);
+    }
+  }
+
+  // Fill up to 8 from any remaining categories without repeats
+  if (selectedDishes.length < 8) {
+    for (const cat of validCats) {
+      if (selectedDishes.length >= 8) break;
+      if (usedCatIds.has(cat.id)) continue;
+
+      const catItems = items.filter((item) => item.category === cat.id);
+      const chosen =
+        catItems.find((item) => {
+          const base = extractSizeFromDish(item.name, item.portionNote).baseName.toLowerCase();
+          return item.isChefSpecial && !selectedBaseNames.has(base);
+        }) ||
+        catItems.find((item) => {
+          const base = extractSizeFromDish(item.name, item.portionNote).baseName.toLowerCase();
+          return !selectedBaseNames.has(base);
+        });
+
+      if (chosen) {
+        const base = extractSizeFromDish(chosen.name, chosen.portionNote).baseName.toLowerCase();
+        selectedBaseNames.add(base);
+        usedCatIds.add(cat.id);
+        selectedDishes.push(chosen);
+      }
+    }
+  }
+
+  return selectedDishes;
+}
 
 // Exact 10 Classic Menu Items for Mobile View in Order:
 // 1. Mandi, 2. Baby Corn 555, 3. Chicken 65, 4. Biryani, 5. Butter Chicken,
@@ -85,12 +147,56 @@ export const HomeMenuPreview: React.FC<HomeMenuPreviewProps> = ({
   const [mobileActiveSlide, setMobileActiveSlide] = useState(0);
   const { getPrice, getMrp, isAvailable, getSavings } = useLiveMenu();
 
-  // Desktop dishes (exact original 8 preview dishes)
-  const desktopDishes = useMemo(() => {
-    const list = PREVIEW_DISH_IDS.map((id) =>
-      MENU_ITEMS.find((item) => item.id === id)
-    ).filter((item): item is MenuItem => item !== undefined);
-    return list.length >= 6 ? list : MENU_ITEMS.slice(0, 8);
+  // Desktop dishes: starts with 8 deterministic dishes from 8 different categories for SSG/prerender
+  const [desktopDishes, setDesktopDishes] = useState<MenuItem[]>(() =>
+    getInitialPreviewDishes(MENU_ITEMS, MENU_CATEGORIES)
+  );
+
+  // Client-only randomized rotation after mount (no hydration mismatch, layout shift prevented by identical card dimensions)
+  useEffect(() => {
+    try {
+      const validCats = MENU_CATEGORIES
+        .filter((c) => c.id !== 'all')
+        .filter((c) => MENU_ITEMS.some((item) => item.category === c.id));
+
+      if (validCats.length < 8) return;
+
+      const shuffledCats = [...validCats];
+      for (let i = shuffledCats.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [shuffledCats[i], shuffledCats[j]] = [shuffledCats[j], shuffledCats[i]];
+      }
+
+      const randomDishes: MenuItem[] = [];
+      const seenBases = new Set<string>();
+
+      for (const cat of shuffledCats) {
+        if (randomDishes.length >= 8) break;
+        const catItems = MENU_ITEMS.filter((item) => item.category === cat.id);
+        if (catItems.length === 0) continue;
+
+        const shuffledItems = [...catItems];
+        for (let i = shuffledItems.length - 1; i > 0; i--) {
+          const j = Math.floor(Math.random() * (i + 1));
+          [shuffledItems[i], shuffledItems[j]] = [shuffledItems[j], shuffledItems[i]];
+        }
+
+        const picked = shuffledItems.find((item) => {
+          const base = extractSizeFromDish(item.name, item.portionNote).baseName.toLowerCase();
+          return !seenBases.has(base);
+        });
+
+        if (picked) {
+          const base = extractSizeFromDish(picked.name, picked.portionNote).baseName.toLowerCase();
+          seenBases.add(base);
+          randomDishes.push(picked);
+        }
+      }
+
+      if (randomDishes.length === 8) {
+        setDesktopDishes(randomDishes);
+      }
+    } catch {}
   }, []);
 
   // Curated 10 items in exact requested order for mobile view from classic MENU_ITEMS

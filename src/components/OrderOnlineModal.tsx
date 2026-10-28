@@ -281,6 +281,7 @@ export const OrderOnlineModal: React.FC<OrderOnlineModalProps> = ({
     }
     try {
       sessionStorage.setItem('vaibhav_order_mode', orderMode);
+      window.dispatchEvent(new CustomEvent('vaibhav-order-mode-changed', { detail: { mode: orderMode } }));
     } catch {}
     onClose();
     if (onNavigate) {
