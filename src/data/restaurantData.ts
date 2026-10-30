@@ -1,12 +1,16 @@
 import { MenuItem, SignatureDish, Testimonial, GalleryPhoto, RestaurantInfo, DigitalMenuPage, MenuCategoryType } from '../types';
 
+export const DEFAULT_WHATSAPP_NUMBER = "918919505126";
+export const MERCHANT_UPI_ID = "9177480436@ibl";
+export const MERCHANT_UPI_NAME = "GADDAMADUGU BHANU PR";
+
 export const RESTAURANT_INFO: RestaurantInfo = {
   name: "Vaibhav Grand Family Restaurant",
   tagline: "Authentic Flavor, Fresh Ingredients",
   address: "Plot 157, Near Ramana Vilas Circle, Srikalahasthi Road, Renigunta, Tirupati-517520, Andhra Pradesh",
   landmark: "Opposite HP Petrol Pump, Renigunta & Mangalam Road Junction",
   phone: "7947142432",
-  whatsapp: "7702104894",
+  whatsapp: "8919505126",
   email: "vaibhavgrand91@gmail.com",
   instagramHandle: "@vaibh_avgrand",
   instagramUrl: "https://www.instagram.com/vaibh_avgrand/",
@@ -20,7 +24,7 @@ export const RESTAURANT_INFO: RestaurantInfo = {
   overallRating: 4.3,
   totalReviews: 1001,
   justdialUrl: "https://jsdl.in/DT-99XHP795D46",
-  logoUrl: "/assets/images/vaibhav-grand-logo.png"
+  logoUrl: "/assets/images/vaibhav-grand-logo-red.png"
 };
 
 export const HERO_SLIDES = [

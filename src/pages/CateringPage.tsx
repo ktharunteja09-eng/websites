@@ -86,7 +86,7 @@ export const CateringPage: React.FC<CateringPageProps> = ({
               <span>Book Event: {RESTAURANT_INFO.phone}</span>
             </button>
             <a
-              href={`https://wa.me/91${(RESTAURANT_INFO.whatsapp || '7702104894').replace(/\D/g, '')}?text=${encodeURIComponent(
+              href={`https://wa.me/91${(RESTAURANT_INFO.whatsapp || '8919505126').replace(/\D/g, '')}?text=${encodeURIComponent(
                 'Hi Vaibhav Grand! I would like to inquire about bulk catering & wedding banquet services in Renigunta/Tirupati.'
               )}`}
               target="_blank"

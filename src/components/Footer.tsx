@@ -28,7 +28,7 @@ export const Footer: React.FC<FooterProps> = ({
           <div className="space-y-4">
             <div className="flex items-center">
               <img
-                src="/assets/images/vaibhav-grand-logo.png"
+                src="/assets/images/vaibhav-grand-logo-red.png"
                 alt="Vaibhav Grand Family Restaurant Logo"
                 width={1766}
                 height={866}

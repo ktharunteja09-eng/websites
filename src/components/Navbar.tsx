@@ -201,7 +201,7 @@ export const Navbar: React.FC<NavbarProps> = ({
             aria-label="Vaibhav Grand Family Restaurant Home"
           >
             <img
-              src="/assets/images/vaibhav-grand-logo.png"
+              src="/assets/images/vaibhav-grand-logo-red.png"
               alt="Vaibhav Grand Family Restaurant Logo"
               width={1766}
               height={866}
@@ -344,7 +344,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                   aria-label="Vaibhav Grand Family Restaurant Home"
                 >
                   <img
-                    src="/assets/images/vaibhav-grand-logo.png"
+                    src="/assets/images/vaibhav-grand-logo-red.png"
                     alt="Vaibhav Grand Family Restaurant Logo"
                     width={1766}
                     height={866}

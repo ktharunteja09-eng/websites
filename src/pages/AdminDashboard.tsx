@@ -816,7 +816,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBackToSite }) 
           <div className="flex items-center gap-3 w-full sm:w-auto justify-between sm:justify-start">
             <div className="flex items-center gap-2.5">
               <img
-                src="/assets/images/vaibhav-grand-logo.png"
+                src="/assets/images/vaibhav-grand-logo-red.png"
                 alt="Vaibhav Grand Logo"
                 width={1766}
                 height={866}

@@ -1,6 +1,6 @@
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
 import { DbMenuItem, StoreOffer, DbOrder, PaymentStatus } from '../types';
-import { MENU_ITEMS, RESTAURANT_INFO } from '../data/restaurantData';
+import { MENU_ITEMS, RESTAURANT_INFO, DEFAULT_WHATSAPP_NUMBER } from '../data/restaurantData';
 import { getDishImage, BESTSELLER_TARGET_NAMES } from '../data/menuImageMap';
 import { getCanonicalSku, isOfferActive } from './cartMath';
 
@@ -22,8 +22,7 @@ export const SWIGGY_URL =
   import.meta.env.VITE_SWIGGY_URL || RESTAURANT_INFO.swiggyUrl;
 export const ZOMATO_URL =
   import.meta.env.VITE_ZOMATO_URL || RESTAURANT_INFO.zomatoUrl;
-export const WHATSAPP_NUMBER =
-  import.meta.env.VITE_WHATSAPP_NUMBER || '917702104894';
+export const WHATSAPP_NUMBER = DEFAULT_WHATSAPP_NUMBER;
 
 export const isSupabaseConfigured = (): boolean => {
   return Boolean(
@@ -1197,7 +1196,7 @@ export async function createOrder(
     discount_amount: validatedDiscount,
     packing_fee: validatedPackingFee,
     final_total: validatedFinalTotal,
-    payment_method: resolvedPaymentMethod,
+    payment_method: 'UPI',
     payment_status: order.payment_status || 'pending',
     idempotency_key: resolvedIdempotencyKey,
     created_at: new Date().toISOString(),
@@ -1240,7 +1239,7 @@ export async function createOrder(
       p_coupon_code: appliedCouponCode ? appliedCouponCode.trim() : null,
       p_address_notes: String(orderToSave.address_notes || '').trim(),
       p_maps_link: String(orderToSave.maps_link || '').trim(),
-      p_payment_method: resolvedPaymentMethod,
+      p_payment_method: 'UPI',
       p_idempotency_key: resolvedIdempotencyKey,
       p_expected_total: Number(orderToSave.final_total) || null,
     };

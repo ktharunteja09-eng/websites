@@ -26,7 +26,7 @@ export const BrandEmblem: React.FC<BrandEmblemProps> = ({
 }) => {
   return (
     <img
-      src="/assets/images/vaibhav-grand-logo.png"
+      src="/assets/images/vaibhav-grand-logo-red.png"
       alt={alt}
       width={1766}
       height={866}

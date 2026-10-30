@@ -137,7 +137,7 @@ export const CateringEvents: React.FC<CateringEventsProps> = ({
       mandi_spread: 'Royal Arabian Mandi Communal Feast Spread',
     };
 
-    const cleanNumber = (RESTAURANT_INFO.whatsapp || '7702104894').replace(/\D/g, '');
+    const cleanNumber = (RESTAURANT_INFO.whatsapp || '8919505126').replace(/\D/g, '');
     const phoneWithCountry = cleanNumber.length === 10 ? `91${cleanNumber}` : cleanNumber;
 
     const message = `*👑 BULK CATERING & EVENT INQUIRY — VAIBHAV GRAND*
@@ -754,7 +754,7 @@ Hi Vaibhav Grand Team! We are planning an upcoming event and would like a detail
 
                 <div className="pt-4 border-t border-gray-100">
                   <a
-                    href={`https://wa.me/91${(RESTAURANT_INFO.whatsapp || '7702104894').replace(/\D/g, '')}?text=${encodeURIComponent(
+                    href={`https://wa.me/91${(RESTAURANT_INFO.whatsapp || '8919505126').replace(/\D/g, '')}?text=${encodeURIComponent(
                       `Hi Vaibhav Grand! I am interested in booking the "${pkg.name}" (${pkg.priceEstimate}) for an upcoming event in Renigunta/Tirupati. Please send menu details.`
                     )}`}
                     target="_blank"

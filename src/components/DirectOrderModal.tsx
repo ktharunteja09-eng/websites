@@ -33,7 +33,6 @@ import {
   AlertCircle,
   RefreshCw,
   CreditCard,
-  Banknote,
   Copy,
   Check,
   QrCode,
@@ -41,11 +40,10 @@ import {
   ShieldCheck,
 } from 'lucide-react';
 import { PriceComparisonModal } from './PriceComparisonModal';
-import { RESTAURANT_INFO } from '../data/restaurantData';
+import { RESTAURANT_INFO, MERCHANT_UPI_ID, MERCHANT_UPI_NAME } from '../data/restaurantData';
 
-// TEST ONLY: personal UPI ID. Replace with the restaurant's own UPI ID before going live.
-export const MERCHANT_UPI_ID = 'Tarunteja190820071@ibl';
-export const MERCHANT_UPI_NAME = 'Vaibhav Grand';
+// Re-export single source of truth for UPI ID and payee name
+export { MERCHANT_UPI_ID, MERCHANT_UPI_NAME };
 export const IS_VERIFIED_MERCHANT_VPA = false; // Set to true only when switching to a restaurant merchant VPA; personal handles often reject the 'tr' parameter on GPay/PhonePe.
 
 /**
@@ -834,11 +832,9 @@ export const DirectOrderModal: React.FC<DirectOrderModalProps> = ({
     const modeText = isPickup ? 'Pickup' : 'Delivery';
     const mapsLink = order.maps_link || 'Self-Pickup at Restaurant';
 
-    let firstLine = `New Order: Order ${order.order_code}`;
-    if (order.payment_method === 'COD') {
-      firstLine = `PAYMENT: ${isPickup ? 'Cash at Pickup' : 'Cash on Delivery'} (Collect Rs ${order.final_total}) | Order ${order.order_code}`;
-    } else if (utrNumber) {
-      firstLine = `CHECK SOUNDBOX: Rs ${order.final_total} | UPI Ref: ${utrNumber} | Order ${order.order_code}`;
+    let firstLine = `PAYMENT: UPI (online) | Order ${order.order_code}`;
+    if (utrNumber) {
+      firstLine = `PAYMENT: UPI (online) | CHECK SOUNDBOX: Rs ${order.final_total} | UPI Ref: ${utrNumber} | Order ${order.order_code}`;
     }
 
     let itemsFormatted = '';
@@ -883,7 +879,7 @@ export const DirectOrderModal: React.FC<DirectOrderModalProps> = ({
 
 *DIRECT ORDER INVOICE*
 *Order ID:* #${order.order_code}
-*Mode:* ${modeText} | *Payment:* ${order.payment_method}
+*Mode:* ${modeText} | *Payment:* UPI (online)
 *Customer:* ${safeCustomerName} | +91 ${order.customer_phone}
 ${locationDetails}
 --------------------------------
@@ -1005,7 +1001,7 @@ _Please reply "CONFIRMED" to start preparing my order._`;
         if (hasPriceDiff && !priceConfirmed) {
           setIsSubmittingOrder(false);
           setPriceConfirmed(true);
-          const actionText = paymentMethod === 'COD' ? 'Order on WhatsApp' : 'Proceed to Payment';
+          const actionText = 'Proceed to Payment';
           setFormError(`Note: Item prices were updated to latest menu rates. Please review your updated total and tap "${actionText}" to confirm.`);
           return;
         }
@@ -1199,7 +1195,7 @@ _Please reply "CONFIRMED" to start preparing my order._`;
           }
           priceChangeAdoptedCountRef.current += 1;
 
-          const actionWord = paymentMethod === 'COD' ? 'Order on WhatsApp' : 'Proceed to Payment';
+          const actionWord = 'Proceed to Payment';
           setFormError(
             `Note: Total updated to ₹${sTotal} based on latest live restaurant menu pricing. Tap "${actionWord}" to confirm.`
           );
@@ -1253,51 +1249,7 @@ _Please reply "CONFIRMED" to start preparing my order._`;
 
       setActiveOrder(validatedOrder);
 
-      // If payment method is COD, skip UPI payment step
-      if (paymentMethod === 'COD') {
-        const receipt = buildWhatsappReceipt(validatedOrder);
-        const rawNumber = (WHATSAPP_NUMBER || '917702104894').replace(/\D/g, '');
-        const targetPhone =
-          rawNumber.length === 10 ? `91${rawNumber}` : rawNumber;
-        const encodedMsg = encodeURIComponent(receipt);
-        const whatsappUrl = `https://api.whatsapp.com/send?phone=${targetPhone}&text=${encodedMsg}`;
-
-        setSubmittedWhatsappUrl(whatsappUrl);
-        setSubmittedWhatsappMessage(receipt);
-
-        if (typeof sessionStorage !== 'undefined') {
-          try {
-            sessionStorage.removeItem('vaibhav_pending_order_v1');
-          } catch {}
-        }
-        onClearCart(true);
-        completedOrderFingerprintRef.current = currentFingerprint;
-
-        const isMobileDevice =
-          typeof navigator !== 'undefined' &&
-          /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
-
-        try {
-          if (isMobileDevice) {
-            window.location.href = whatsappUrl;
-          } else {
-            const newWin = window.open(
-              whatsappUrl,
-              '_blank',
-              'noopener,noreferrer'
-            );
-            if (!newWin || newWin.closed || typeof newWin.closed === 'undefined') {
-              window.location.href = whatsappUrl;
-            }
-          }
-        } catch {}
-
-        setCheckoutStep('completed');
-        setIsSubmittingOrder(false);
-        return;
-      }
-
-      // For UPI, proceed to Payment step
+      // Online UPI payment: proceed to Payment step
       setCheckoutStep('payment');
       setIsSubmittingOrder(false);
     } catch (err) {
@@ -1348,7 +1300,7 @@ _Please reply "CONFIRMED" to start preparing my order._`;
 
       // 2. OK: Build WhatsApp message with CHECK SOUNDBOX first line
       const receipt = buildWhatsappReceipt(activeOrder, cleanUtr);
-      const rawNumber = (WHATSAPP_NUMBER || '917702104894').replace(/\D/g, '');
+      const rawNumber = (WHATSAPP_NUMBER || '918919505126').replace(/\D/g, '');
       const targetPhone =
         rawNumber.length === 10 ? `91${rawNumber}` : rawNumber;
       const encodedMsg = encodeURIComponent(receipt);
@@ -1432,9 +1384,9 @@ _Please reply "CONFIRMED" to start preparing my order._`;
 
   const fallbackWhatsappUrl = activeOrder
     ? `https://api.whatsapp.com/send?phone=${
-        (WHATSAPP_NUMBER || '917702104894').replace(/\D/g, '').length === 10
-          ? `91${(WHATSAPP_NUMBER || '917702104894').replace(/\D/g, '')}`
-          : (WHATSAPP_NUMBER || '917702104894').replace(/\D/g, '')
+        (WHATSAPP_NUMBER || '918919505126').replace(/\D/g, '').length === 10
+          ? `91${(WHATSAPP_NUMBER || '918919505126').replace(/\D/g, '')}`
+          : (WHATSAPP_NUMBER || '918919505126').replace(/\D/g, '')
       }&text=${encodeURIComponent(
         buildWhatsappReceipt(activeOrder, utr || 'Pending Manual Entry')
       )}`
@@ -1547,11 +1499,7 @@ _Please reply "CONFIRMED" to start preparing my order._`;
               {/* Soundbox Verification Notice */}
               <div className="bg-[#F7F3EB] rounded-2xl p-4 text-left text-xs sm:text-sm text-gray-700 space-y-2 border border-[#2E4823]/15">
                 <div className="font-mono font-bold text-xs text-[#2E4823] pb-1 border-b border-gray-200">
-                  {activeOrder.payment_method === 'COD'
-                    ? `COLLECT CASH: Rs ${activeOrder.final_total} upon ${
-                        activeOrder.order_type === 'DELIVERY_5KM' ? 'delivery' : 'pickup'
-                      }`
-                    : `CHECK SOUNDBOX: Rs ${activeOrder.final_total} | UPI Ref: ${utr || 'Pending'}`}
+                  {`CHECK SOUNDBOX: Rs ${activeOrder.final_total} | UPI Ref: ${utr || 'Pending'}`}
                 </div>
                 <p className="flex items-center justify-between">
                   <span className="text-gray-500">Total Payable:</span>
@@ -1562,11 +1510,7 @@ _Please reply "CONFIRMED" to start preparing my order._`;
                 <p className="flex items-center justify-between">
                   <span className="text-gray-500">Payment Mode:</span>
                   <span className="font-semibold">
-                    {activeOrder.payment_method === 'UPI'
-                      ? 'UPI Payment'
-                      : activeOrder.order_type === 'DELIVERY_5KM'
-                      ? 'Cash on Delivery'
-                      : 'Cash at Pickup'}
+                    UPI (online)
                   </span>
                 </p>
                 <p className="flex items-center justify-between">
@@ -1743,7 +1687,7 @@ _Please reply "CONFIRMED" to start preparing my order._`;
                   </button>
 
                   {showQrOnMobile && (
-                    <div className="p-4 bg-white rounded-2xl border border-gray-200 text-center space-y-2 animate-fade-in shadow-2xs">
+                    <div className="p-4 bg-white rounded-2xl border border-gray-200 text-center space-y-3 animate-fade-in shadow-2xs">
                       <p className="text-xs font-bold text-gray-800">
                         Scan with GPay, PhonePe, Paytm, or any UPI app
                       </p>
@@ -1763,10 +1707,45 @@ _Please reply "CONFIRMED" to start preparing my order._`;
                           </div>
                         )}
                       </div>
+                      <div className="flex items-center justify-center gap-2 bg-[#FDFBF7] p-2 rounded-xl border border-gray-200 text-xs">
+                        <span className="font-mono font-bold text-gray-800 select-all">
+                          {MERCHANT_UPI_ID}
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => handleCopyText(MERCHANT_UPI_ID, setCopiedUpi)}
+                          className="px-2 py-1 rounded bg-[#2E4823] text-white text-[11px] font-semibold flex items-center gap-1"
+                        >
+                          {copiedUpi ? <Check className="w-3 h-3 text-emerald-300" /> : <Copy className="w-3 h-3" />}
+                          <span>{copiedUpi ? 'Copied' : 'Copy'}</span>
+                        </button>
+                      </div>
                       <p className="text-[11px] text-gray-500">
                         Pay exactly Rs {activeOrder.final_total} for Order{' '}
                         {activeOrder.order_code}
                       </p>
+
+                      {/* Small Fallback Static QR Section */}
+                      <details className="text-left text-xs bg-gray-50 rounded-xl p-2.5 border border-gray-200 group">
+                        <summary className="cursor-pointer font-medium text-gray-600 hover:text-gray-900 list-none flex items-center justify-between py-1">
+                          <span>QR not scanning? Use the restaurant's QR</span>
+                          <span className="text-[10px] text-gray-400 group-open:rotate-180 transition-transform">▼</span>
+                        </summary>
+                        <div className="pt-2.5 pb-1 text-center space-y-2 border-t border-gray-200/60 mt-1.5">
+                          <div className="p-1.5 bg-white rounded-lg border border-gray-200 inline-block shadow-2xs max-w-[160px] mx-auto">
+                            <img
+                              src="/upi-qr.jpg"
+                              alt="Scan to pay with any UPI app"
+                              width={160}
+                              height={300}
+                              className="w-full h-auto rounded mx-auto"
+                            />
+                          </div>
+                          <p className="text-[11px] font-semibold text-[#D3452B]">
+                            Enter the exact amount: Rs {activeOrder.final_total}
+                          </p>
+                        </div>
+                      </details>
                     </div>
                   )}
                 </div>
@@ -1790,6 +1769,20 @@ _Please reply "CONFIRMED" to start preparing my order._`;
                     )}
                   </div>
 
+                  <div className="flex items-center justify-center gap-2 bg-[#FDFBF7] p-2 rounded-xl border border-gray-200 text-xs max-w-sm mx-auto">
+                    <span className="font-mono font-bold text-gray-800 select-all">
+                      {MERCHANT_UPI_ID}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => handleCopyText(MERCHANT_UPI_ID, setCopiedUpi)}
+                      className="px-2.5 py-1 rounded bg-[#2E4823] text-white text-[11px] font-semibold flex items-center gap-1"
+                    >
+                      {copiedUpi ? <Check className="w-3 h-3 text-emerald-300" /> : <Copy className="w-3 h-3" />}
+                      <span>{copiedUpi ? 'Copied' : 'Copy'}</span>
+                    </button>
+                  </div>
+
                   {/* Desktop 2-step instructions */}
                   <div className="bg-[#F7F3EB] p-3 rounded-xl border border-gray-200 text-left text-xs space-y-1.5">
                     <div className="font-semibold text-gray-800">
@@ -1801,6 +1794,28 @@ _Please reply "CONFIRMED" to start preparing my order._`;
                       order (required)
                     </div>
                   </div>
+
+                  {/* Small Fallback Static QR Section */}
+                  <details className="text-left text-xs bg-gray-50 rounded-xl p-2.5 border border-gray-200 group">
+                    <summary className="cursor-pointer font-medium text-gray-600 hover:text-gray-900 list-none flex items-center justify-between py-1">
+                      <span>QR not scanning? Use the restaurant's QR</span>
+                      <span className="text-[10px] text-gray-400 group-open:rotate-180 transition-transform">▼</span>
+                    </summary>
+                    <div className="pt-2.5 pb-1 text-center space-y-2 border-t border-gray-200/60 mt-1.5">
+                      <div className="p-1.5 bg-white rounded-lg border border-gray-200 inline-block shadow-2xs max-w-[160px] mx-auto">
+                        <img
+                          src="/upi-qr.jpg"
+                          alt="Scan to pay with any UPI app"
+                          width={160}
+                          height={300}
+                          className="w-full h-auto rounded mx-auto"
+                        />
+                      </div>
+                      <p className="text-[11px] font-semibold text-[#D3452B]">
+                        Enter the exact amount: Rs {activeOrder.final_total}
+                      </p>
+                    </div>
+                  </details>
                 </div>
               )}
 
@@ -2485,56 +2500,23 @@ _Please reply "CONFIRMED" to start preparing my order._`;
                   <label className="block text-xs font-semibold text-gray-700 mb-1.5">
                     Payment Method
                   </label>
-                  <div className="grid grid-cols-2 gap-2.5">
-                    <button
-                      type="button"
-                      disabled={!storeOpen}
-                      onClick={() => setPaymentMethod('UPI')}
-                      className={`p-3 rounded-2xl border text-left flex items-start gap-2.5 transition-all ${
-                        !storeOpen ? 'opacity-50 cursor-not-allowed ' : ''
-                      }${
-                        paymentMethod === 'UPI'
-                          ? 'border-[#2E4823] bg-[#2E4823]/5 ring-2 ring-[#2E4823] shadow-xs'
-                          : 'border-gray-200 bg-white hover:bg-gray-50'
-                      }`}
-                    >
-                      <div className="p-1 rounded-lg bg-gray-100 text-gray-700 shrink-0 mt-0.5">
+                  <div className="p-3 rounded-2xl border border-[#2E4823] bg-[#2E4823]/5 ring-2 ring-[#2E4823] shadow-xs flex items-center justify-between">
+                    <div className="flex items-center gap-2.5">
+                      <div className="p-1 rounded-lg bg-gray-100 text-gray-700 shrink-0">
                         <CreditCard className="w-4 h-4" />
                       </div>
                       <div>
                         <p className="text-xs font-bold text-gray-900">
-                          Pay by UPI
+                          Online Payment (UPI)
                         </p>
                         <p className="text-[10px] text-gray-500 mt-0.5">
-                          GPay, PhonePe, Paytm QR
+                          Instant zero-fee payment via GPay, PhonePe, Paytm, or UPI QR
                         </p>
                       </div>
-                    </button>
-
-                    <button
-                      type="button"
-                      disabled={!storeOpen}
-                      onClick={() => setPaymentMethod('COD')}
-                      className={`p-3 rounded-2xl border text-left flex items-start gap-2.5 transition-all ${
-                        !storeOpen ? 'opacity-50 cursor-not-allowed ' : ''
-                      }${
-                        paymentMethod === 'COD'
-                          ? 'border-[#2E4823] bg-[#2E4823]/5 ring-2 ring-[#2E4823] shadow-xs'
-                          : 'border-gray-200 bg-white hover:bg-gray-50'
-                      }`}
-                    >
-                      <div className="p-1 rounded-lg bg-gray-100 text-gray-700 shrink-0 mt-0.5">
-                        <Banknote className="w-4 h-4" />
-                      </div>
-                      <div>
-                        <p className="text-xs font-bold text-gray-900">
-                          {isTakeaway ? 'Cash at Pickup' : 'Cash on Delivery'}
-                        </p>
-                        <p className="text-[10px] text-gray-500 mt-0.5">
-                          {isTakeaway ? 'Pay upon pickup at counter' : 'Pay upon delivery'}
-                        </p>
-                      </div>
-                    </button>
+                    </div>
+                    <span className="text-[10px] font-bold text-[#2E4823] bg-[#2E4823]/10 px-2 py-0.5 rounded-full shrink-0">
+                      Online Only
+                    </span>
                   </div>
                 </div>
               </div>
@@ -2606,15 +2588,10 @@ _Please reply "CONFIRMED" to start preparing my order._`;
                   ) : !isTakeaway &&
                     (!isNameValid || !isPhoneValid || !isAddressValid) ? (
                     <span>Fill Address &amp; Details</span>
-                  ) : paymentMethod === 'UPI' ? (
+                  ) : (
                     <>
                       <span>Proceed to Payment (Rs {displayPayableTotal})</span>
                       <CreditCard className="w-4 h-4" />
-                    </>
-                  ) : (
-                    <>
-                      <span>Order on WhatsApp (Rs {displayPayableTotal})</span>
-                      <Send className="w-4 h-4" />
                     </>
                   )}
                 </button>
