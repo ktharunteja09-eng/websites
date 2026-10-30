@@ -1184,7 +1184,8 @@ export async function createOrder(
     validatedDiscount = Math.min(Number(order.discount_amount), validatedSubtotal);
   }
 
-  const validatedFinalTotal = Math.max(0, validatedSubtotal - validatedDiscount);
+  const validatedPackingFee = Math.max(0, Math.floor(Number(order.packing_fee) || 0));
+  const validatedFinalTotal = Math.max(0, validatedSubtotal - validatedDiscount) + validatedPackingFee;
   const resolvedIdempotencyKey = idempotencyKey || order.idempotency_key || null;
 
   const rawMethod = paymentMethod || order.payment_method || (order as unknown as Record<string, unknown>).paymentMethod || 'UPI';
@@ -1194,6 +1195,7 @@ export async function createOrder(
     ...order,
     subtotal: validatedSubtotal,
     discount_amount: validatedDiscount,
+    packing_fee: validatedPackingFee,
     final_total: validatedFinalTotal,
     payment_method: resolvedPaymentMethod,
     payment_status: order.payment_status || 'pending',
