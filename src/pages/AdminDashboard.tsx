@@ -1846,6 +1846,14 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBackToSite }) 
                               ))
                             )}
                           </div>
+                          <div className="flex justify-between items-center text-[11px] text-gray-600 pt-1 border-t border-gray-100 flex-wrap gap-1 font-mono">
+                            <span>Subtotal: Rs {order.subtotal}</span>
+                            {order.discount_amount > 0 && (
+                              <span className="text-emerald-700">Disc: -Rs {order.discount_amount}</span>
+                            )}
+                            <span>Packing: Rs {order.packing_fee !== undefined && order.packing_fee !== null ? order.packing_fee : 5}</span>
+                            <span className="font-bold text-[#2E4823]">Total: Rs {order.final_total}</span>
+                          </div>
                         </div>
 
                         {/* Payment Verification Buttons */}

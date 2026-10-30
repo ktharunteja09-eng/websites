@@ -498,9 +498,11 @@ export const DirectOrderModal: React.FC<DirectOrderModalProps> = ({
     return Number(offer.coupon_flat_discount) || 0;
   }, [couponApplied, offer]);
 
+  const packingFee = totals.packing_fee > 0 ? totals.packing_fee : (Number(offer?.packing_fee) || 0);
   const totalSavings = totals.discount_amount + couponDiscount;
-  const finalTotal = Math.max(0, totals.subtotal - totalSavings);
+  const finalTotal = Math.max(0, totals.subtotal - totalSavings) + packingFee;
   const displayPayableTotal = confirmedServerTotal !== null ? confirmedServerTotal : finalTotal;
+  const priceChangeAdoptedCountRef = useRef<number>(0);
 
   // Swiggy/Zomato live contrast calculation
   const swiggyFoodEstimate = useMemo(() => {
@@ -870,6 +872,13 @@ export const DirectOrderModal: React.FC<DirectOrderModalProps> = ({
       ? `*Pickup Note:* ${pickupNote}\nPickup from: ${RESTAURANT_INFO.name}, Renigunta`
       : `*Address:* ${safeAddressText}\nSystem GPS Pin: ${mapsLink}`;
 
+    const packingFeeVal =
+      order.packing_fee !== undefined && order.packing_fee !== null
+        ? order.packing_fee
+        : packingFee > 0
+        ? packingFee
+        : 5;
+
     return `${firstLine}
 
 *DIRECT ORDER INVOICE*
@@ -883,6 +892,7 @@ ${itemsFormatted}
 --------------------------------
 *Subtotal:* Rs ${order.subtotal}
 *Discount:* -Rs ${order.discount_amount}
+*Packing Fee:* Rs ${packingFeeVal}
 *TOTAL PAYABLE:* *Rs ${order.final_total}*
 --------------------------------
 *Vaibhav Grand Direct Order*
@@ -1101,6 +1111,7 @@ _Please reply "CONFIRMED" to start preparing my order._`;
         items_json: itemsFormattedText,
         subtotal: Number(totals.subtotal),
         discount_amount: Number(totalSavings),
+        packing_fee: Number(packingFee),
         final_total: orderFinalTotal,
         payment_method: paymentMethod,
         status: 'Initiated',
@@ -1179,6 +1190,14 @@ _Please reply "CONFIRMED" to start preparing my order._`;
               }
             });
           }
+
+          if (priceChangeAdoptedCountRef.current >= 1) {
+            setFormError(
+              `Total verified at ₹${sTotal}. Please re-submit to place your order.`
+            );
+            return;
+          }
+          priceChangeAdoptedCountRef.current += 1;
 
           const actionWord = paymentMethod === 'COD' ? 'Order on WhatsApp' : 'Proceed to Payment';
           setFormError(
@@ -1548,6 +1567,12 @@ _Please reply "CONFIRMED" to start preparing my order._`;
                       : activeOrder.order_type === 'DELIVERY_5KM'
                       ? 'Cash on Delivery'
                       : 'Cash at Pickup'}
+                  </span>
+                </p>
+                <p className="flex items-center justify-between">
+                  <span className="text-gray-500">Packing Fee:</span>
+                  <span className="font-semibold font-mono">
+                    Rs {activeOrder.packing_fee !== undefined && activeOrder.packing_fee !== null ? activeOrder.packing_fee : (packingFee > 0 ? packingFee : 5)}
                   </span>
                 </p>
                 <p className="flex items-center justify-between">
@@ -1996,7 +2021,7 @@ _Please reply "CONFIRMED" to start preparing my order._`;
                         </h4>
                         <p className="text-[11px] text-red-800 mt-0.5 leading-relaxed">
                           {distanceKm !== null && distanceKm > 5.0
-                            ? `Our direct kitchen fleet delivers strictly within 5.0 km road distance. You are ~${distanceKm} km away. Please switch to Self-Pickup to complete your direct order with full 25%+ savings.`
+                            ? `Our direct kitchen fleet delivers strictly within 5.0 km road distance. You are ~${distanceKm} km away. Please switch to Self-Pickup to complete your direct order with ₹0 platform fees.`
                             : 'Direct doorstep delivery requires a verified location within 5.0 km road distance. Please switch to Self-Pickup to place your order.'}
                         </p>
                       </div>
@@ -2013,43 +2038,71 @@ _Please reply "CONFIRMED" to start preparing my order._`;
                 )}
               </div>
 
-              {/* Progress Bar Offer Callout */}
-              {offer && offer.is_active && Number(offer.min_order_amount) > 0 && (
-                <div className="bg-[#F7F3EB] rounded-2xl p-3 border border-[#2E4823]/15 space-y-2">
-                  <div className="flex items-center justify-between text-xs">
-                    {totals.has_discount ? (
-                      <span className="font-bold text-emerald-800">
-                        {offer.discount_percent}% OFF Applied! You saved Rs{' '}
-                        {totals.discount_amount}.
+              {/* Progress Bar Offer Callout (Strictly driven by store_offers settings) */}
+              {offer && offer.is_active && (() => {
+                const hasFreeItemSetting = Boolean(
+                  offer.free_item_name &&
+                  offer.free_item_name.trim() !== '' &&
+                  Number(offer.free_item_min_amount) > 0
+                );
+                const hasDiscountSetting = Boolean(
+                  Number(offer.discount_percent) > 0 &&
+                  Number(offer.min_order_amount) > 0
+                );
+
+                // Show progress bar only when settings turn an offer on
+                if (!hasFreeItemSetting && !hasDiscountSetting) return null;
+
+                const targetThreshold = hasFreeItemSetting
+                  ? Number(offer.free_item_min_amount)
+                  : Number(offer.min_order_amount);
+                const cleanFreeItemName = hasFreeItemSetting
+                  ? offer.free_item_name.trim().replace(/^free\s+/i, '')
+                  : '';
+                const isGoalAchieved = totals.has_free_item || (totals.has_discount && Number(offer.discount_percent) > 0);
+
+                return (
+                  <div className="bg-[#F7F3EB] rounded-2xl p-3 border border-[#2E4823]/15 space-y-2">
+                    <div className="flex items-center justify-between text-xs">
+                      {totals.has_free_item && totals.free_item_name ? (
+                        <span className="font-bold text-emerald-800 flex items-center gap-1.5">
+                          <Gift className="w-3.5 h-3.5 text-emerald-600" />
+                          <span>FREE {totals.free_item_name} included</span>
+                        </span>
+                      ) : totals.amount_for_free_item > 0 && cleanFreeItemName ? (
+                        <span className="font-bold text-amber-900 flex items-center gap-1.5">
+                          <Gift className="w-3.5 h-3.5 text-amber-600" />
+                          <span>Add Rs {totals.amount_for_free_item} more for a FREE {cleanFreeItemName}</span>
+                        </span>
+                      ) : totals.has_discount ? (
+                        <span className="font-bold text-emerald-800">
+                          {offer.discount_percent}% OFF Applied! You saved Rs {totals.discount_amount}.
+                        </span>
+                      ) : (
+                        <span className="font-bold text-amber-900">
+                          Add Rs {totals.amount_for_discount} more to get {offer.discount_percent}% OFF!
+                        </span>
+                      )}
+                      <span className="text-[11px] font-mono font-bold text-gray-500">
+                        Rs {totals.subtotal} / Rs {targetThreshold}
                       </span>
-                    ) : (
-                      <span className="font-bold text-amber-900">
-                        Add Rs {totals.amount_for_discount} more to get{' '}
-                        {offer.discount_percent}% OFF!
-                      </span>
-                    )}
-                    <span className="text-[11px] font-mono font-bold text-gray-500">
-                      Rs {totals.subtotal} / Rs {offer.min_order_amount}
-                    </span>
+                    </div>
+                    <div className="w-full h-2 rounded-full bg-gray-200 overflow-hidden">
+                      <div
+                        className={`h-full rounded-full transition-all duration-300 ${
+                          isGoalAchieved ? 'bg-emerald-600' : 'bg-amber-500'
+                        }`}
+                        style={{
+                          width: `${Math.min(
+                            100,
+                            Math.round((totals.subtotal / (targetThreshold || 1)) * 100)
+                          )}%`,
+                        }}
+                      />
+                    </div>
                   </div>
-                  <div className="w-full h-2 rounded-full bg-gray-200 overflow-hidden">
-                    <div
-                      className={`h-full rounded-full transition-all duration-300 ${
-                        totals.has_discount ? 'bg-emerald-600' : 'bg-amber-500'
-                      }`}
-                      style={{
-                        width: `${Math.min(
-                          100,
-                          Math.round(
-                            (totals.subtotal / Number(offer.min_order_amount)) *
-                              100
-                          )
-                        )}%`,
-                      }}
-                    />
-                  </div>
-                </div>
-              )}
+                );
+              })()}
 
               {/* Itemized Mini-Receipt Box */}
               <div className="bg-white rounded-2xl p-4 border border-gray-200 shadow-2xs space-y-3">
@@ -2218,7 +2271,7 @@ _Please reply "CONFIRMED" to start preparing my order._`;
                 {/* Subtotal & Discount Rows */}
                 <div className="pt-3 border-t border-gray-100 space-y-1.5 text-xs text-gray-600">
                   <div className="flex justify-between">
-                    <span>Subtotal</span>
+                    <span>Food Subtotal</span>
                     <span className="font-semibold text-gray-900 font-mono">
                       Rs {totals.subtotal}
                     </span>
@@ -2226,16 +2279,23 @@ _Please reply "CONFIRMED" to start preparing my order._`;
 
                   {totalSavings > 0 && (
                     <div className="flex justify-between text-emerald-700 font-semibold">
-                      <span>Direct Discount Savings</span>
+                      <span>Direct Discount</span>
                       <span className="font-mono bg-emerald-50 px-2 py-0.5 rounded text-emerald-800">
-                        -Rs {totalSavings} Saved!
+                        -Rs {totalSavings}
                       </span>
                     </div>
                   )}
 
                   <div className="flex justify-between">
+                    <span>Packing Fee</span>
+                    <span className="font-semibold text-gray-900 font-mono">
+                      Rs {packingFee}
+                    </span>
+                  </div>
+
+                  <div className="flex justify-between">
                     <span>Delivery Charge</span>
-                    <span className="text-emerald-700 font-bold">FREE</span>
+                    <span className="text-emerald-700 font-bold">FREE (Within 5 km)</span>
                   </div>
 
                   <div className="pt-2 border-t border-gray-200 flex justify-between items-baseline text-sm">

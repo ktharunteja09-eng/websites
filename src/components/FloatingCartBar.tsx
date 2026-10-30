@@ -67,26 +67,31 @@ export const FloatingCartBar: React.FC<FloatingCartBarProps> = ({
                   • {totalQuantity} {totalQuantity === 1 ? 'item' : 'items'}
                 </span>
                 <span className="hidden sm:inline-block text-[10px] font-extrabold bg-amber-400 text-[#2E4823] px-1.5 py-0.5 rounded-full shadow-2xs shrink-0">
-                  Save ~₹{estSavings} vs Apps
+                  ₹0 Platform Fees
                 </span>
               </div>
 
               {/* Offer incentive text */}
               <div className="flex items-center gap-1 text-[11px] text-amber-200 mt-0.5 truncate">
-                {cleanFreeItemName ? (
+                {totals.has_free_item && cleanFreeItemName ? (
                   <>
                     <Gift className="w-3 h-3 text-amber-300 shrink-0" />
-                    <span className="truncate font-medium">Free {cleanFreeItemName} Included!</span>
+                    <span className="truncate font-medium">FREE {cleanFreeItemName} included</span>
+                  </>
+                ) : totals.amount_for_free_item > 0 && offer?.free_item_name?.trim() && Number(offer?.free_item_min_amount) > 0 ? (
+                  <>
+                    <Gift className="w-3 h-3 text-amber-300 shrink-0" />
+                    <span className="truncate font-medium">
+                      Add ₹{totals.amount_for_free_item} more for a FREE {offer.free_item_name.trim().replace(/^free\s+/i, '')}
+                    </span>
                   </>
                 ) : totals.has_discount ? (
                   <>
                     <Sparkles className="w-3 h-3 text-amber-300 shrink-0" />
                     <span className="truncate font-medium">{offer?.discount_percent}% Direct Discount Applied!</span>
                   </>
-                ) : offer && Number(offer.min_order_amount) > 0 ? (
-                  <span className="truncate">Add ₹{totals.amount_for_discount} for {offer.discount_percent}% OFF</span>
                 ) : (
-                  <span className="text-[10px] font-semibold text-amber-300/90">Direct Order · Save vs Swiggy/Zomato</span>
+                  <span className="text-[10px] font-semibold text-amber-300/90">₹0 Platform Fees • Free 5km Delivery</span>
                 )}
               </div>
             </div>

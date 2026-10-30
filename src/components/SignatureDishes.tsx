@@ -124,7 +124,7 @@ export const SignatureDishes: React.FC<SignatureDishesProps> = ({
                           <div className="absolute bottom-2.5 right-2.5 z-10 bg-white/95 backdrop-blur-xs px-2.5 py-1 rounded-xl shadow-xs border border-[#2E4823]/10 text-right">
                             <div className="flex items-center gap-1.5 justify-end">
                               {activeSavings > 0 && (
-                                <span className="text-[11px] text-gray-400 line-through">₹{activeMrp}</span>
+                                <span className="text-[11px] text-gray-400 line-through">Est. ₹{activeMrp}</span>
                               )}
                               <span className="text-[#D3452B] font-bold text-sm sm:text-base">₹{activePrice}</span>
                             </div>
@@ -288,7 +288,7 @@ export const SignatureDishes: React.FC<SignatureDishesProps> = ({
                       <div className="absolute bottom-2.5 right-2.5 z-10 bg-white/95 backdrop-blur-xs px-3 py-1 rounded-xl shadow-xs border border-[#2E4823]/10 text-right">
                         <div className="flex items-center gap-1.5 justify-end">
                           {activeSavings > 0 && (
-                            <span className="text-xs text-gray-400 line-through">₹{activeMrp}</span>
+                            <span className="text-xs text-gray-400 line-through">Est. ₹{activeMrp}</span>
                           )}
                           <span className="text-[#D3452B] font-bold text-base">₹{activePrice}</span>
                         </div>

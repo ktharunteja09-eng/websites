@@ -123,12 +123,12 @@ export const WhyChooseUs: React.FC = () => {
         'Generous family buckets that save significantly compared to single orders',
         'Bountiful Mandi platters accompanied by complimentary salad, mayo & salan',
         'Affordable daily prices for college students, families & pilgrims',
-        'Save 25%–35% by ordering direct on our website with ₹0 platform fees & free 5km delivery'
+        'Order direct on our website with ₹0 platform fees & free delivery within 5 km'
       ],
       dishHighlight: {
         name: 'Family Chicken Dum Biryani',
         portion: 'Feast for 3–4 Diners',
-        price: '₹680',
+        price: '₹690',
         tag: 'Top Value'
       }
     }

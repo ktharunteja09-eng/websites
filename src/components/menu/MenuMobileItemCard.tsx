@@ -175,7 +175,7 @@ export const MenuMobileItemCard: React.FC<MenuMobileItemCardProps> = ({
         </span>
         {showDual && !hasVariants && (
           <span className="text-[10px] text-gray-400 line-through">
-            ₹{activeAggPrice}
+            Est. ₹{activeAggPrice}
           </span>
         )}
         {showDual && !hasVariants && (

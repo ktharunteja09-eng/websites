@@ -49,7 +49,7 @@ export const DirectOrderTrustBanner: React.FC<DirectOrderTrustBannerProps> = ({
           <div className="w-16 h-1 bg-[#D3452B] mx-auto mt-3.5 rounded-full" />
           <p className="mt-3.5 text-sm sm:text-base text-gray-700 leading-relaxed max-w-2xl mx-auto">
             Swiggy &amp; Zomato add hefty aggregator markups, convenience fees, and packaging charges. 
-            When you order directly with us, you get <strong className="text-[#2E4823]">genuine dine-in prices</strong>, <strong className="text-[#2E4823]">₹0 platform fees</strong>, and save up to <strong className="text-[#D3452B]">25%–35%</strong> on every meal!
+            When you order directly with us, you get <strong className="text-[#2E4823]">genuine kitchen prices</strong>, <strong className="text-[#2E4823]">₹0 platform fees</strong>, and save with <strong className="text-[#D3452B]">transparent direct billing</strong> on every meal!
           </p>
         </motion.div>
 
@@ -78,7 +78,7 @@ export const DirectOrderTrustBanner: React.FC<DirectOrderTrustBannerProps> = ({
             </div>
 
             <p className="text-xs text-gray-600 leading-relaxed">
-              Why pay 25%–35% Swiggy &amp; Zomato commissions? Order directly to enjoy authentic restaurant rates, zero hidden packaging fees, and free 5km doorstep delivery.
+              Why pay inflated food app commissions? Order directly to enjoy authentic kitchen rates, ₹0 platform fees, and free 5km doorstep delivery.
             </p>
 
             <div className="mt-3.5 pt-3 border-t border-gray-100 space-y-2">
@@ -88,11 +88,11 @@ export const DirectOrderTrustBanner: React.FC<DirectOrderTrustBannerProps> = ({
               </div>
               <div className="flex items-center gap-2 text-xs text-amber-800 font-semibold">
                 <CheckCircle2 className="w-4 h-4 text-amber-600 shrink-0" />
-                <span>₹0 Platform fee &amp; ₹0 packaging charges</span>
+                <span>₹0 Platform fee &amp; ₹5 flat packaging</span>
               </div>
               <div className="flex items-center gap-2 text-xs text-[#2E4823] font-semibold">
                 <CheckCircle2 className="w-4 h-4 text-[#2E4823] shrink-0" />
-                <span>Free 5km direct delivery above ₹299</span>
+                <span>Free delivery within 5 km road distance</span>
               </div>
             </div>
           </div>
@@ -147,10 +147,10 @@ export const DirectOrderTrustBanner: React.FC<DirectOrderTrustBannerProps> = ({
                 100% Transparent Billing
               </span>
               <h3 className="font-['Playfair_Display'] text-lg sm:text-xl font-bold text-[#1C1C1C]">
-                ₹0 Platform &amp; Packaging Fees
+                ₹0 Platform Fees &amp; ₹5 Flat Packaging
               </h3>
               <p className="mt-2 text-xs sm:text-sm text-gray-600 leading-relaxed">
-                No sneaky ₹12 platform fees. No ₹35–₹50 packaging surcharge added at the last screen. We pack your food in high-grade food-safe insulated containers at zero extra cost.
+                ₹0 platform fees and a simple ₹5 flat packaging charge per order.
               </p>
             </div>
             <div className="mt-4 pt-3 border-t border-gray-100 flex items-center gap-1.5 text-xs text-amber-800 font-semibold">
@@ -179,7 +179,7 @@ export const DirectOrderTrustBanner: React.FC<DirectOrderTrustBannerProps> = ({
                 Free Delivery &amp; Fast Kitchen Prep
               </h3>
               <p className="mt-2 text-xs sm:text-sm text-gray-600 leading-relaxed">
-                Free delivery within 5.0 km road distance on orders above ₹299. Direct orders are prepped hot on our stoves and sent straight to your doorstep without multi-stop delays.
+                Free delivery within 5.0 km road distance. Direct orders are prepped hot on our stoves and sent straight to your doorstep without multi-stop delays.
               </p>
             </div>
             <div className="mt-4 pt-3 border-t border-gray-100 flex items-center gap-1.5 text-xs text-[#2E4823] font-semibold">
@@ -204,14 +204,14 @@ export const DirectOrderTrustBanner: React.FC<DirectOrderTrustBannerProps> = ({
             <div className="max-w-xl text-center lg:text-left">
               <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-amber-400/20 text-amber-300 text-xs font-bold uppercase tracking-wider mb-2">
                 <Gift className="w-3.5 h-3.5" />
-                <span>Special Online Offer: DIRECT50 + Free Drink</span>
+                <span>Special Direct Offer: FREE Cool Drink Above ₹499</span>
               </div>
               <h3 className="font-['Playfair_Display'] text-xl sm:text-2xl lg:text-3xl font-bold tracking-tight">
                 Typical Meal Example: 1 Biryani + 1 Chicken Starter
               </h3>
               <p className="mt-2 text-xs sm:text-sm text-white/85 leading-relaxed">
-                On Swiggy/Zomato, inflated rates and extra fees total <strong className="text-white">~₹712</strong>. 
-                Direct with us, the exact same meal costs just <strong className="text-amber-300 font-mono text-base sm:text-lg">₹460</strong> — you save <strong className="text-emerald-300">₹252 (35% OFF)</strong>!
+                On Swiggy/Zomato, inflated rates and extra fees total <strong className="text-white">~₹732</strong>. 
+                Direct with us, the exact same meal costs just <strong className="text-amber-300 font-mono text-base sm:text-lg">₹535</strong> — you save <strong className="text-emerald-300">₹197 + Free Cool Drink</strong>!
               </p>
 
               <div className="mt-4 flex flex-wrap items-center justify-center lg:justify-start gap-3 text-xs text-white/90">
@@ -221,11 +221,11 @@ export const DirectOrderTrustBanner: React.FC<DirectOrderTrustBannerProps> = ({
                 </span>
                 <span className="flex items-center gap-1 bg-white/10 px-2.5 py-1 rounded-lg">
                   <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
-                  <span>₹0 Packaging Fee</span>
+                  <span>₹5 Flat Packaging</span>
                 </span>
                 <span className="flex items-center gap-1 bg-white/10 px-2.5 py-1 rounded-lg">
                   <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
-                  <span>Free 5km Delivery above ₹299</span>
+                  <span>Free Delivery within 5 km</span>
                 </span>
               </div>
             </div>

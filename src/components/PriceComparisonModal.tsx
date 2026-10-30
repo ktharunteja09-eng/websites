@@ -65,7 +65,7 @@ export const PriceComparisonModal: React.FC<PriceComparisonModalProps> = ({
             Why Order Direct from Our Website?
           </h2>
           <p className="text-xs sm:text-sm text-white/80 mt-1 max-w-xl">
-            Swiggy &amp; Zomato add hefty aggregator markups &amp; hidden charges. When you order directly from Vaibhav Grand, you save up to <span className="text-amber-300 font-bold">25% to 35%</span> on every single meal!
+            Swiggy &amp; Zomato add hefty aggregator markups &amp; hidden charges. When you order directly from Vaibhav Grand, you get <span className="text-amber-300 font-bold">₹0 platform fees</span> and direct kitchen pricing on every single meal!
           </p>
         </div>
 
@@ -87,7 +87,7 @@ export const PriceComparisonModal: React.FC<PriceComparisonModalProps> = ({
                       <span>Vaibhav Grand Direct</span>
                     </div>
                   </th>
-                  <th className="py-3 px-3 sm:px-4 font-bold text-gray-500">Swiggy / Zomato</th>
+                  <th className="py-3 px-3 sm:px-4 font-bold text-gray-500">Swiggy / Zomato (Est.)</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100 text-gray-700">
@@ -115,7 +115,7 @@ export const PriceComparisonModal: React.FC<PriceComparisonModalProps> = ({
                 <tr>
                   <td className="py-3 px-3 sm:px-4 font-semibold">Restaurant Packaging Charge</td>
                   <td className="py-3 px-3 sm:px-4 font-bold text-[#2E4823] bg-emerald-50/30 border-x border-emerald-100">
-                    <span className="text-emerald-700 bg-emerald-100/70 px-2 py-0.5 rounded-md">₹0 (FREE Eco-Box)</span>
+                    <span className="text-emerald-700 bg-emerald-100/70 px-2 py-0.5 rounded-md">₹5 (Flat Packaging)</span>
                   </td>
                   <td className="py-3 px-3 sm:px-4 text-gray-500">
                     <span>+₹30 to ₹45 added</span>
@@ -125,7 +125,7 @@ export const PriceComparisonModal: React.FC<PriceComparisonModalProps> = ({
                 <tr>
                   <td className="py-3 px-3 sm:px-4 font-semibold">Doorstep Delivery</td>
                   <td className="py-3 px-3 sm:px-4 font-bold text-[#2E4823] bg-emerald-50/30 border-x border-emerald-100">
-                    <span className="text-emerald-700 bg-emerald-100/70 px-2 py-0.5 rounded-md">FREE above ₹299 (5km)</span>
+                    <span className="text-emerald-700 bg-emerald-100/70 px-2 py-0.5 rounded-md">FREE within 5 km</span>
                   </td>
                   <td className="py-3 px-3 sm:px-4 text-gray-500">
                     <span>+₹35 to ₹60 surge fee</span>
@@ -136,7 +136,7 @@ export const PriceComparisonModal: React.FC<PriceComparisonModalProps> = ({
                   <td className="py-3 px-3 sm:px-4 font-semibold">Direct Offers &amp; Freebies</td>
                   <td className="py-3 px-3 sm:px-4 font-bold text-[#2E4823] bg-emerald-50/30 border-x border-emerald-100 flex items-center gap-1.5">
                     <Gift className="w-4 h-4 text-[#D3452B] shrink-0" />
-                    <span>Flat 10% OFF + Free Drink</span>
+                    <span>FREE Cool Drink above ₹499</span>
                   </td>
                   <td className="py-3 px-3 sm:px-4 text-gray-500">
                     <span>No free drinks</span>
@@ -168,18 +168,18 @@ export const PriceComparisonModal: React.FC<PriceComparisonModalProps> = ({
               {/* Aggregator Cost */}
               <div className="bg-white rounded-xl p-3 border border-gray-200">
                 <span className="text-xs text-gray-500 font-bold uppercase tracking-wider block mb-1">
-                  On Swiggy / Zomato
+                  On Swiggy / Zomato (Est.)
                 </span>
                 <ul className="text-xs space-y-1 text-gray-600">
-                  <li className="flex justify-between"><span>Biryani (Marked up):</span> <span>₹280</span></li>
-                  <li className="flex justify-between"><span>Chicken 65 (Marked up):</span> <span>₹340</span></li>
+                  <li className="flex justify-between"><span>Biryani (Est. App Price):</span> <span>₹290</span></li>
+                  <li className="flex justify-between"><span>Chicken 65 (Est. App Price):</span> <span>₹350</span></li>
                   <li className="flex justify-between"><span>Packaging charge:</span> <span>₹35</span></li>
                   <li className="flex justify-between"><span>Platform fee:</span> <span>₹12</span></li>
                   <li className="flex justify-between"><span>Delivery fee:</span> <span>₹45</span></li>
                 </ul>
                 <div className="mt-2 pt-2 border-t border-gray-100 flex justify-between font-bold text-sm text-gray-800">
                   <span>Total Bill:</span>
-                  <span className="text-[#D3452B]">₹712</span>
+                  <span className="text-[#D3452B]">₹732</span>
                 </div>
               </div>
 
@@ -190,15 +190,15 @@ export const PriceComparisonModal: React.FC<PriceComparisonModalProps> = ({
                   <span className="text-[10px] bg-emerald-600 text-white px-1.5 py-0.2 rounded font-extrabold">BEST</span>
                 </span>
                 <ul className="text-xs space-y-1 text-emerald-900">
-                  <li className="flex justify-between"><span>Biryani (Dine-In Price):</span> <span>₹230</span></li>
-                  <li className="flex justify-between"><span>Chicken 65 (Dine-In Price):</span> <span>₹280</span></li>
-                  <li className="flex justify-between text-emerald-700"><span>Packaging:</span> <span>₹0 FREE</span></li>
+                  <li className="flex justify-between"><span>Biryani (Direct Price):</span> <span>₹240</span></li>
+                  <li className="flex justify-between"><span>Chicken 65 (Direct Price):</span> <span>₹290</span></li>
+                  <li className="flex justify-between text-emerald-700"><span>Packaging:</span> <span>₹5 Flat</span></li>
                   <li className="flex justify-between text-emerald-700"><span>Platform Fee:</span> <span>₹0 FREE</span></li>
-                  <li className="flex justify-between text-[#D3452B] font-semibold"><span>DIRECT50 Discount:</span> <span>-₹50</span></li>
+                  <li className="flex justify-between text-[#D3452B] font-semibold"><span>Free Cool Drink (Food ≥ ₹499):</span> <span>₹0 FREE</span></li>
                 </ul>
                 <div className="mt-2 pt-2 border-t border-emerald-200 flex justify-between font-bold text-sm text-[#2E4823]">
                   <span>Total Bill:</span>
-                  <span className="text-emerald-700">₹460</span>
+                  <span className="text-emerald-700">₹535</span>
                 </div>
               </div>
             </div>
@@ -211,11 +211,11 @@ export const PriceComparisonModal: React.FC<PriceComparisonModalProps> = ({
                 </span>
                 <div>
                   <span className="text-xs font-bold block text-amber-300">You Save On This Order:</span>
-                  <span className="text-sm font-semibold text-white/90">₹252 saved (35% OFF!) + Free Cool Drink</span>
+                  <span className="text-sm font-semibold text-white/90">₹197 saved + Free Cool Drink</span>
                 </div>
               </div>
               <span className="text-lg font-black text-amber-300 font-mono">
-                Save ₹252
+                Save ₹197
               </span>
             </div>
           </div>
@@ -224,7 +224,7 @@ export const PriceComparisonModal: React.FC<PriceComparisonModalProps> = ({
           <div className="flex items-start gap-2.5 text-xs text-gray-500 bg-gray-50 p-3 rounded-xl border border-gray-200">
             <ShieldCheck className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
             <p>
-              Direct delivery is available within <strong>5.0 km road distance</strong> from Vaibhav Grand, Renigunta. Free delivery on orders above ₹299. Self-pickup is also available with zero wait time.
+              Direct delivery is available within <strong>5.0 km road distance</strong> from Vaibhav Grand, Renigunta. Free delivery within 5 km. Self-pickup is also available with zero wait time.
             </p>
           </div>
         </div>

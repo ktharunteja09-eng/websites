@@ -82,6 +82,27 @@ export const MenuSection: React.FC = () => {
   const [cartHydrated, setCartHydrated] = useState<boolean>(false);
   const [isCheckoutOpen, setIsCheckoutOpen] = useState<boolean>(false);
 
+  // Perks tile highlight cycle state (client-only, paused on hover/focus)
+  const [activeTileIndex, setActiveTileIndex] = useState<number | null>(null);
+  const [isTilePaused, setIsTilePaused] = useState<boolean>(false);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    try {
+      const mediaQuery = window.matchMedia('(prefers-reduced-motion: reduce)');
+      if (mediaQuery.matches) return;
+    } catch {}
+
+    setActiveTileIndex(0);
+    const interval = setInterval(() => {
+      if (!isTilePaused) {
+        setActiveTileIndex((prev) => ((prev ?? 0) + 1) % 4);
+      }
+    }, 3000);
+
+    return () => clearInterval(interval);
+  }, [isTilePaused]);
+
   // Cart Hydration on mount: drop legacy/missing IDs and derive current prices
   useEffect(() => {
     if (typeof window === 'undefined') return;
@@ -743,13 +764,13 @@ export const MenuSection: React.FC = () => {
                 <div className="text-center md:text-left">
                   <div className="inline-flex items-center gap-1.5 text-amber-300 text-[10px] sm:text-xs font-bold uppercase tracking-wider mb-1.5 bg-white/10 px-3 py-1 rounded-full">
                     <Sparkles className="w-3.5 h-3.5 text-amber-300" />
-                    <span>Dine-In Rates at Home (Save 20% to 35% vs Apps)</span>
+                    <span>Dine-In Rates at Home (₹0 Platform Fees)</span>
                   </div>
                   <h3 className="font-['Playfair_Display'] text-lg sm:text-2xl font-bold">
                     Order Direct from Our Kitchen &amp; Save
                   </h3>
                   <p className="text-xs sm:text-sm text-white/80 mt-1 max-w-xl hidden sm:block">
-                    Enjoy real restaurant prices, ₹0 platform charges, free delivery above ₹299, plus a free drink above ₹499 with code <strong>DIRECT50</strong>.
+                    Enjoy real restaurant prices, ₹0 platform charges, free delivery within 5 km, plus a free cool drink on orders above ₹499.
                   </p>
                   <button
                     type="button"
@@ -757,7 +778,7 @@ export const MenuSection: React.FC = () => {
                     className="mt-2 inline-flex items-center gap-1 text-xs text-amber-300 font-extrabold hover:text-white underline transition-colors"
                   >
                     <TrendingDown className="w-3.5 h-3.5" />
-                    <span>Compare Live Prices vs Swiggy/Zomato (Save ₹120–₹250+) →</span>
+                    <span>Compare Live Prices vs Swiggy/Zomato (Save vs Apps) →</span>
                   </button>
                 </div>
 
@@ -802,23 +823,63 @@ export const MenuSection: React.FC = () => {
                 </div>
               </div>
 
-              {/* High-Converting 4 Perks Ticker */}
-              <div className="mt-3 grid grid-cols-2 sm:grid-cols-4 gap-2 text-center text-xs">
-                <div className="bg-[#F7F3EB] p-2.5 rounded-xl border border-[#2E4823]/10 shadow-2xs">
-                  <span className="font-extrabold text-[#2E4823] block text-xs sm:text-sm">💰 20–35% Cheaper</span>
-                  <span className="text-[10.5px] text-gray-600">Dine-in menu rates</span>
-                </div>
-                <div className="bg-[#F7F3EB] p-2.5 rounded-xl border border-[#2E4823]/10 shadow-2xs">
-                  <span className="font-extrabold text-[#2E4823] block text-xs sm:text-sm">🛵 FREE 5km Delivery</span>
-                  <span className="text-[10.5px] text-gray-600">On orders above ₹299</span>
-                </div>
-                <div className="bg-[#F7F3EB] p-2.5 rounded-xl border border-[#2E4823]/10 shadow-2xs">
-                  <span className="font-extrabold text-[#2E4823] block text-xs sm:text-sm">🥤 Free Drink Offer</span>
-                  <span className="text-[10.5px] text-gray-600">Above ₹499 (DIRECT50)</span>
-                </div>
-                <div className="bg-[#F7F3EB] p-2.5 rounded-xl border border-[#2E4823]/10 shadow-2xs">
-                  <span className="font-extrabold text-[#2E4823] block text-xs sm:text-sm">⚡ ₹0 Hidden Fees</span>
+              {/* High-Converting 4 Perks Ticker with subtle highlight cycle */}
+              <div
+                className="mt-3 grid grid-cols-2 sm:grid-cols-4 gap-2 text-center text-xs"
+                onMouseEnter={() => setIsTilePaused(true)}
+                onMouseLeave={() => setIsTilePaused(false)}
+              >
+                <div
+                  tabIndex={0}
+                  onFocus={() => { setIsTilePaused(true); setActiveTileIndex(0); }}
+                  onBlur={() => setIsTilePaused(false)}
+                  className={`p-2.5 rounded-xl border transition-all duration-500 cursor-default outline-hidden ${
+                    activeTileIndex === 0
+                      ? 'bg-amber-50 border-amber-400/80 shadow-md ring-2 ring-amber-400/30 -translate-y-0.5'
+                      : 'bg-[#F7F3EB] border-[#2E4823]/10 shadow-2xs'
+                  }`}
+                >
+                  <span className="font-extrabold text-[#2E4823] block text-xs sm:text-sm">💰 ₹0 Platform Fees</span>
                   <span className="text-[10.5px] text-gray-600">Zero app commission</span>
+                </div>
+                <div
+                  tabIndex={0}
+                  onFocus={() => { setIsTilePaused(true); setActiveTileIndex(1); }}
+                  onBlur={() => setIsTilePaused(false)}
+                  className={`p-2.5 rounded-xl border transition-all duration-500 cursor-default outline-hidden ${
+                    activeTileIndex === 1
+                      ? 'bg-amber-50 border-amber-400/80 shadow-md ring-2 ring-amber-400/30 -translate-y-0.5'
+                      : 'bg-[#F7F3EB] border-[#2E4823]/10 shadow-2xs'
+                  }`}
+                >
+                  <span className="font-extrabold text-[#2E4823] block text-xs sm:text-sm">🛵 FREE 5km Delivery</span>
+                  <span className="text-[10.5px] text-gray-600">Within 5 km radius</span>
+                </div>
+                <div
+                  tabIndex={0}
+                  onFocus={() => { setIsTilePaused(true); setActiveTileIndex(2); }}
+                  onBlur={() => setIsTilePaused(false)}
+                  className={`p-2.5 rounded-xl border transition-all duration-500 cursor-default outline-hidden ${
+                    activeTileIndex === 2
+                      ? 'bg-amber-50 border-amber-400/80 shadow-md ring-2 ring-amber-400/30 -translate-y-0.5'
+                      : 'bg-[#F7F3EB] border-[#2E4823]/10 shadow-2xs'
+                  }`}
+                >
+                  <span className="font-extrabold text-[#2E4823] block text-xs sm:text-sm">🥤 Free Drink Offer</span>
+                  <span className="text-[10.5px] text-gray-600">Above ₹499 food total</span>
+                </div>
+                <div
+                  tabIndex={0}
+                  onFocus={() => { setIsTilePaused(true); setActiveTileIndex(3); }}
+                  onBlur={() => setIsTilePaused(false)}
+                  className={`p-2.5 rounded-xl border transition-all duration-500 cursor-default outline-hidden ${
+                    activeTileIndex === 3
+                      ? 'bg-amber-50 border-amber-400/80 shadow-md ring-2 ring-amber-400/30 -translate-y-0.5'
+                      : 'bg-[#F7F3EB] border-[#2E4823]/10 shadow-2xs'
+                  }`}
+                >
+                  <span className="font-extrabold text-[#2E4823] block text-xs sm:text-sm">⚡ ₹0 Hidden Fees</span>
+                  <span className="text-[10.5px] text-gray-600">Real kitchen prices</span>
                 </div>
               </div>
             </div>
@@ -1301,7 +1362,7 @@ export const MenuSection: React.FC = () => {
                                 <div className="flex items-center gap-1.5 flex-wrap">
                                   {showDual && (
                                     <span className="text-[10px] sm:text-[11px] text-gray-400 line-through font-mono whitespace-nowrap">
-                                      App Price: ₹{activeAggPrice}
+                                      Est. app price: ₹{activeAggPrice}
                                     </span>
                                   )}
                                   <span className="font-bold text-sm sm:text-base text-[#2E4823] whitespace-nowrap">

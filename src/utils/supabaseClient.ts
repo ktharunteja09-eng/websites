@@ -232,17 +232,18 @@ export function getTodayDateString(): string {
 // Default Fallback Store Offer
 export const DEFAULT_STORE_OFFER: StoreOffer = {
   id: 1,
-  is_active: true,
-  banner_text: 'Order Direct: Flat 10% OFF above ₹299 + Free Drink above ₹499!',
-  discount_percent: 10,
-  min_order_amount: 299,
-  free_item_name: 'Free 250ml Cool Drink',
-  free_item_min_amount: 499,
-  coupon_code: 'DIRECT50',
-  coupon_flat_discount: 50,
-  starts_at: new Date().toISOString(),
-  expires_at: new Date(Date.now() + 12 * 60 * 60 * 1000).toISOString(),
+  is_active: false,
+  banner_text: '',
+  discount_percent: 0,
+  min_order_amount: 0,
+  free_item_name: '',
+  free_item_min_amount: 0,
+  coupon_code: '',
+  coupon_flat_discount: 0,
+  starts_at: '',
+  expires_at: '',
   admin_pin: '',
+  packing_fee: 0,
 };
 
 // Memory fallback cache in case Supabase is not connected

@@ -188,7 +188,7 @@ export const Hero: React.FC<HeroProps> = ({
             <Utensils className="w-5 h-5" />
             <span>Order Online</span>
             <span className="ml-1 text-[10px] font-extrabold uppercase bg-amber-400 text-[#1C1C1C] px-2 py-0.5 rounded-full shadow-xs tracking-wider">
-              Save 25%+
+              ₹0 Fees
             </span>
           </button>
 
@@ -218,14 +218,14 @@ export const Hero: React.FC<HeroProps> = ({
             <div>
               <div className="flex items-center gap-2 flex-wrap">
                 <span className="text-xs sm:text-sm font-bold text-white">
-                  Order Direct &amp; Save ₹150–₹250+
+                  Order Direct &amp; Save vs Apps
                 </span>
                 <span className="text-[10px] bg-emerald-500/90 text-white font-extrabold px-1.5 py-0.2 rounded uppercase">
                   Zero App Markup
                 </span>
               </div>
               <p className="text-[11px] sm:text-xs text-white/80 mt-0.5">
-                ₹0 Platform Fees • Real Dine-In Menu Prices • Free 5km Delivery above ₹299
+                ₹0 Platform Fees • Real Dine-In Menu Prices • Free Delivery within 5 km
               </p>
             </div>
           </div>

@@ -4,10 +4,12 @@ import { getOrderAvailability } from './supabaseClient';
 export interface CartTotals {
   subtotal: number;
   discount_amount: number;
+  packing_fee: number;
   free_item_name: string | null;
   has_discount: boolean;
   has_free_item: boolean;
   amount_for_discount: number;
+  amount_for_free_item: number;
   final_total: number;
 }
 
@@ -121,8 +123,10 @@ export function calculateTotals(items: CartItem[], offer: StoreOffer | null): Ca
   let has_discount = false;
   let has_free_item = false;
   let min_order_amount = 0;
+  let amount_for_free_item = 0;
 
   const activeOffer = isOfferActive(offer) ? offer : null;
+  const packing_fee = Math.max(0, Number(activeOffer?.packing_fee) || 0);
 
   if (activeOffer) {
     min_order_amount = Math.max(0, Number(activeOffer.min_order_amount) || 0);
@@ -138,32 +142,37 @@ export function calculateTotals(items: CartItem[], offer: StoreOffer | null): Ca
       has_discount = false;
     }
 
-    // Apply or dynamically strip free item
-    const freeThreshold = free_item_min_amount > 0 ? free_item_min_amount : min_order_amount;
-    if (
+    // Apply or dynamically strip free item strictly based on settings (free_item_min_amount > 0 and non-empty name)
+    const subtotalAfterDiscount = Math.max(0, subtotal - discount_amount);
+    const hasFreeItemSetting = Boolean(
       activeOffer.free_item_name &&
       activeOffer.free_item_name.trim() !== '' &&
-      freeThreshold > 0 &&
-      subtotal >= freeThreshold
-    ) {
+      free_item_min_amount > 0
+    );
+
+    if (hasFreeItemSetting && subtotalAfterDiscount >= free_item_min_amount) {
       free_item_name = activeOffer.free_item_name.trim();
       has_free_item = true;
+      amount_for_free_item = 0;
     } else {
       free_item_name = null;
       has_free_item = false;
+      amount_for_free_item = hasFreeItemSetting ? Math.max(0, free_item_min_amount - subtotalAfterDiscount) : 0;
     }
   }
 
-  const final_total = Math.max(0, subtotal - discount_amount);
+  const final_total = Math.max(0, subtotal - discount_amount) + packing_fee;
   const amount_for_discount = Math.max(0, min_order_amount - subtotal);
 
   return {
     subtotal,
     discount_amount,
+    packing_fee,
     free_item_name,
     has_discount,
     has_free_item,
     amount_for_discount,
+    amount_for_free_item,
     final_total,
   };
 }

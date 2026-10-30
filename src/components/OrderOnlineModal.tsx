@@ -338,7 +338,7 @@ export const OrderOnlineModal: React.FC<OrderOnlineModalProps> = ({
             </div>
 
             <h2 id="order-online-title" className="font-['Playfair_Display'] text-xl sm:text-2xl font-bold tracking-tight">
-              Order Online &amp; Save 25%+
+              Order Direct - Rs 0 Platform Fees
             </h2>
             <p className="text-xs sm:text-sm text-white/85 mt-1 leading-relaxed">
               Enjoy real dine-in menu prices, ₹0 platform fees, and fresh food delivered straight from our stoves.
@@ -405,7 +405,7 @@ export const OrderOnlineModal: React.FC<OrderOnlineModalProps> = ({
                         Self-Pickup at Vaibhav Grand, Renigunta
                       </h3>
                       <p className="text-xs text-emerald-900 mt-1 leading-relaxed">
-                        Ready in <strong>20–25 minutes</strong> with zero wait time. Packaged hot in insulated eco-boxes with full 25%+ direct savings.
+                        Ready in <strong>20–25 minutes</strong> with zero wait time. Packaged hot in insulated eco-boxes with ₹0 platform fees.
                       </p>
                       <div className="mt-2.5 text-xs text-emerald-800 font-medium flex items-center gap-1.5">
                         <MapPin className="w-3.5 h-3.5 text-emerald-700 shrink-0" />
@@ -442,7 +442,7 @@ export const OrderOnlineModal: React.FC<OrderOnlineModalProps> = ({
                         <span>Check Delivery to Your Location</span>
                       </h3>
                       <p className="text-xs text-gray-600 mt-1 leading-relaxed">
-                        We deliver directly within <strong>5.0 km road driving distance</strong> from our kitchen with ₹0 platform fees and free delivery above ₹299.
+                        We deliver directly within <strong>5.0 km road driving distance</strong> from our kitchen with ₹0 platform fees and free delivery within 5 km.
                       </p>
                     </div>
 
@@ -553,7 +553,7 @@ export const OrderOnlineModal: React.FC<OrderOnlineModalProps> = ({
                           <div className="mt-3 grid grid-cols-2 gap-2 text-[11px] text-emerald-800 font-semibold">
                             <div className="flex items-center gap-1.5">
                               <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
-                              <span>Free Delivery above ₹299</span>
+                              <span>Free Delivery within 5 km</span>
                             </div>
                             <div className="flex items-center gap-1.5">
                               <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
@@ -561,7 +561,7 @@ export const OrderOnlineModal: React.FC<OrderOnlineModalProps> = ({
                             </div>
                             <div className="flex items-center gap-1.5">
                               <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
-                              <span>₹0 Packaging Charge</span>
+                              <span>₹5 Flat Packaging</span>
                             </div>
                             <div className="flex items-center gap-1.5">
                               <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
@@ -681,7 +681,7 @@ export const OrderOnlineModal: React.FC<OrderOnlineModalProps> = ({
                       {/* Solution 2: Switch to Takeaway */}
                       <div className="pt-2 border-t border-gray-200">
                         <p className="text-xs text-gray-600 mb-2">
-                          2. <strong>Switch to Self-Pickup &amp; Save 25%+</strong> (No distance restrictions! Pick up freshly packed hot food yourself):
+                          2. <strong>Switch to Self-Pickup &amp; Save Direct</strong> (No distance restrictions! Pick up freshly packed hot food yourself):
                         </p>
                         <button
                           type="button"

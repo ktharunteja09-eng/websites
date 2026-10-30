@@ -355,7 +355,7 @@ export const HomeMenuPreview: React.FC<HomeMenuPreviewProps> = ({
                           <div className="absolute bottom-2 right-2 z-10 bg-white/95 backdrop-blur-xs px-2 py-0.5 rounded-lg shadow-xs border border-[#2E4823]/10 text-right">
                             <div className="flex items-center gap-1 justify-end">
                               {savings > 0 && (
-                                <span className="text-[10px] text-gray-400 line-through">₹{estimatedAggPrice}</span>
+                                <span className="text-[10px] text-gray-400 line-through">Est. ₹{estimatedAggPrice}</span>
                               )}
                               <span className="text-[#D3452B] font-bold text-xs">₹{activePrice}</span>
                             </div>
@@ -509,13 +509,13 @@ export const HomeMenuPreview: React.FC<HomeMenuPreviewProps> = ({
             <div className="text-left max-w-xl">
               <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-emerald-100 text-emerald-800 text-[10px] font-bold uppercase tracking-wider mb-1.5">
                 <Sparkles className="w-3 h-3 text-emerald-600" />
-                <span>Save 20% to 35% Ordering Direct</span>
+                <span>₹0 Platform Fees • Zero App Commission</span>
               </div>
               <h3 className="font-['Playfair_Display'] text-lg sm:text-xl font-bold text-[#2E4823]">
-                Order Directly from Our Kitchen &amp; Save ₹150–₹250+
+                Order Directly from Our Kitchen &amp; Save vs Apps
               </h3>
               <p className="text-xs sm:text-sm text-gray-600 mt-1 leading-relaxed">
-                Genuine dine-in pricing • ₹0 platform fees • ₹0 packaging charges • Free 5km delivery above ₹299.
+                Genuine kitchen pricing • ₹0 platform fees • Free delivery within 5 km.
               </p>
             </div>
 
@@ -609,7 +609,7 @@ export const HomeMenuPreview: React.FC<HomeMenuPreviewProps> = ({
                       <div className="text-right shrink-0">
                         <div className="flex items-center gap-1.5 justify-end">
                           {itemSavings > 0 && (
-                            <span className="text-xs text-gray-400 line-through">₹{estimatedAggPrice}</span>
+                            <span className="text-xs text-gray-400 line-through">Est. ₹{estimatedAggPrice}</span>
                           )}
                           <span className="font-bold text-base sm:text-lg text-[#D3452B]">
                             ₹{activePrice}

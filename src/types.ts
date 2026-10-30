@@ -152,6 +152,7 @@ export interface StoreOffer {
   starts_at: string;
   expires_at: string;
   admin_pin?: string;
+  packing_fee?: number;
 }
 
 export type OrderType = 'DELIVERY_5KM' | 'SELF_PICKUP';
@@ -169,6 +170,7 @@ export interface DbOrder {
   items_json: string;
   subtotal: number;
   discount_amount: number;
+  packing_fee?: number;
   final_total: number;
   payment_method: 'UPI' | 'COD' | string;
   status: string;
